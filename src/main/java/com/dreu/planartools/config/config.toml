@@ -1,14 +1,9 @@
 # To reset this config to default, delete this file and rerun the game.
-# Items not registered by their mod as Tools won't be valid.
-[Blocks]
-# Default Power will be based on required tool type and tier
-# that the block was originally registered with.
-# This table shows the default power level of each tier of tool.
-###############################################################
-# Tier  -> | Wooden |  Stone  |  Iron  | Diamond  | Netherite #
-#----------|--------|---------|--------|----------|-----------#
-# Power -> |   20   |    40   |   60   |    80    |    100    #
-###############################################################
-"minecraft:stone" = {PickaxeResistance = 20, Hardness = 200}
-"minecraft:grass_block" = {PickaxeResistance = 0, Hardness = 100}
-"minecraft:dirt" = {PickaxeResistance = 0, Hardness = 50}
+
+UseGlobalDefault = true
+GlobalDefaultResistance = -1
+
+# To use a custom preset, create a folder in: config/planar_tools/presets/[your-preset-name]
+# Add both blocks.toml and tools.toml to your preset folder.
+# Use the "template" preset in config/planar_tools/presets/template as an example.
+Preset = "template"

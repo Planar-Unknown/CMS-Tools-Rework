@@ -4,13 +4,6 @@ import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.toml.TomlParser;
 import net.minecraftforge.fml.ModList;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,11 +12,13 @@ import static com.dreu.planartools.PlanarTools.*;
 @SuppressWarnings({"SameParameterValue"})
 public class ToolsConfig {
     public static boolean needsRepair = false;
-    public static final String fileName = "config/" + MODID + "/tools.toml";
-    static final String DEFAULT_CONFIG_STRING = """
-            # To reset this config to default, delete this file and rerun the game.
+    public static final String templateFileName = "config/" + MODID + "/presets/template/tools.toml";
+    public static final String TEMPLATE_CONFIG_STRING = """
+            # DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!
             # Values not included for Tools will default to the Default power.
-            # Items not registered by their mod as Tools won't be valid.
+            # Power indicates the level of blocks a tool is able to mine.
+            # MiningSpeed indicates the rate at which a tool will mine blocks that it can mine.
+            # Each block can be configured to choose whether a tools MiningSpeed will be applied.
             Default = {PickaxePower = -1, AxePower = -1, ShovelPower = -1, HoePower = -1, ShearPower = -1, MiningSpeed = 1}
             
             [Tools]
@@ -64,8 +59,8 @@ public class ToolsConfig {
             
             "minecraft:shears" = {ShearPower = 100, MiningSpeed = 12}
             """;
-    private static final Config CONFIG = parseFileOrDefault(fileName, DEFAULT_CONFIG_STRING);
-    private static final Config DEFAULT_CONFIG = new TomlParser().parse(DEFAULT_CONFIG_STRING);
+    private static final Config CONFIG = parseFileOrDefault(templateFileName, TEMPLATE_CONFIG_STRING);
+    private static final Config TEMPLATE_CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
 
     public static final Map<String, Integer> DEFAULT_POWERS = Map.of(
         "PickaxePower", getOrDefault("Default.PickaxePower", Integer.class),
@@ -79,7 +74,7 @@ public class ToolsConfig {
     static {
         getOrDefault("Tools", Config.class).valueMap().forEach((itemId, values) -> {
             if (!itemId.contains(":")) {
-                LOGGER.warn("No namespace found in item id: [{}] declared in config: [{}] | Skipping...", itemId, fileName);
+                LOGGER.warn("No namespace found in item id: [{}] declared in config: [{}] | Skipping...", itemId, templateFileName);
                 return;
             }
             if (ModList.get().isLoaded(itemId.substring(0, itemId.indexOf(":")))) {
@@ -94,7 +89,7 @@ public class ToolsConfig {
                     getPropertyOrDefault((Config) values, "MiningSpeed", itemId))
             );
             } else
-                LOGGER.info("Config [{}] declared tool power values for [{}] when [{}] was not loaded | Skipping Item...", fileName, itemId, itemId.substring(0, itemId.indexOf(":")));
+                LOGGER.info("Config [{}] declared tool power values for [{}] when [{}] was not loaded | Skipping Item...", templateFileName, itemId, itemId.substring(0, itemId.indexOf(":")));
         });
     }
 
@@ -102,7 +97,7 @@ public class ToolsConfig {
         if (!propertyValues.contains(property))
             return DEFAULT_POWERS.get(property);
         return propertyValues.getIntOrElse(property, () -> {
-            LOGGER.warn("Value for {} in {} was not an Integer | Substituting with default value...", itemId + "." + property, fileName);
+            LOGGER.warn("Value for {} in {} was not an Integer | Substituting with default value...", itemId + "." + property, templateFileName);
             return DEFAULT_POWERS.get(property);
         });
     }
@@ -110,15 +105,15 @@ public class ToolsConfig {
     private static <T> T getOrDefault(String key, Class<T> clazz) {
         try {
             if ((CONFIG.get(key) == null)) {
-                LOGGER.error("Key [{}] is missing from Config: [{}] | Marking config file for repair...", key, fileName);
+                LOGGER.error("Key [{}] is missing from Config: [{}] | Marking config file for repair...", key, templateFileName);
                 needsRepair = true;
-                return clazz.cast(DEFAULT_CONFIG.get(key));
+                return clazz.cast(TEMPLATE_CONFIG.get(key));
             }
             return clazz.cast(CONFIG.get(key));
         } catch (Exception e) {
-            LOGGER.error("Value: [{}] for [{}] is an invalid type in Config: {} | Expected: [{}] but got: [{}] | Marking config file for repair...", CONFIG.get(key), key, fileName, clazz.getTypeName(), CONFIG.get(key).getClass().getTypeName());
+            LOGGER.error("Value: [{}] for [{}] is an invalid type in Config: {} | Expected: [{}] but got: [{}] | Marking config file for repair...", CONFIG.get(key), key, templateFileName, clazz.getTypeName(), CONFIG.get(key).getClass().getTypeName());
             needsRepair = true;
-            return clazz.cast(DEFAULT_CONFIG.get(key));
+            return clazz.cast(TEMPLATE_CONFIG.get(key));
         }
     }
 

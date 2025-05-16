@@ -5,7 +5,8 @@
   "minVersion": "0.8",
   "refmap": "planar_tools.refmap.json",
   "mixins": [
-    "DiggerItemMixin"
+    "DiggerItemMixin",
+    "ItemMixin"
   ],
   "injectors": {
     "defaultRequire": 1
