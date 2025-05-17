@@ -18,7 +18,7 @@ import java.nio.file.Path;
 
 @Mod(PlanarTools.MODID)
 public class PlanarTools {
-    //Todo: Make DO NOT EDIT message only appear in the actual template
+    //Todo: Make TOOLS be a map of string to ToolsConfig.Properties
     //Todo: Shears mixin
     //Todo: Blocks mixin for hardness
     //Todo: Add swords to the system
@@ -28,7 +28,6 @@ public class PlanarTools {
     //Todo: Nbt system for upgrading tools
     //Todo: Tags compatibility
     //Todo: Send error logs in chat on server start
-    //Todo Together: Make blocks not listed in config grant ApplyMiningSpeed for tools that have the appropriate power type
 
     //Eventually make tool types dynamic and expandable
     //Eventually make blocks store their destroy progress

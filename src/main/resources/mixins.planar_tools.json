@@ -6,7 +6,8 @@
   "refmap": "planar_tools.refmap.json",
   "mixins": [
     "DiggerItemMixin",
-    "ItemMixin"
+    "ItemMixin",
+    "BlockMixin"
   ],
   "injectors": {
     "defaultRequire": 1

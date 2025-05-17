@@ -1,7 +1,9 @@
 package com.dreu.planartools.config;
 
 import com.electronwill.nightconfig.core.Config;
+import net.minecraft.world.level.block.Block;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -104,6 +106,11 @@ public class BlocksConfig {
     private static Optional<Float> getOptionalHardness(Config values) {
         Double hardness = values.get("Hardness");
         return hardness == null ? Optional.empty() : Optional.of(((Number) values.get("Hardness")).floatValue());
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    public static BlocksConfig.Properties getBlockProperties(Block block) {
+        return BLOCKS.get(ForgeRegistries.BLOCKS.getKey(block).toString());
     }
 
     public record Properties(Optional<Float> hardness, Map<String, ToolData> toolDataMap) {}
