@@ -20,10 +20,10 @@ public class ItemMixin {
     public float getDestroySpeed(ItemStack itemInHand, BlockState blockState) {
         Map.Entry<int[], Integer> toolProperties = TOOLS.get(ForgeRegistries.ITEMS.getKey(itemInHand.getItem()).toString());
         BlocksConfig.Properties blockProperties = BLOCKS.get(ForgeRegistries.BLOCKS.getKey(blockState.getBlock()).toString());
+        boolean applyMiningSpeed = false;
         if (blockProperties != null) {
             if (toolProperties != null) {
                 boolean canMine = false;
-                boolean applyMiningSpeed = false;
                 for (int i = 0; i < toolProperties.getKey().length; i++) {
                     int resistance = blockProperties.toolDataMap().get(POWERS[i]).resistance();
                     if (resistance >= 0 && toolProperties.getKey()[i] >= resistance) {
@@ -41,8 +41,10 @@ public class ItemMixin {
                 }
                 return 0f;
             }
-
+        } else if (toolProperties != null) {
+            //Todo Together: isCorrectToolForDrops check
+            return applyMiningSpeed ? toolProperties.getValue() : 1.0f;
         }
-        return 1.0F;
+        return 1.0f;
     }
 }
