@@ -11,37 +11,44 @@ import static com.dreu.planartools.PlanarTools.*;
 import static com.dreu.planartools.config.GeneralConfig.GLOBAL_DEFAULT_RESISTANCE;
 
 public class BlocksConfig {
+
     public static final String templateFileName = "config/" + MODID + "/presets/template/blocks.toml";
     public static final String TEMPLATE_CONFIG_STRING = """
-    # DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!
     # Modded Items that override the getDestroySpeed method will not be valid.
     # To request compatibility with a specific mod, let us know in our Discord | https://discord.gg/RrY3rXuAH5
     
     # This table shows the default power level of each tier of tool.
-    ###############################################################
-    # Tier  -> | Wooden |  Stone  |  Iron  | Diamond  | Netherite #
-    #----------|--------|---------|--------|----------|-----------#
-    # Power -> |   20   |    40   |   60   |    80    |    100    #
-    ###############################################################
+    ########################################################################
+    # Tier  -> | Wooden |  Stone  |  Iron  |  Gold  | Diamond  | Netherite #
+    #----------|--------|---------|--------|--------|----------|-----------#
+    # Power -> |   20   |    40   |   60   |   60   |    80    |    100    #
+    ########################################################################
+    
     # Here is an example of a block that can only be mined with a Power 40+ Shovel OR a Power 20+ Pickaxe:
-    # ["minecraft:packed_mud"]
-    # Hardness = 1.0
-    # DefaultResistance = -1
-    # Shovel = {Resistance = 40, ApplyMiningSpeed = false}
-    # Pickaxe = {Resistance = 20, ApplyMiningSpeed = true}
+    ["minecraft:packed_mud"] # Block ID
+    Hardness = 1.0 # Affects mining time (e.g., dirt = 0.5, stone = 1.5, bedrock = -1). Only include this if you want to change a block's existing hardness.
+    DefaultResistance = -1 # Resistance to unlisted tool types (-1 = unbreakable)
+    Shovel = { Resistance = 40, ApplyMiningSpeed = false }  # Tools with ShovelPower ≥ 40 can mine this block but their MiningSpeed is NOT applied.
+    Pickaxe = { Resistance = 20, ApplyMiningSpeed = true  }  # Tools with PickaxePower ≥ 20 can mine this block and their MiningSpeed IS applied.
     
     ["minecraft:dirt"]
-    Hardness = 0.5
-    DefaultResistance = 0
-    Shovel = {Resistance = 0, ApplyMiningSpeed = true}
+    DefaultResistance = 0 # Zero indicates no resistance, meaning no power is required to mine it. So any tool, item (or fist) works!
+    Shovel = {ApplyMiningSpeed = true} # Even though ANYTHING can mine it, only tools/items that have ShovelPower apply their MiningSpeed.
     
-    ["minecraft:stone"]
-    Hardness = 1.5
+    ["minecraft:deepslate"]
     DefaultResistance = -1
-    Pickaxe = {Resistance = 20, ApplyMiningSpeed = true}
+    Pickaxe = {Resistance = 40, ApplyMiningSpeed = true}
+    
+    ["minecraft:obsidian"]
+    DefaultResistance = -1
+    Pickaxe = {Resistance = 80, ApplyMiningSpeed = true}
+    
+    ["minecraft:oak_log"] # Same as vanilla
+    DefaultResistance = 0
+    Axe = {ApplyMiningSpeed = true}
     """;
 
-    private static final Config CONFIG = parseFileOrDefault(GeneralConfig.PRESET_FOLDER_NAME + "blocks.toml", TEMPLATE_CONFIG_STRING);
+    private static final Config CONFIG = parseFileOrDefault(GeneralConfig.PRESET_FOLDER_NAME + "blocks.toml", TEMPLATE_CONFIG_STRING, false);
 
     public static final Map<String, Properties> BLOCKS = new HashMap<>();
     static {
@@ -95,7 +102,8 @@ public class BlocksConfig {
     }
 
     private static Optional<Float> getOptionalHardness(Config values) {
-        return Optional.of(((Number) values.get("Hardness")).floatValue());
+        Double hardness = values.get("Hardness");
+        return hardness == null ? Optional.empty() : Optional.of(((Number) values.get("Hardness")).floatValue());
     }
 
     public record Properties(Optional<Float> hardness, Map<String, ToolData> toolDataMap) {}

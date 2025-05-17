@@ -14,9 +14,8 @@ public class ToolsConfig {
     public static boolean needsRepair = false;
     public static final String templateFileName = "config/" + MODID + "/presets/template/tools.toml";
     public static final String TEMPLATE_CONFIG_STRING = """
-            # DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!
             # Values not included for Tools will default to the Default power.
-            # Power indicates the level of blocks a tool is able to mine.
+            # Power indicates the block Resistance level a tool can overcome.
             # MiningSpeed indicates the rate at which a tool will mine blocks that it can mine.
             # Each block can be configured to choose whether a tools MiningSpeed will be applied.
             Default = {PickaxePower = -1, AxePower = -1, ShovelPower = -1, HoePower = -1, ShearPower = -1, MiningSpeed = 1}
@@ -59,7 +58,7 @@ public class ToolsConfig {
             
             "minecraft:shears" = {ShearPower = 100, MiningSpeed = 12}
             """;
-    private static final Config CONFIG = parseFileOrDefault(templateFileName, TEMPLATE_CONFIG_STRING);
+    private static final Config CONFIG = parseFileOrDefault(GeneralConfig.PRESET_FOLDER_NAME + "tools.toml", TEMPLATE_CONFIG_STRING, false);
     private static final Config TEMPLATE_CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
 
     public static final Map<String, Integer> DEFAULT_POWERS = Map.of(

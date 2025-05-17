@@ -1,6 +1,7 @@
 package com.dreu.planartools;
 
 import com.dreu.planartools.config.BlocksConfig;
+import com.dreu.planartools.config.GeneralConfig;
 import com.dreu.planartools.config.ToolsConfig;
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.toml.TomlParser;
@@ -16,32 +17,60 @@ import java.nio.file.Path;
 
 @Mod(PlanarTools.MODID)
 public class PlanarTools {
+    //Todo: Make blocks not listed in config grant ApplyMiningSpeed for tools that have the appropriate power type
+    //Todo: Truly preload configs
+    //Todo: Make DO NOT EDIT message only appear in the actual template
+    //Todo: Shears mixin
+    //Todo: Blocks mixin for hardness
+    //Todo: Add swords to the system
+    //Todo: Flush out tem tooltips
+    //Todo: Toggleable Waila
+    //Todo: Inject into Item#mineBlock() to return true if the item is in the tools config
+    //Todo: Nbt system for upgrading tools
+    //Todo: Tags compatibility
+    //Todo: Send error logs in chat on server start
+    //Eventually make tool types dynamic and expandable
+    //Eventually make blocks store their destroy progress
     public static final String[] POWERS = {"Pickaxe", "Axe", "Shovel", "Hoe", "Shears"};
     public static final String MODID = "planar_tools";
     public static final Logger LOGGER = LogUtils.getLogger();
     public PlanarTools() {
-        //Todo: if (GeneralConfig.needsRepair) GeneralConfig.repair();
+        if (GeneralConfig.needsRepair) GeneralConfig.repair();
         resetTemplate(BlocksConfig.templateFileName, BlocksConfig.TEMPLATE_CONFIG_STRING);
         resetTemplate(ToolsConfig.templateFileName, ToolsConfig.TEMPLATE_CONFIG_STRING);
     }
 
-    public static Config parseFileOrDefault(String fileName, String defaultConfig) {
+    public static Config parseFileOrDefault(String fileName, String defaultConfig, boolean rewriteIfFailedToParse) {
         Path filePath = Path.of(fileName);
         try {
-            Files.createDirectories(filePath.getParent());}
-        catch (Exception ignored) {}
-        return new TomlParser().parse(filePath.toAbsolutePath(),
-                (path, configFormat) -> {
-                    FileWriter writer = new FileWriter(path.toFile().getAbsolutePath());
+            Files.createDirectories(filePath.getParent());
+            return new TomlParser().parse(filePath.toAbsolutePath(),
+                    (path, configFormat) -> {
+                        FileWriter writer = new FileWriter(path.toFile().getAbsolutePath());
+                        writer.write(defaultConfig);
+                        writer.close();
+                        return true;
+                    });
+        } catch (Exception e) {
+            LOGGER.error("Exception encountered during parsing of config file: [{}]. The hardcoded default config will be used | Exception: {}", fileName, e.getMessage());
+            if (rewriteIfFailedToParse) {
+                LOGGER.info("Rewriting config file: [{}] in response to parsing failure", fileName);
+                try (FileWriter writer = new FileWriter(filePath.toFile().getAbsolutePath())) {
                     writer.write(defaultConfig);
-                    writer.close();
-                    return true;
-                });
+                } catch (IOException io) {
+                    LOGGER.error("Exception encountered during rewriting of faulty config file: [{}] | Exception: {}", fileName, io.getMessage());
+                }
+            } else {
+                LOGGER.info("Not rewriting config file: [{}] even though it failed to parse", fileName);
+            }
+            return new TomlParser().parse(defaultConfig);
+        }
     }
 
     public static void resetTemplate(String fileName, String contents) {
         try (FileWriter writer = new FileWriter(new File(fileName).getAbsolutePath())) {
-            writer.write(contents);
+            String warning = "# DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!\n";
+            writer.write(warning + contents);
         } catch (IOException e) {
             LOGGER.warn("Exception during template replacement: {}", e.getMessage());
         }
