@@ -42,7 +42,7 @@ public class GeneralConfig {
 
     public static final Config DEFAULT_CONFIG = new TomlParser().parse(DEFAULT_CONFIG_STRING);
 
-    private static final Config CONFIG = parseFileOrDefault(fileName, DEFAULT_CONFIG_STRING, true);
+    public static final Config CONFIG = parseFileOrDefault(fileName, DEFAULT_CONFIG_STRING, true);
 
     public static final boolean USE_GLOBAL_DEFAULT = getOrDefault("UseGlobalDefault", Boolean.class);
     public static final int GLOBAL_DEFAULT_RESISTANCE = USE_GLOBAL_DEFAULT ? getOrDefault("GlobalDefaultResistance", Integer.class) : 0;

@@ -48,7 +48,7 @@ public class BlocksConfig {
     Axe = {ApplyMiningSpeed = true}
     """;
 
-    private static final Config CONFIG = parseFileOrDefault(GeneralConfig.PRESET_FOLDER_NAME + "blocks.toml", TEMPLATE_CONFIG_STRING, false);
+    public static final Config CONFIG = parseFileOrDefault(GeneralConfig.PRESET_FOLDER_NAME + "blocks.toml", TEMPLATE_CONFIG_STRING, false);
 
     public static final Map<String, Properties> BLOCKS = new HashMap<>();
     static {
@@ -108,5 +108,4 @@ public class BlocksConfig {
 
     public record Properties(Optional<Float> hardness, Map<String, ToolData> toolDataMap) {}
     public record ToolData(int resistance, boolean applyMiningSpeed) {}
-
 }

@@ -58,7 +58,7 @@ public class ToolsConfig {
             
             "minecraft:shears" = {ShearPower = 100, MiningSpeed = 12}
             """;
-    private static final Config CONFIG = parseFileOrDefault(GeneralConfig.PRESET_FOLDER_NAME + "tools.toml", TEMPLATE_CONFIG_STRING, false);
+    public static final Config CONFIG = parseFileOrDefault(GeneralConfig.PRESET_FOLDER_NAME + "tools.toml", TEMPLATE_CONFIG_STRING, false);
     private static final Config TEMPLATE_CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
 
     public static final Map<String, Integer> DEFAULT_POWERS = Map.of(
@@ -115,6 +115,4 @@ public class ToolsConfig {
             return clazz.cast(TEMPLATE_CONFIG.get(key));
         }
     }
-
-
 }

@@ -8,6 +8,7 @@ import com.electronwill.nightconfig.toml.TomlParser;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
+import oshi.util.GlobalConfig;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -17,8 +18,6 @@ import java.nio.file.Path;
 
 @Mod(PlanarTools.MODID)
 public class PlanarTools {
-    //Todo: Make blocks not listed in config grant ApplyMiningSpeed for tools that have the appropriate power type
-    //Todo: Truly preload configs
     //Todo: Make DO NOT EDIT message only appear in the actual template
     //Todo: Shears mixin
     //Todo: Blocks mixin for hardness
@@ -29,12 +28,15 @@ public class PlanarTools {
     //Todo: Nbt system for upgrading tools
     //Todo: Tags compatibility
     //Todo: Send error logs in chat on server start
+    //Todo Together: Make blocks not listed in config grant ApplyMiningSpeed for tools that have the appropriate power type
+
     //Eventually make tool types dynamic and expandable
     //Eventually make blocks store their destroy progress
     public static final String[] POWERS = {"Pickaxe", "Axe", "Shovel", "Hoe", "Shears"};
     public static final String MODID = "planar_tools";
     public static final Logger LOGGER = LogUtils.getLogger();
     public PlanarTools() {
+        preloadConfigs();
         if (GeneralConfig.needsRepair) GeneralConfig.repair();
         resetTemplate(BlocksConfig.templateFileName, BlocksConfig.TEMPLATE_CONFIG_STRING);
         resetTemplate(ToolsConfig.templateFileName, ToolsConfig.TEMPLATE_CONFIG_STRING);
@@ -74,5 +76,11 @@ public class PlanarTools {
         } catch (IOException e) {
             LOGGER.warn("Exception during template replacement: {}", e.getMessage());
         }
+    }
+
+    private void preloadConfigs() {
+        GeneralConfig.CONFIG.valueMap().put("Preloaded", true);
+        ToolsConfig.CONFIG.valueMap().put("Preloaded", true);
+        BlocksConfig.CONFIG.valueMap().put("Preloaded", true);
     }
 }
