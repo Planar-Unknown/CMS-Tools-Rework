@@ -6,7 +6,9 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.registries.ForgeRegistries;
-import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
 
 import static com.dreu.planartools.config.BlocksConfig.BLOCKS;
 
@@ -17,7 +19,7 @@ public class BlockMixin {
 
     @Overwrite
     public float getDestroySpeed(BlockGetter level, BlockPos blockPos) {
-        BlocksConfig.Properties blockProperties = BLOCKS.get(ForgeRegistries.BLOCKS.getKey(this.getBlock()).toString());
+        @SuppressWarnings("DataFlowIssue") BlocksConfig.Properties blockProperties = BLOCKS.get(ForgeRegistries.BLOCKS.getKey(this.getBlock()).toString());
         return blockProperties != null ? blockProperties.hardness().orElse(this.destroySpeed) : this.destroySpeed;
     }
 

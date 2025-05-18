@@ -61,13 +61,16 @@ public class BlocksConfig {
             }
             if (ModList.get().isLoaded(itemId.substring(0, itemId.indexOf(":")))) {
                 int defaultResistance = getResistanceOrDefault((Config) values, itemId);
-                Map<String, ToolData> toolDataMap = new HashMap<>();
+                Map<String, BlockData> toolDataMap = new HashMap<>();
+                //Todo: populate based on declared values only. and add defaultResistance field to Properties record
 
                 putToolData(itemId, (Config) values, toolDataMap, defaultResistance, "Pickaxe");
                 putToolData(itemId, (Config) values, toolDataMap, defaultResistance, "Axe");
                 putToolData(itemId, (Config) values, toolDataMap, defaultResistance, "Shovel");
                 putToolData(itemId, (Config) values, toolDataMap, defaultResistance, "Hoe");
                 putToolData(itemId, (Config) values, toolDataMap, defaultResistance, "Shears");
+                putToolData(itemId, (Config) values, toolDataMap, defaultResistance, "Sword");
+                putToolData(itemId, (Config) values, toolDataMap, defaultResistance, "Banana");
 
                 BLOCKS.put(itemId, new Properties(
                         getOptionalHardness((Config) values),
@@ -78,8 +81,8 @@ public class BlocksConfig {
         });
     }
 
-    private static void putToolData(String itemId, Config values, Map<String, ToolData> toolDataMap, int defaultResistance, String tool) {
-        toolDataMap.put(tool, new ToolData(
+    private static void putToolData(String itemId, Config values, Map<String, BlockData> toolDataMap, int defaultResistance, String tool) {
+        toolDataMap.put(tool, new BlockData(
                 getPropertyOrElse(values, tool + ".Resistance", itemId, defaultResistance),
                 getPropertyOrElse(values, tool + ".ApplyMiningSpeed", itemId, false)
         ));
@@ -113,6 +116,10 @@ public class BlocksConfig {
         return BLOCKS.get(ForgeRegistries.BLOCKS.getKey(block).toString());
     }
 
-    public record Properties(Optional<Float> hardness, Map<String, ToolData> toolDataMap) {}
-    public record ToolData(int resistance, boolean applyMiningSpeed) {}
+    public record Properties(Optional<Float> hardness, Map<String, BlockData> toolDataMap) {
+        public BlockData get(String key) {
+            return this.toolDataMap.get(key);
+        }
+    }
+    public record BlockData(int resistance, boolean applyMiningSpeed) {}
 }

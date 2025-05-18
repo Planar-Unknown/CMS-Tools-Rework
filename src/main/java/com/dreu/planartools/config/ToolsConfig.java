@@ -2,15 +2,23 @@ package com.dreu.planartools.config;
 
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.toml.TomlParser;
+import net.minecraft.util.Mth;
+import net.minecraft.world.item.Tier;
+import net.minecraft.world.item.Tiers;
 import net.minecraftforge.fml.ModList;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.dreu.planartools.PlanarTools.*;
+import static com.dreu.planartools.config.GeneralConfig.PRESET_FOLDER_NAME;
+import static java.lang.String.format;
 
 @SuppressWarnings({"SameParameterValue"})
 public class ToolsConfig {
+    public static final Tier[] TIERS_BY_ID = {Tiers.WOOD, Tiers.STONE, Tiers.IRON, Tiers.DIAMOND, Tiers.NETHERITE};
     public static boolean needsRepair = false;
     public static final String templateFileName = "config/" + MODID + "/presets/template/tools.toml";
     public static final String TEMPLATE_CONFIG_STRING = """
@@ -18,86 +26,80 @@ public class ToolsConfig {
             # Power indicates the block Resistance level a tool can overcome.
             # MiningSpeed indicates the rate at which a tool will mine blocks that it can mine.
             # Each block can be configured to choose whether a tools MiningSpeed will be applied.
-            Default = {PickaxePower = -1, AxePower = -1, ShovelPower = -1, HoePower = -1, ShearPower = -1, MiningSpeed = 1}
+            ToolTypes = ["Pickaxe", "Axe", "Shovel", "Hoe", "Shear", "Sword"]
             
             [Tools]
-            "minecraft:wooden_pickaxe" = {PickaxePower = 20, MiningSpeed = 2}
-            "minecraft:stone_pickaxe" = {PickaxePower = 40, MiningSpeed = 4}
-            "minecraft:iron_pickaxe" = {PickaxePower = 60, MiningSpeed = 6}
-            "minecraft:golden_pickaxe" = {PickaxePower = 60, MiningSpeed = 12}
-            "minecraft:diamond_pickaxe" = {PickaxePower = 80, MiningSpeed = 8}
-            "minecraft:netherite_pickaxe" = {PickaxePower = 100, MiningSpeed = 9}
+            "minecraft:wooden_pickaxe" = {Pickaxe = 20, MiningSpeed = 2}
+            "minecraft:stone_pickaxe" = {Pickaxe = 40, MiningSpeed = 4}
+            "minecraft:iron_pickaxe" = {Pickaxe = 60, MiningSpeed = 6}
+            "minecraft:golden_pickaxe" = {Pickaxe = 60, MiningSpeed = 12}
+            "minecraft:diamond_pickaxe" = {Pickaxe = 80, MiningSpeed = 8}
+            "minecraft:netherite_pickaxe" = {Pickaxe = 100, MiningSpeed = 9}
             
-            "minecraft:wooden_shovel" = {ShovelPower = 20, MiningSpeed = 2}
-            "minecraft:stone_shovel" = {ShovelPower = 40, MiningSpeed = 4}
-            "minecraft:iron_shovel" = {ShovelPower = 60, MiningSpeed = 6}
-            "minecraft:golden_shovel" = {ShovelPower = 60, MiningSpeed = 12}
-            "minecraft:diamond_shovel" = {ShovelPower = 80, MiningSpeed = 8}
-            "minecraft:netherite_shovel" = {ShovelPower = 100, MiningSpeed = 9}
+            "minecraft:wooden_shovel" = {Shovel = 20, MiningSpeed = 2}
+            "minecraft:stone_shovel" = {Shovel = 40, MiningSpeed = 4}
+            "minecraft:iron_shovel" = {Shovel = 60, MiningSpeed = 6}
+            "minecraft:golden_shovel" = {Shovel = 60, MiningSpeed = 12}
+            "minecraft:diamond_shovel" = {Shovel = 80, MiningSpeed = 8}
+            "minecraft:netherite_shovel" = {Shovel = 100, MiningSpeed = 9}
             
-            "minecraft:wooden_hoe" = {HoePower = 20, MiningSpeed = 2}
-            "minecraft:stone_hoe" = {HoePower = 40, MiningSpeed = 4}
-            "minecraft:iron_hoe" = {HoePower = 60, MiningSpeed = 6}
-            "minecraft:golden_hoe" = {HoePower = 60, MiningSpeed = 12}
-            "minecraft:diamond_hoe" = {HoePower = 80, MiningSpeed = 8}
-            "minecraft:netherite_hoe" = {HoePower = 100, MiningSpeed = 9}
+            "minecraft:wooden_hoe" = {Hoe = 20, MiningSpeed = 2}
+            "minecraft:stone_hoe" = {Hoe = 40, MiningSpeed = 4}
+            "minecraft:iron_hoe" = {Hoe = 60, MiningSpeed = 6}
+            "minecraft:golden_hoe" = {Hoe = 60, MiningSpeed = 12}
+            "minecraft:diamond_hoe" = {Hoe = 80, MiningSpeed = 8}
+            "minecraft:netherite_hoe" = {Hoe = 100, MiningSpeed = 9}
             
-            "minecraft:wooden_axe" = {AxePower = 20, MiningSpeed = 2}
-            "minecraft:stone_axe" = {AxePower = 40, MiningSpeed = 4}
-            "minecraft:iron_axe" = {AxePower = 60, MiningSpeed = 6}
-            "minecraft:golden_axe" = {AxePower = 60, MiningSpeed = 12}
-            "minecraft:diamond_axe" = {AxePower = 80, MiningSpeed = 8}
-            "minecraft:netherite_axe" = {AxePower = 100, MiningSpeed = 9}
+            "minecraft:wooden_axe" = {Axe = 20, MiningSpeed = 2}
+            "minecraft:stone_axe" = {Axe = 40, MiningSpeed = 4}
+            "minecraft:iron_axe" = {Axe = 60, MiningSpeed = 6}
+            "minecraft:golden_axe" = {Axe = 60, MiningSpeed = 12}
+            "minecraft:diamond_axe" = {Axe = 80, MiningSpeed = 8}
+            "minecraft:netherite_axe" = {Axe = 100, MiningSpeed = 9}
             
-            "minecraft:wooden_sword" = {ShearPower = 20, MiningSpeed = 2}
-            "minecraft:stone_sword" = {ShearPower = 40, MiningSpeed = 4}
-            "minecraft:iron_sword" = {ShearPower = 60, MiningSpeed = 6}
-            "minecraft:golden_sword" = {ShearPower = 60, MiningSpeed = 12}
-            "minecraft:diamond_sword" = {ShearPower = 80, MiningSpeed = 8}
-            "minecraft:netherite_sword" = {ShearPower = 100, MiningSpeed = 9}
+            "minecraft:wooden_sword" = {Shear = 20, MiningSpeed = 2}
+            "minecraft:stone_sword" = {Shear = 40, MiningSpeed = 4}
+            "minecraft:iron_sword" = {Shear = 60, MiningSpeed = 6}
+            "minecraft:golden_sword" = {Shear = 60, MiningSpeed = 12}
+            "minecraft:diamond_sword" = {Shear = 80, MiningSpeed = 8}
+            "minecraft:netherite_sword" = {Shear = 100, MiningSpeed = 9}
             
-            "minecraft:shears" = {ShearPower = 100, MiningSpeed = 12}
+            "minecraft:shears" = {Shear = 100, MiningSpeed = 12}
             """;
-    public static final Config CONFIG = parseFileOrDefault(GeneralConfig.PRESET_FOLDER_NAME + "tools.toml", TEMPLATE_CONFIG_STRING, false);
+    public static final Config CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "tools.toml", TEMPLATE_CONFIG_STRING, false);
     private static final Config TEMPLATE_CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
 
-    public static final Map<String, Integer> DEFAULT_POWERS = Map.of(
-        "PickaxePower", getOrDefault("Default.PickaxePower", Integer.class),
-        "AxePower", getOrDefault("Default.AxePower", Integer.class),
-        "ShovelPower", getOrDefault("Default.ShovelPower", Integer.class),
-        "HoePower", getOrDefault("Default.HoePower", Integer.class),
-        "ShearPower", getOrDefault("Default.ShearPower", Integer.class)
-    );
-    
-    public static final Map<String, Map.Entry<int[], Integer>> TOOLS = new HashMap<>();
+    @SuppressWarnings("unchecked") public static final ArrayList<String> REGISTERED_TOOL_TYPES = getOrDefault("ToolTypes", ArrayList.class);
+
+    public static final Map<String, Properties> TOOLS = new HashMap<>();
     static {
-        getOrDefault("Tools", Config.class).valueMap().forEach((itemId, values) -> {
+        getOrDefault("Tools", Config.class).valueMap().forEach((itemId, tool) -> {
             if (!itemId.contains(":")) {
                 LOGGER.warn("No namespace found in item id: [{}] declared in config: [{}] | Skipping...", itemId, templateFileName);
                 return;
             }
             if (ModList.get().isLoaded(itemId.substring(0, itemId.indexOf(":")))) {
-                TOOLS.put(itemId, Map.entry(
-                    new int[]{
-                        getPropertyOrDefault((Config) values, "PickaxePower", itemId),
-                        getPropertyOrDefault((Config) values, "AxePower", itemId),
-                        getPropertyOrDefault((Config) values, "ShovelPower", itemId),
-                        getPropertyOrDefault((Config) values, "HoePower", itemId),
-                        getPropertyOrDefault((Config) values, "ShearPower", itemId)
-                    },
-                    getPropertyOrDefault((Config) values, "MiningSpeed", itemId))
-            );
-            } else
-                LOGGER.info("Config [{}] declared tool power values for [{}] when [{}] was not loaded | Skipping Item...", templateFileName, itemId, itemId.substring(0, itemId.indexOf(":")));
-        });
-    }
+                List<PowerData> powerDataList = new ArrayList<>();
+                Integer miningSpeed = 1;
+                for (Map.Entry<String, Object> property : ((Config) tool).valueMap().entrySet()) {
+                    if (property.getKey().equals("MiningSpeed")) miningSpeed = (Integer) property.getValue();
+                    else {
+                        if (!REGISTERED_TOOL_TYPES.contains(property.getKey())) {
+                            throw new IllegalStateException(format("[%s] in config file [%s] is not a registered tool type", property.getKey(), PRESET_FOLDER_NAME + "tools.toml"));
+                        }
+                        powerDataList.add(new PowerData(
+                                (byte) REGISTERED_TOOL_TYPES.indexOf(property.getKey()),
+                                (byte) Mth.clamp(Math.floor((int)property.getValue()*0.05), 0, TIERS_BY_ID.length),
+                                (int) property.getValue()
+                        ));
 
-    private static int getPropertyOrDefault(Config propertyValues, String property, String itemId) {
-        if (!propertyValues.contains(property))
-            return DEFAULT_POWERS.get(property);
-        return propertyValues.getIntOrElse(property, () -> {
-            LOGGER.warn("Value for {} in {} was not an Integer | Substituting with default value...", itemId + "." + property, templateFileName);
-            return DEFAULT_POWERS.get(property);
+                    }
+                }
+                TOOLS.put(itemId, new Properties(
+                    powerDataList.toArray(new PowerData[0]),
+                    miningSpeed
+                ));
+            } else LOGGER.info("Config [{}] declared tool power values for [{}] when [{}] was not loaded | Skipping Item...", templateFileName, itemId, itemId.substring(0, itemId.indexOf(":")));
         });
     }
 
@@ -115,4 +117,7 @@ public class ToolsConfig {
             return clazz.cast(TEMPLATE_CONFIG.get(key));
         }
     }
+
+    public record Properties(PowerData[] data, int miningSpeed) {}
+    public record PowerData(byte toolTypeId, byte tierId, int power) {}
 }

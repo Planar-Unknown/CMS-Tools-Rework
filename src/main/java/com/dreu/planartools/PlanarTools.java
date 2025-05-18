@@ -6,15 +6,20 @@ import com.dreu.planartools.config.ToolsConfig;
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.toml.TomlParser;
 import com.mojang.logging.LogUtils;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.block.Block;
 import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
-import oshi.util.GlobalConfig;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 
 @Mod(PlanarTools.MODID)
 public class PlanarTools {
@@ -31,14 +36,26 @@ public class PlanarTools {
 
     //Eventually make tool types dynamic and expandable
     //Eventually make blocks store their destroy progress
-    public static final String[] POWERS = {"Pickaxe", "Axe", "Shovel", "Hoe", "Shears"};
     public static final String MODID = "planar_tools";
     public static final Logger LOGGER = LogUtils.getLogger();
+
+    @SuppressWarnings("unchecked") public static final TagKey<Block>[] TAG_KEYS_BY_TOOL_TYPE = new TagKey[REGISTERED_TOOL_TYPES.size()];
+
+
     public PlanarTools() {
+        populateTagKeys();
         preloadConfigs();
         if (GeneralConfig.needsRepair) GeneralConfig.repair();
         resetTemplate(BlocksConfig.templateFileName, BlocksConfig.TEMPLATE_CONFIG_STRING);
         resetTemplate(ToolsConfig.templateFileName, ToolsConfig.TEMPLATE_CONFIG_STRING);
+    }
+
+    private void populateTagKeys() {
+        for (int i = 0; i < REGISTERED_TOOL_TYPES.size(); i++) {
+            String toolType = REGISTERED_TOOL_TYPES.get(i);
+            String tagKeyName = "mineable/" + toolType.toLowerCase();
+            TAG_KEYS_BY_TOOL_TYPE[i] = BlockTags.create(new ResourceLocation(tagKeyName));
+        }
     }
 
     public static Config parseFileOrDefault(String fileName, String defaultConfig, boolean rewriteIfFailedToParse) {
