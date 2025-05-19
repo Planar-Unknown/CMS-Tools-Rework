@@ -6,6 +6,7 @@ import com.google.common.base.Suppliers;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ShearsItem;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.TierSortingRegistry;
@@ -24,9 +25,9 @@ import static com.dreu.planartools.config.BlocksConfig.getBlockProperties;
 import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 import static com.dreu.planartools.config.ToolsConfig.TOOLS;
 
-@Mixin(Item.class)
 @SuppressWarnings("unused")
-public class ItemMixin {
+@Mixin(ShearsItem.class)
+public class ShearsItemMixin {
     @SuppressWarnings("DataFlowIssue")
     private Item self() {
         return (Item) (Object) this;
