@@ -73,7 +73,8 @@ public class BlocksConfig {
                 putToolData(itemId, (Config) values, toolDataMap, defaultResistance, "Banana");
 
                 BLOCKS.put(itemId, new Properties(
-                        getOptionalHardness((Config) values),
+                        getOptionalFloat(((Config) config), "Hardness"),
+                        getOptionalFloat(((Config) config), "ExplosionResistance"),
                         toolDataMap)
                 );
             } else
@@ -106,17 +107,18 @@ public class BlocksConfig {
         });
     }
 
-    private static Optional<Float> getOptionalHardness(Config values) {
-        Double hardness = values.get("Hardness");
-        return hardness == null ? Optional.empty() : Optional.of(((Number) values.get("Hardness")).floatValue());
+    private static Optional<Float> getOptionalFloat(Config values, String key) {
+        Number explosionResistance = values.get(key);
+        return explosionResistance == null ? Optional.empty() : Optional.of(explosionResistance.floatValue());
+
     }
 
     @SuppressWarnings("DataFlowIssue")
-    public static BlocksConfig.Properties getBlockProperties(Block block) {
+    public static Properties getBlockProperties(Block block) {
         return BLOCKS.get(ForgeRegistries.BLOCKS.getKey(block).toString());
     }
 
-    public record Properties(Optional<Float> hardness, Map<String, BlockData> toolDataMap) {
+    public record Properties(Optional<Float> hardness, Optional<Float> explosionResistance,  Map<String, BlockData> toolDataMap) {
         public BlockData get(String key) {
             return this.toolDataMap.get(key);
         }
