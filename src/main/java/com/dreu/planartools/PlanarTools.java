@@ -24,7 +24,6 @@ import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 @Mod(PlanarTools.MODID)
 public class PlanarTools {
     //Todo: Shears mixin
-    //Todo: Flush out item tooltips
     //Todo: Toggleable Waila
     //Todo: Nbt system for upgrading tools
     //Todo: Tags compatibility, Vanilla tags and Custom TOML / Json tags

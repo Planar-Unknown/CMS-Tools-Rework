@@ -2,10 +2,7 @@ package com.dreu.planartools.mixin;
 
 import com.dreu.planartools.config.BlocksConfig;
 import com.google.common.base.Suppliers;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;

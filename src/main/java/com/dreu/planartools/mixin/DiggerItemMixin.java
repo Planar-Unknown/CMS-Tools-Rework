@@ -14,7 +14,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
 import static com.dreu.planartools.config.BlocksConfig.BLOCKS;
-import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 import static com.dreu.planartools.config.ToolsConfig.TOOLS;
 
 @Mixin(DiggerItem.class) @SuppressWarnings("unused")

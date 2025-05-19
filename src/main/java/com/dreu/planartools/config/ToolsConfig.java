@@ -7,10 +7,7 @@ import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.Tiers;
 import net.minecraftforge.fml.ModList;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.dreu.planartools.PlanarTools.*;
 import static com.dreu.planartools.config.GeneralConfig.PRESET_FOLDER_NAME;
@@ -26,7 +23,18 @@ public class ToolsConfig {
             # Power indicates the block Resistance level a tool can overcome.
             # MiningSpeed indicates the rate at which a tool will mine blocks that it can mine.
             # Each block can be configured to choose whether a tools MiningSpeed will be applied.
-            ToolTypes = ["Pickaxe", "Axe", "Shovel", "Hoe", "Shear", "Sword"]
+            
+            # Register tool types to use for Tool Power and Block Resistances
+            # The order of this list will be the display order of Tooltips
+            # You may specify Tooltip Color using 6 digit RGB Hex colors following the Tool Type
+            ToolTypes = [
+                "Pickaxe:FFD700",
+                "Axe:8B4513",
+                "Shovel:A9A9A9",
+                "Hoe:32CD32",
+                "Sword:DC143C",
+                "Shears"
+            ]
             
             [Tools]
             "minecraft:wooden_pickaxe" = {Pickaxe = 20, MiningSpeed = 2}
@@ -57,19 +65,34 @@ public class ToolsConfig {
             "minecraft:diamond_axe" = {Axe = 80, MiningSpeed = 8}
             "minecraft:netherite_axe" = {Axe = 100, MiningSpeed = 9}
             
-            "minecraft:wooden_sword" = {Shear = 20, MiningSpeed = 2}
-            "minecraft:stone_sword" = {Shear = 40, MiningSpeed = 4}
-            "minecraft:iron_sword" = {Shear = 60, MiningSpeed = 6}
-            "minecraft:golden_sword" = {Shear = 60, MiningSpeed = 12}
-            "minecraft:diamond_sword" = {Shear = 80, MiningSpeed = 8}
-            "minecraft:netherite_sword" = {Shear = 100, MiningSpeed = 9}
+            "minecraft:wooden_sword" = {Shears = 20, MiningSpeed = 2}
+            "minecraft:stone_sword" = {Shears = 40, MiningSpeed = 4}
+            "minecraft:iron_sword" = {Shears = 60, MiningSpeed = 6}
+            "minecraft:golden_sword" = {Shears = 60, MiningSpeed = 12}
+            "minecraft:diamond_sword" = {Shears = 80, MiningSpeed = 8}
+            "minecraft:netherite_sword" = {Shears = 100, MiningSpeed = 9}
             
-            "minecraft:shears" = {Shear = 100, MiningSpeed = 12}
+            "minecraft:shears" = {Shears = 100, MiningSpeed = 12}
             """;
     public static final Config CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "tools.toml", TEMPLATE_CONFIG_STRING, false);
     private static final Config TEMPLATE_CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
 
-    @SuppressWarnings("unchecked") public static final ArrayList<String> REGISTERED_TOOL_TYPES = getOrDefault("ToolTypes", ArrayList.class);
+    public static final ArrayList<String> REGISTERED_TOOL_TYPES = new ArrayList<>();
+    public static final ArrayList<Integer> REGISTERED_TOOL_COLORS = new ArrayList<>();
+
+    static {
+        //noinspection unchecked
+        getOrDefault("ToolTypes", ArrayList.class).forEach((toolType) -> {
+            String entry = toolType.toString();
+            String[] parts = entry.split(":");
+            REGISTERED_TOOL_TYPES.add(parts[0]);
+            if (parts.length == 2){
+                REGISTERED_TOOL_COLORS.add(Integer.parseUnsignedInt(parts[1], 16));
+            } else {
+                REGISTERED_TOOL_COLORS.add(0xFFFFFF);
+            }
+        });
+    }
 
     public static final Map<String, Properties> TOOLS = new HashMap<>();
     static {
@@ -95,6 +118,8 @@ public class ToolsConfig {
 
                     }
                 }
+                powerDataList.sort(Comparator.comparingInt(PowerData::toolTypeId));
+
                 TOOLS.put(itemId, new Properties(
                     powerDataList.toArray(new PowerData[0]),
                     miningSpeed
