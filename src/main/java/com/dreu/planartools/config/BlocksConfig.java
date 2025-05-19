@@ -9,7 +9,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.dreu.planartools.PlanarTools.*;
+import static com.dreu.planartools.PlanarTools.MODID;
+import static com.dreu.planartools.Util.LogLevel.INFO;
+import static com.dreu.planartools.Util.LogLevel.WARN;
+import static com.dreu.planartools.Util.addConfigIssue;
 import static com.dreu.planartools.Util.parseFileOrDefault;
 import static com.dreu.planartools.config.GeneralConfig.PRESET_FOLDER_NAME;
 import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
@@ -59,7 +62,7 @@ public class BlocksConfig {
     static {
         CONFIG.valueMap().forEach((blockId, block) -> {
             if (!blockId.contains(":")) {
-                LOGGER.warn("No namespace found in item id: [{}] declared in config: [{}] | Skipping...", blockId, templateFileName);
+                addConfigIssue(WARN, (byte) 2, "No namespace found in item id: [{}] declared in config: [{}] | Skipping...", blockId, templateFileName);
                 return;
             }
             if (ModList.get().isLoaded(blockId.substring(0, blockId.indexOf(":")))) {
@@ -79,6 +82,7 @@ public class BlocksConfig {
                         );
                     }
                     if (!REGISTERED_TOOL_TYPES.contains(property.getKey())) {
+                        //Todo handle this with the new logging system
                         throw new IllegalStateException(format("[%s] in config file [%s] is not a registered tool type", property.getKey(), PRESET_FOLDER_NAME + "tools.toml"));
                     }
                 }
@@ -90,7 +94,7 @@ public class BlocksConfig {
                         resistanceDataMap
                 ));
             } else
-                LOGGER.info("Config [{}] declared Block Resistance values for [{}] when [{}] was not loaded | Skipping Block...", templateFileName, blockId, blockId.substring(0, blockId.indexOf(":")));
+                addConfigIssue(INFO, (byte) 3, "Config [{}] declared Block Resistance values for [{}] when [{}] was not loaded or does not exist in this modpack | Skipping Block...", PRESET_FOLDER_NAME + "blocks.toml", blockId, blockId.substring(0, blockId.indexOf(":")));
         });
     }
 

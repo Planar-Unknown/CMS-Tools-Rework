@@ -15,6 +15,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import static com.dreu.planartools.Util.LogLevel.WARN;
+import static com.dreu.planartools.Util.addConfigIssue;
 import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 
 @Mod(PlanarTools.MODID)
@@ -23,8 +25,9 @@ public class PlanarTools {
     //Todo: Nbt system for upgrading tools
     //Todo: Tags compatibility, Vanilla tags and Custom TOML / Json tags
     //Todo: Make enchantments work on items that have been given tool types
-    /*Todo: Send the following error logs in chat on server start:
-        - whenever their custom config or a value in one is not being used
+    /*Todo: Errors that still need handling:
+            - When a float is expected but boolean is declared, utter crash
+            - Manually thrown IllegalArgumentException in BlocksConfig
      */
     //Eventually make blocks store their destroy progress
     public static final String MODID = "planar_tools";
@@ -54,7 +57,7 @@ public class PlanarTools {
             String warning = "# DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!\n";
             writer.write(warning + contents);
         } catch (IOException e) {
-            LOGGER.warn("Exception during template replacement: {}", e.getMessage());
+            addConfigIssue(WARN, (byte) 5, "Exception during template replacement: {}", e.getMessage());
         }
     }
 

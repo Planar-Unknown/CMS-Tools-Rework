@@ -5,15 +5,56 @@ import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.toml.TomlParser;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.Tiers;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.function.BiConsumer;
 
-import static com.mojang.text2speech.Narrator.LOGGER;
+import static com.dreu.planartools.PlanarTools.LOGGER;
+
+
 
 public class Util {
+
+    @SuppressWarnings("unused")
+    public enum LogLevel {
+        TRACE(LOGGER::trace),
+        DEBUG(LOGGER::debug),
+        INFO(LOGGER::info),
+        WARN(LOGGER::warn),
+        ERROR(LOGGER::error);
+        private final BiConsumer<String, Object[]> func;
+        LogLevel(BiConsumer<String, Object[]> func) {
+            this.func = func;
+        }
+        public void log(String message, Object... args) {
+            func.accept(message, args);
+        }
+    }
+
+    public record Issue(String message, byte priority) implements Comparable<Issue> {
+        @Override
+        public int compareTo(@NotNull Issue other) {
+            return Byte.compare(other.priority, this.priority);
+        }
+    }
+
+    public static final ArrayList<Issue> CONFIG_ISSUES = new ArrayList<>();
+
+    public static void addConfigIssue(LogLevel level, byte priority, String message, Object... args) {
+//        System.out.printf("Message: " + (message) + "%n", args);
+//        System.out.println(message);
+//        System.out.println(Arrays.toString(args));
+        level.log(message, args);
+        String formattable = message.replace("{}", "%s");
+        CONFIG_ISSUES.add(new Issue("<" + level.name() + "> -- " + String.format(formattable, args), priority));
+        Collections.sort(CONFIG_ISSUES);
+    }
 
     public static Config parseFileOrDefault(String fileName, String defaultConfig, boolean rewriteIfFailedToParse) {
         Path filePath = Path.of(fileName);

@@ -9,10 +9,11 @@ import net.minecraftforge.fml.ModList;
 
 import java.util.*;
 
-import static com.dreu.planartools.PlanarTools.*;
+import static com.dreu.planartools.PlanarTools.MODID;
+import static com.dreu.planartools.Util.LogLevel.*;
+import static com.dreu.planartools.Util.addConfigIssue;
 import static com.dreu.planartools.Util.parseFileOrDefault;
 import static com.dreu.planartools.config.GeneralConfig.PRESET_FOLDER_NAME;
-import static java.lang.String.format;
 
 @SuppressWarnings({"SameParameterValue"})
 public class ToolsConfig {
@@ -99,7 +100,7 @@ public class ToolsConfig {
     static {
         getOrDefault("Tools", Config.class).valueMap().forEach((itemId, tool) -> {
             if (!itemId.contains(":")) {
-                LOGGER.warn("No namespace found in item id: [{}] declared in config: [{}] | Skipping...", itemId, templateFileName);
+                addConfigIssue(WARN, (byte) 2, "No namespace found in item id: [{}] declared in config: [{}] | Skipping...", itemId, templateFileName);
                 return;
             }
             if (ModList.get().isLoaded(itemId.substring(0, itemId.indexOf(":")))) {
@@ -109,7 +110,7 @@ public class ToolsConfig {
                     if (property.getKey().equals("MiningSpeed")) miningSpeed = (Integer) property.getValue();
                     else {
                         if (!REGISTERED_TOOL_TYPES.contains(property.getKey())) {
-                            throw new IllegalStateException(format("[%s] in config file [%s] is not a registered tool type", property.getKey(), PRESET_FOLDER_NAME + "tools.toml"));
+                            addConfigIssue(ERROR, (byte) 6, "[{}] declared for [{}] in config file [{}] is NOT a registered tool type!", property.getKey(), itemId, PRESET_FOLDER_NAME + "tools.toml");
                         }
                         powerDataList.add(new PowerData(
                                 (byte) REGISTERED_TOOL_TYPES.indexOf(property.getKey()),
@@ -125,20 +126,20 @@ public class ToolsConfig {
                     powerDataList.toArray(new PowerData[0]),
                     miningSpeed
                 ));
-            } else LOGGER.info("Config [{}] declared tool power values for [{}] when [{}] was not loaded | Skipping Item...", templateFileName, itemId, itemId.substring(0, itemId.indexOf(":")));
+            } else addConfigIssue(INFO, (byte) 3, "Config [{}] declared tool power values for [{}] when [{}] was not loaded or does not exist in this modpack | Skipping Item...", templateFileName, itemId, itemId.substring(0, itemId.indexOf(":")));
         });
     }
 
     private static <T> T getOrDefault(String key, Class<T> clazz) {
         try {
             if ((CONFIG.get(key) == null)) {
-                LOGGER.error("Key [{}] is missing from Config: [{}] | Marking config file for repair...", key, templateFileName);
+                addConfigIssue(ERROR, (byte) 4, "Key [{}] is missing from Config: [{}] | Marking config file for repair...", key, templateFileName);
                 needsRepair = true;
                 return clazz.cast(TEMPLATE_CONFIG.get(key));
             }
             return clazz.cast(CONFIG.get(key));
         } catch (Exception e) {
-            LOGGER.error("Value: [{}] for [{}] is an invalid type in Config: {} | Expected: [{}] but got: [{}] | Marking config file for repair...", CONFIG.get(key), key, templateFileName, clazz.getTypeName(), CONFIG.get(key).getClass().getTypeName());
+            addConfigIssue(ERROR, (byte) 4, "Value: [{}] for [{}] is an invalid type in Config: {} | Expected: [{}] but got: [{}] | Marking config file for repair...", CONFIG.get(key), key, templateFileName, clazz.getTypeName(), CONFIG.get(key).getClass().getTypeName());
             needsRepair = true;
             return clazz.cast(TEMPLATE_CONFIG.get(key));
         }
