@@ -23,18 +23,15 @@ import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 
 @Mod(PlanarTools.MODID)
 public class PlanarTools {
-    //Todo: Make TOOLS be a map of string to ToolsConfig.Properties
     //Todo: Shears mixin
-    //Todo: Blocks mixin for hardness
-    //Todo: Add swords to the system
-    //Todo: Flush out tem tooltips
+    //Todo: Flush out item tooltips
     //Todo: Toggleable Waila
-    //Todo: Inject into Item#mineBlock() to return true if the item is in the tools config
     //Todo: Nbt system for upgrading tools
-    //Todo: Tags compatibility
-    //Todo: Send error logs in chat on server start
-
-    //Eventually make tool types dynamic and expandable
+    //Todo: Tags compatibility, Vanilla tags and Custom TOML / Json tags
+    //Todo: Make enchantments work on items that have been given tool types
+    /*Todo: Send the following error logs in chat on server start:
+        - whenever their custom config or a value in one is not being used
+     */
     //Eventually make blocks store their destroy progress
     public static final String MODID = "planar_tools";
     public static final Logger LOGGER = LogUtils.getLogger();

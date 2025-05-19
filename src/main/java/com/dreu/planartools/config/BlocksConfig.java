@@ -54,23 +54,23 @@ public class BlocksConfig {
 
     public static final Map<String, Properties> BLOCKS = new HashMap<>();
     static {
-        CONFIG.valueMap().forEach((itemId, values) -> {
+        CONFIG.valueMap().forEach((itemId, config) -> {
             if (!itemId.contains(":")) {
                 LOGGER.warn("No namespace found in item id: [{}] declared in config: [{}] | Skipping...", itemId, templateFileName);
                 return;
             }
             if (ModList.get().isLoaded(itemId.substring(0, itemId.indexOf(":")))) {
-                int defaultResistance = getResistanceOrDefault((Config) values, itemId);
+                int defaultResistance = getResistanceOrDefault((Config) config, itemId);
                 Map<String, BlockData> toolDataMap = new HashMap<>();
                 //Todo: populate based on declared values only. and add defaultResistance field to Properties record
 
-                putToolData(itemId, (Config) values, toolDataMap, defaultResistance, "Pickaxe");
-                putToolData(itemId, (Config) values, toolDataMap, defaultResistance, "Axe");
-                putToolData(itemId, (Config) values, toolDataMap, defaultResistance, "Shovel");
-                putToolData(itemId, (Config) values, toolDataMap, defaultResistance, "Hoe");
-                putToolData(itemId, (Config) values, toolDataMap, defaultResistance, "Shears");
-                putToolData(itemId, (Config) values, toolDataMap, defaultResistance, "Sword");
-                putToolData(itemId, (Config) values, toolDataMap, defaultResistance, "Banana");
+                putToolData(itemId, (Config) config, toolDataMap, defaultResistance, "Pickaxe");
+                putToolData(itemId, (Config) config, toolDataMap, defaultResistance, "Axe");
+                putToolData(itemId, (Config) config, toolDataMap, defaultResistance, "Shovel");
+                putToolData(itemId, (Config) config, toolDataMap, defaultResistance, "Hoe");
+                putToolData(itemId, (Config) config, toolDataMap, defaultResistance, "Shears");
+                putToolData(itemId, (Config) config, toolDataMap, defaultResistance, "Sword");
+                putToolData(itemId, (Config) config, toolDataMap, defaultResistance, "Banana");
 
                 BLOCKS.put(itemId, new Properties(
                         getOptionalFloat(((Config) config), "Hardness"),

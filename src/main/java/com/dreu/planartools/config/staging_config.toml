@@ -1,9 +1,0 @@
-# To reset this config to default, delete this file and rerun the game.
-
-UseGlobalDefault = true
-GlobalDefaultResistance = -1
-
-# To use a custom preset, create a folder in: config/planar_tools/presets/[your-preset-name]
-# Add both blocks.toml and tools.toml to your preset folder.
-# Use the "template" preset in config/planar_tools/presets/template as an example.
-Preset = "template"
