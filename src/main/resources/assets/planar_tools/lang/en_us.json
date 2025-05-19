@@ -3,6 +3,7 @@
   "planar_tools.powerNames.Axe": "Axe",
   "planar_tools.powerNames.Shovel": "Shovel",
   "planar_tools.powerNames.Hoe": "Hoe",
-  "planar_tools.powerNames.Shears": "Shear",
-  "planar_tools.powerNames.Sword": "Sword"
+  "planar_tools.powerNames.Shear": "Shear",
+  "planar_tools.powerNames.Sword": "Sword",
+  "planar_tools.power_title": "Powers:"
 }
