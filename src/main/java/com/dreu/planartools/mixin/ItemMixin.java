@@ -2,6 +2,7 @@ package com.dreu.planartools.mixin;
 
 import com.dreu.planartools.config.BlocksConfig;
 import com.dreu.planartools.config.ToolsConfig;
+import com.google.common.base.Suppliers;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -28,34 +29,45 @@ import static com.dreu.planartools.config.ToolsConfig.TOOLS;
 @SuppressWarnings("unused")
 public class ItemMixin {
     @SuppressWarnings("DataFlowIssue")
-    private final Item self = (Item) (Object) this;
+    private Item self() {
+        return (Item) (Object) this;
+    }
     @SuppressWarnings("DataFlowIssue")
-    Supplier<ToolsConfig.Properties> toolProperties = () -> TOOLS.get(ForgeRegistries.ITEMS.getKey(self).toString());
+    Supplier<ToolsConfig.Properties> toolProperties = Suppliers.memoize(() -> TOOLS.get(ForgeRegistries.ITEMS.getKey(self()).toString()));
 
     @Inject(method = "getDestroySpeed", at = @At("HEAD"), cancellable = true)
     private void onGetDestroySpeed(ItemStack itemInHand, BlockState blockState, CallbackInfoReturnable<Float> cir) {
         BlocksConfig.Properties blockProperties = getBlockProperties(blockState.getBlock());
         if (blockProperties != null) {
+            System.out.println("We Have blockProperties!");
+            if (toolProperties.get() != null) {
+                System.out.println("We also have toolProperties!");
+            }
+        }
+        if (blockProperties != null) {
             boolean applyMiningSpeed = false;
             if (toolProperties.get() != null) {
                 boolean canMine = false;
-                for (ToolsConfig.PowerData data : toolProperties.get().data()) {
-                    String toolType = REGISTERED_TOOL_TYPES.get(data.toolTypeId());
-                    BlocksConfig.BlockData blockData = blockProperties.get(toolType);
-                    if (blockData != null) {
-                        int resistance = blockProperties.get(toolType).resistance();
-                        if (resistance >= 0 && data.power() >= resistance) {
+                for (ToolsConfig.PowerData powerData : toolProperties.get().data()) {
+                    BlocksConfig.ResistanceData resistanceData = blockProperties.data().get(powerData.toolTypeId());
+                    if (resistanceData != null) {
+                        int resistance = resistanceData.resistance();
+                        if (resistance >= 0 && powerData.power() >= resistance) {
                             canMine = true;
-                            if (blockData.applyMiningSpeed()) {
+                            if (resistanceData.applyMiningSpeed()) {
                                 applyMiningSpeed = true;
                             }
                         }
+                    } else {
+                        int defaultResistance = blockProperties.defaultResistance();
+                        if (defaultResistance != -1 && powerData.power() >= defaultResistance)
+                            canMine = true;
                     }
                 }
                 cir.setReturnValue(canMine ? (applyMiningSpeed ? toolProperties.get().miningSpeed() : 1.0f) : 0.0f);
             } else {
                 for (String toolType : REGISTERED_TOOL_TYPES) {
-                    BlocksConfig.BlockData data = blockProperties.get(toolType);
+                    BlocksConfig.ResistanceData data = blockProperties.data().get((byte) REGISTERED_TOOL_TYPES.indexOf(toolType));
                     if (data != null && data.resistance() == 0) {
                         cir.setReturnValue(1.0f);
                     }
@@ -73,10 +85,10 @@ public class ItemMixin {
         BlocksConfig.Properties blockProperties = getBlockProperties(blockState.getBlock());
         if (toolProperties.get() != null) {
             if (blockProperties != null) {
-                for (ToolsConfig.PowerData data : toolProperties.get().data()) {
-                    BlocksConfig.BlockData toolData = blockProperties.get(REGISTERED_TOOL_TYPES.get(data.toolTypeId()));
-                    if (toolData != null && toolData.applyMiningSpeed()) {
-                        if (toolData.resistance() >= 0 && data.power() >= toolData.resistance()) {
+                for (ToolsConfig.PowerData powerData : toolProperties.get().data()) {
+                    BlocksConfig.ResistanceData resistanceData = blockProperties.data().get(powerData.toolTypeId());
+                    if (resistanceData != null && resistanceData.applyMiningSpeed()) {
+                        if (resistanceData.resistance() >= 0 && powerData.power() >= resistanceData.resistance()) {
                             cir.setReturnValue(true);
                         }
                     }
@@ -95,18 +107,14 @@ public class ItemMixin {
         }
     }
 
-
     private Tier getTierIfPresent(int toolType) {
-        if (toolProperties.get() != null) {
-            int power = toolProperties.get().data()[toolType].power();
-            if (power < 20) return null;
-            if (power < 40) return Tiers.WOOD;
-            if (power < 60) return Tiers.STONE;
-            if (power < 80) return Tiers.IRON;
-            if (power < 100) return Tiers.DIAMOND;
-            return Tiers.NETHERITE;
-        }
-        return null;
+        int power = toolProperties.get().data()[toolType].power();
+        if (power < 20) return null;
+        if (power < 40) return Tiers.WOOD;
+        if (power < 60) return Tiers.STONE;
+        if (power < 80) return Tiers.IRON;
+        if (power < 100) return Tiers.DIAMOND;
+        return Tiers.NETHERITE;
     }
 
     @Shadow

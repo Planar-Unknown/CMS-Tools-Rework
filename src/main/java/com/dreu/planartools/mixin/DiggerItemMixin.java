@@ -37,13 +37,17 @@ public class DiggerItemMixin extends TieredItem {
         if (toolProperties != null && blockProperties != null) {
             boolean canMine = false;
             boolean applyMiningSpeed = false;
-            for (ToolsConfig.PowerData data : toolProperties.data()) {
-                int resistance = blockProperties.get(REGISTERED_TOOL_TYPES.get(data.toolTypeId())).resistance();
-                if (resistance >= 0 && data.power() >= resistance) {
+            for (ToolsConfig.PowerData powerData : toolProperties.data()) {
+                BlocksConfig.ResistanceData resistanceData = blockProperties.data().get(powerData.toolTypeId());
+                if (resistanceData != null && resistanceData.resistance() >= 0 && powerData.power() >= resistanceData.resistance()) {
                     canMine = true;
-                    if (blockProperties.get(REGISTERED_TOOL_TYPES.get(data.toolTypeId())).applyMiningSpeed()) {
+                    if (resistanceData.applyMiningSpeed()) {
                         applyMiningSpeed = true;
                     }
+                } else {
+                    int defaultResistance = blockProperties.defaultResistance();
+                    if (defaultResistance != -1 && powerData.power() >= defaultResistance)
+                        canMine = true;
                 }
             }
             return canMine ? applyMiningSpeed ? toolProperties.miningSpeed() : 1.0f : 0.0f;

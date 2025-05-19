@@ -10,7 +10,9 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.dreu.planartools.PlanarTools.*;
-import static com.dreu.planartools.config.GeneralConfig.GLOBAL_DEFAULT_RESISTANCE;
+import static com.dreu.planartools.config.GeneralConfig.PRESET_FOLDER_NAME;
+import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
+import static java.lang.String.format;
 
 public class BlocksConfig {
 
@@ -30,8 +32,8 @@ public class BlocksConfig {
     ["minecraft:packed_mud"] # Block ID
     Hardness = 1.0 # Affects mining time (e.g., dirt = 0.5, stone = 1.5, bedrock = -1). Only include this if you want to change a block's existing hardness.
     DefaultResistance = -1 # Resistance to unlisted tool types (-1 = unbreakable)
-    Shovel = { Resistance = 40, ApplyMiningSpeed = false }  # Tools with ShovelPower ≥ 40 can mine this block but their MiningSpeed is NOT applied.
-    Pickaxe = { Resistance = 20, ApplyMiningSpeed = true  }  # Tools with PickaxePower ≥ 20 can mine this block and their MiningSpeed IS applied.
+    Shovel = {Resistance = 40, ApplyMiningSpeed = false}  # Tools with ShovelPower ≥ 40 can mine this block but their MiningSpeed is NOT applied.
+    Pickaxe = {Resistance = 20, ApplyMiningSpeed = true}  # Tools with PickaxePower ≥ 20 can mine this block and their MiningSpeed IS applied.
     
     ["minecraft:dirt"]
     DefaultResistance = 0 # Zero indicates no resistance, meaning no power is required to mine it. So any tool, item (or fist) works!
@@ -50,60 +52,44 @@ public class BlocksConfig {
     Axe = {ApplyMiningSpeed = true}
     """;
 
-    public static final Config CONFIG = parseFileOrDefault(GeneralConfig.PRESET_FOLDER_NAME + "blocks.toml", TEMPLATE_CONFIG_STRING, false);
+    public static final Config CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "blocks.toml", TEMPLATE_CONFIG_STRING, false);
 
     public static final Map<String, Properties> BLOCKS = new HashMap<>();
     static {
-        CONFIG.valueMap().forEach((itemId, config) -> {
-            if (!itemId.contains(":")) {
-                LOGGER.warn("No namespace found in item id: [{}] declared in config: [{}] | Skipping...", itemId, templateFileName);
+        CONFIG.valueMap().forEach((blockId, block) -> {
+            if (!blockId.contains(":")) {
+                LOGGER.warn("No namespace found in item id: [{}] declared in config: [{}] | Skipping...", blockId, templateFileName);
                 return;
             }
-            if (ModList.get().isLoaded(itemId.substring(0, itemId.indexOf(":")))) {
-                int defaultResistance = getResistanceOrDefault((Config) config, itemId);
-                Map<String, BlockData> toolDataMap = new HashMap<>();
-                //Todo: populate based on declared values only. and add defaultResistance field to Properties record
+            if (ModList.get().isLoaded(blockId.substring(0, blockId.indexOf(":")))) {
+                Map<Byte, ResistanceData> resistanceDataMap = new HashMap<>();
 
-                putToolData(itemId, (Config) config, toolDataMap, defaultResistance, "Pickaxe");
-                putToolData(itemId, (Config) config, toolDataMap, defaultResistance, "Axe");
-                putToolData(itemId, (Config) config, toolDataMap, defaultResistance, "Shovel");
-                putToolData(itemId, (Config) config, toolDataMap, defaultResistance, "Hoe");
-                putToolData(itemId, (Config) config, toolDataMap, defaultResistance, "Shears");
-                putToolData(itemId, (Config) config, toolDataMap, defaultResistance, "Sword");
-                putToolData(itemId, (Config) config, toolDataMap, defaultResistance, "Banana");
+                Integer defaultResistance = ((Config) block).getOrElse("DefaultResistance", 0);
 
-                BLOCKS.put(itemId, new Properties(
-                        getOptionalFloat(((Config) config), "Hardness"),
-                        getOptionalFloat(((Config) config), "ExplosionResistance"),
-                        toolDataMap)
-                );
+                for (Map.Entry<String, Object> property : ((Config) block).valueMap().entrySet()) {
+                    switch (property.getKey()) {
+                        case "DefaultResistance", "ExplosionResistance", "Hardness" -> {continue;}
+                        default -> resistanceDataMap.put(
+                                (byte) REGISTERED_TOOL_TYPES.indexOf(property.getKey()),
+                                new ResistanceData(
+                                        ((Config) property.getValue()).getIntOrElse("Resistance", defaultResistance),
+                                        ((Config) property.getValue()).getOrElse("ApplyMiningSpeed", false)
+                                )
+                        );
+                    }
+                    if (!REGISTERED_TOOL_TYPES.contains(property.getKey())) {
+                        throw new IllegalStateException(format("[%s] in config file [%s] is not a registered tool type", property.getKey(), PRESET_FOLDER_NAME + "tools.toml"));
+                    }
+                }
+
+                BLOCKS.put(blockId, new Properties(
+                        getOptionalFloat(((Config) block), "Hardness"),
+                        getOptionalFloat(((Config) block), "ExplosionResistance"),
+                        defaultResistance,
+                        resistanceDataMap
+                ));
             } else
-                LOGGER.info("Config [{}] declared Block Resistance values for [{}] when [{}] was not loaded | Skipping Block...", templateFileName, itemId, itemId.substring(0, itemId.indexOf(":")));
-        });
-    }
-
-    private static void putToolData(String itemId, Config values, Map<String, BlockData> toolDataMap, int defaultResistance, String tool) {
-        toolDataMap.put(tool, new BlockData(
-                getPropertyOrElse(values, tool + ".Resistance", itemId, defaultResistance),
-                getPropertyOrElse(values, tool + ".ApplyMiningSpeed", itemId, false)
-        ));
-    }
-
-    private static <T> T getPropertyOrElse(Config propertyValues, String property, String itemId, T defaultTo) {
-        if (!propertyValues.contains(property))
-            return defaultTo;
-        return propertyValues.getOrElse(property, () -> {
-            LOGGER.warn("Value for {} in {} was not a [{}] | Substituting with default value...", itemId + "." + property, templateFileName, defaultTo.getClass().getTypeName());
-            return defaultTo;
-        });
-    }
-
-    private static int getResistanceOrDefault(Config propertyValues, String itemId) {
-        if (!propertyValues.contains("DefaultResistance"))
-            return GLOBAL_DEFAULT_RESISTANCE;
-        return propertyValues.getIntOrElse("DefaultResistance", () -> {
-            LOGGER.warn("Value for {}.DefaultResistance in {} was not an Integer | Substituting with default value...", itemId, templateFileName);
-            return GLOBAL_DEFAULT_RESISTANCE;
+                LOGGER.info("Config [{}] declared Block Resistance values for [{}] when [{}] was not loaded | Skipping Block...", templateFileName, blockId, blockId.substring(0, blockId.indexOf(":")));
         });
     }
 
@@ -118,10 +104,6 @@ public class BlocksConfig {
         return BLOCKS.get(ForgeRegistries.BLOCKS.getKey(block).toString());
     }
 
-    public record Properties(Optional<Float> hardness, Optional<Float> explosionResistance,  Map<String, BlockData> toolDataMap) {
-        public BlockData get(String key) {
-            return this.toolDataMap.get(key);
-        }
-    }
-    public record BlockData(int resistance, boolean applyMiningSpeed) {}
+    public record Properties(Optional<Float> hardness, Optional<Float> explosionResistance, int defaultResistance, Map<Byte, ResistanceData> data) {}
+    public record ResistanceData(int resistance, boolean applyMiningSpeed) {}
 }
