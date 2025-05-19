@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.dreu.planartools.PlanarTools.*;
+import static com.dreu.planartools.Util.parseFileOrDefault;
 import static com.dreu.planartools.config.GeneralConfig.PRESET_FOLDER_NAME;
 import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 import static java.lang.String.format;

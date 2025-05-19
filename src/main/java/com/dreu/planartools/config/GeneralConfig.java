@@ -7,6 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import static com.dreu.planartools.PlanarTools.*;
+import static com.dreu.planartools.Util.parseFileOrDefault;
 
 public class GeneralConfig {
     public static boolean needsRepair;

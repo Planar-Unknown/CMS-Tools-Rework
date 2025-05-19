@@ -3,8 +3,6 @@ package com.dreu.planartools;
 import com.dreu.planartools.config.BlocksConfig;
 import com.dreu.planartools.config.GeneralConfig;
 import com.dreu.planartools.config.ToolsConfig;
-import com.electronwill.nightconfig.core.Config;
-import com.electronwill.nightconfig.toml.TomlParser;
 import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
@@ -16,8 +14,6 @@ import org.slf4j.Logger;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 
@@ -50,33 +46,6 @@ public class PlanarTools {
             String toolType = REGISTERED_TOOL_TYPES.get(i);
             String tagKeyName = "mineable/" + toolType.toLowerCase();
             TAG_KEYS_BY_TOOL_TYPE[i] = BlockTags.create(new ResourceLocation(tagKeyName));
-        }
-    }
-
-    public static Config parseFileOrDefault(String fileName, String defaultConfig, boolean rewriteIfFailedToParse) {
-        Path filePath = Path.of(fileName);
-        try {
-            Files.createDirectories(filePath.getParent());
-            return new TomlParser().parse(filePath.toAbsolutePath(),
-                    (path, configFormat) -> {
-                        FileWriter writer = new FileWriter(path.toFile().getAbsolutePath());
-                        writer.write(defaultConfig);
-                        writer.close();
-                        return true;
-                    });
-        } catch (Exception e) {
-            LOGGER.error("Exception encountered during parsing of config file: [{}]. The hardcoded default config will be used | Exception: {}", fileName, e.getMessage());
-            if (rewriteIfFailedToParse) {
-                LOGGER.info("Rewriting config file: [{}] in response to parsing failure", fileName);
-                try (FileWriter writer = new FileWriter(filePath.toFile().getAbsolutePath())) {
-                    writer.write(defaultConfig);
-                } catch (IOException io) {
-                    LOGGER.error("Exception encountered during rewriting of faulty config file: [{}] | Exception: {}", fileName, io.getMessage());
-                }
-            } else {
-                LOGGER.info("Not rewriting config file: [{}] even though it failed to parse", fileName);
-            }
-            return new TomlParser().parse(defaultConfig);
         }
     }
 
