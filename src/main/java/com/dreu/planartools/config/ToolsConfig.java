@@ -10,15 +10,14 @@ import net.minecraftforge.fml.ModList;
 import java.util.*;
 
 import static com.dreu.planartools.PlanarTools.MODID;
-import static com.dreu.planartools.Util.LogLevel.*;
-import static com.dreu.planartools.Util.addConfigIssue;
-import static com.dreu.planartools.Util.parseFileOrDefault;
+import static com.dreu.planartools.Util.LogLevel.ERROR;
+import static com.dreu.planartools.Util.LogLevel.INFO;
+import static com.dreu.planartools.Util.*;
 import static com.dreu.planartools.config.GeneralConfig.PRESET_FOLDER_NAME;
 
 @SuppressWarnings({"SameParameterValue"})
 public class ToolsConfig {
     public static final Tier[] TIERS_BY_ID = {Tiers.WOOD, Tiers.STONE, Tiers.IRON, Tiers.DIAMOND, Tiers.NETHERITE};
-    public static boolean needsRepair = false;
     public static final String templateFileName = "config/" + MODID + "/presets/template/tools.toml";
     public static final String TEMPLATE_CONFIG_STRING = """
             # Values not included for Tools will default to the Default power.
@@ -100,7 +99,7 @@ public class ToolsConfig {
     static {
         getOrDefault("Tools", Config.class).valueMap().forEach((itemId, tool) -> {
             if (!itemId.contains(":")) {
-                addConfigIssue(WARN, (byte) 2, "No namespace found in item id: [{}] declared in config: [{}] | Skipping...", itemId, templateFileName);
+                addConfigIssue(INFO, (byte) 2, "No namespace found in item id: <{}> declared in config: [{}] | Skipping...", itemId, logFileName(templateFileName));
                 return;
             }
             if (ModList.get().isLoaded(itemId.substring(0, itemId.indexOf(":")))) {
@@ -110,7 +109,7 @@ public class ToolsConfig {
                     if (property.getKey().equals("MiningSpeed")) miningSpeed = (Integer) property.getValue();
                     else {
                         if (!REGISTERED_TOOL_TYPES.contains(property.getKey())) {
-                            addConfigIssue(ERROR, (byte) 6, "[{}] declared for [{}] in config file [{}] is NOT a registered tool type!", property.getKey(), itemId, PRESET_FOLDER_NAME + "tools.toml");
+                            addConfigIssue(ERROR, (byte) 6, "\"{}\" declared for <{}> in config file [{}] is NOT a registered tool type!", property.getKey(), itemId, logFileName(PRESET_FOLDER_NAME + "tools.toml"));
                         }
                         powerDataList.add(new PowerData(
                                 (byte) REGISTERED_TOOL_TYPES.indexOf(property.getKey()),
@@ -126,21 +125,19 @@ public class ToolsConfig {
                     powerDataList.toArray(new PowerData[0]),
                     miningSpeed
                 ));
-            } else addConfigIssue(INFO, (byte) 3, "Config [{}] declared tool power values for [{}] when [{}] was not loaded or does not exist in this modpack | Skipping Item...", templateFileName, itemId, itemId.substring(0, itemId.indexOf(":")));
+            } else addConfigIssue(INFO, (byte) 2, "Config [{}] declared tool power values for <{}> when {{}} was not loaded or does not exist in this modpack | Skipping Item...", logFileName(templateFileName), itemId, itemId.substring(0, itemId.indexOf(":")));
         });
     }
 
     private static <T> T getOrDefault(String key, Class<T> clazz) {
         try {
             if ((CONFIG.get(key) == null)) {
-                addConfigIssue(ERROR, (byte) 4, "Key [{}] is missing from Config: [{}] | Marking config file for repair...", key, templateFileName);
-                needsRepair = true;
+                addConfigIssue(ERROR, (byte) 4, "Key \"{}\" is missing from config [{}] | Using basic Template instead...", key, logFileName(PRESET_FOLDER_NAME + "tools.toml"));
                 return clazz.cast(TEMPLATE_CONFIG.get(key));
             }
             return clazz.cast(CONFIG.get(key));
         } catch (Exception e) {
-            addConfigIssue(ERROR, (byte) 4, "Value: [{}] for [{}] is an invalid type in Config: {} | Expected: [{}] but got: [{}] | Marking config file for repair...", CONFIG.get(key), key, templateFileName, clazz.getTypeName(), CONFIG.get(key).getClass().getTypeName());
-            needsRepair = true;
+            addConfigIssue(ERROR, (byte) 4, "Value: \"{}\" for \"{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Using basic Template instead...", CONFIG.get(key), key, logFileName(PRESET_FOLDER_NAME + "tools.toml"), clazz.getTypeName(), CONFIG.get(key).getClass().getTypeName());
             return clazz.cast(TEMPLATE_CONFIG.get(key));
         }
     }

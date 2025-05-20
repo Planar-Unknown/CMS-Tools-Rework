@@ -6,5 +6,11 @@
   "planar_tools.powerNames.Shears": "Shears",
   "planar_tools.powerNames.Sword": "Sword",
   "planar_tools.power_title": "Powers:",
-  "planar_tools.issuesDetected": "Config Issues Detected with Planar Tools"
+  "planar_tools.issuesDetected": "Config Issues Detected with Planar Tools",
+  "planar_tools.logTitle.<ERROR>": "☠ ERROR ☠",
+  "planar_tools.logTitle.<DEBUG>": "⛏ DEBUG ⛏",
+  "planar_tools.logTitle.<INFO>": "⚑ INFO ⚑",
+  "planar_tools.logTitle.<TRACE>": "⚙ TRACE ⚙",
+  "planar_tools.logTitle.<WARN>": "⚠ WARN ⚠",
+  "planar_tools.clickToOpen": "Click to Open"
 }

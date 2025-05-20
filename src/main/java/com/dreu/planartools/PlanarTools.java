@@ -25,10 +25,7 @@ public class PlanarTools {
     //Todo: Nbt system for upgrading tools
     //Todo: Tags compatibility, Vanilla tags and Custom TOML / Json tags
     //Todo: Make enchantments work on items that have been given tool types
-    /*Todo: Errors that still need handling:
-            - When a float is expected but boolean is declared, utter crash
-            - Manually thrown IllegalArgumentException in BlocksConfig
-     */
+    //Todo: Make log file for all config issues to be printed in
     //Eventually make blocks store their destroy progress
     public static final String MODID = "planar_tools";
     public static final Logger LOGGER = LogUtils.getLogger();

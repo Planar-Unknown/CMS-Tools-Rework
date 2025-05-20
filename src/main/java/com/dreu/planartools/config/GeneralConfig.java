@@ -8,8 +8,8 @@ import java.io.IOException;
 
 import static com.dreu.planartools.PlanarTools.MODID;
 import static com.dreu.planartools.Util.LogLevel.ERROR;
-import static com.dreu.planartools.Util.addConfigIssue;
-import static com.dreu.planartools.Util.parseFileOrDefault;
+import static com.dreu.planartools.Util.LogLevel.WARN;
+import static com.dreu.planartools.Util.*;
 
 public class GeneralConfig {
     public static boolean needsRepair;
@@ -56,13 +56,13 @@ public class GeneralConfig {
     private static <T> T getOrDefault(String key, Class<T> clazz) {
         try {
             if ((CONFIG.get(key) == null)) {
-                addConfigIssue(ERROR, (byte) 4, "Key [{}] is missing from Config: [{}] | Marking config file for repair...", key, fileName);
+                addConfigIssue(WARN, (byte) 4, "Key \"{}\" is missing from config [{}] | Marking config file for repair...", key, logFileName(fileName));
                 needsRepair = true;
                 return clazz.cast(DEFAULT_CONFIG.get(key));
             }
             return clazz.cast(CONFIG.get(key));
         } catch (Exception e) {
-            addConfigIssue(ERROR, (byte) 4, "Value: [{}] for [{}] is an invalid type in Config: {} | Expected: [{}] but got: [{}] | Marking config file for repair...", CONFIG.get(key), key, fileName, clazz.getTypeName(), CONFIG.get(key).getClass().getTypeName());
+            addConfigIssue(WARN, (byte) 4, "Value: \"{}\" for \"{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Marking config file for repair...", CONFIG.get(key), key, logFileName(fileName), clazz.getTypeName(), CONFIG.get(key).getClass().getTypeName());
             needsRepair = true;
             return clazz.cast(DEFAULT_CONFIG.get(key));
         }

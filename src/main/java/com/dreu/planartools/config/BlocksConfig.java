@@ -10,13 +10,10 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.dreu.planartools.PlanarTools.MODID;
-import static com.dreu.planartools.Util.LogLevel.INFO;
-import static com.dreu.planartools.Util.LogLevel.WARN;
-import static com.dreu.planartools.Util.addConfigIssue;
-import static com.dreu.planartools.Util.parseFileOrDefault;
+import static com.dreu.planartools.Util.LogLevel.*;
+import static com.dreu.planartools.Util.*;
 import static com.dreu.planartools.config.GeneralConfig.PRESET_FOLDER_NAME;
 import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
-import static java.lang.String.format;
 
 public class BlocksConfig {
 
@@ -62,7 +59,7 @@ public class BlocksConfig {
     static {
         CONFIG.valueMap().forEach((blockId, block) -> {
             if (!blockId.contains(":")) {
-                addConfigIssue(WARN, (byte) 2, "No namespace found in item id: [{}] declared in config: [{}] | Skipping...", blockId, templateFileName);
+                addConfigIssue(INFO, (byte) 2, "No namespace found in item id: <{}> declared in config: [{}] | Skipping...", blockId, logFileName(templateFileName));
                 return;
             }
             if (ModList.get().isLoaded(blockId.substring(0, blockId.indexOf(":")))) {
@@ -82,8 +79,7 @@ public class BlocksConfig {
                         );
                     }
                     if (!REGISTERED_TOOL_TYPES.contains(property.getKey())) {
-                        //Todo handle this with the new logging system
-                        throw new IllegalStateException(format("[%s] in config file [%s] is not a registered tool type", property.getKey(), PRESET_FOLDER_NAME + "tools.toml"));
+                        addConfigIssue(ERROR, (byte) 6, "\"{}\" in config file [{}] is NOT a registered tool type!", property.getKey(), logFileName(PRESET_FOLDER_NAME + "blocks.toml"));
                     }
                 }
 
@@ -94,14 +90,20 @@ public class BlocksConfig {
                         resistanceDataMap
                 ));
             } else
-                addConfigIssue(INFO, (byte) 3, "Config [{}] declared Block Resistance values for [{}] when [{}] was not loaded or does not exist in this modpack | Skipping Block...", PRESET_FOLDER_NAME + "blocks.toml", blockId, blockId.substring(0, blockId.indexOf(":")));
+                addConfigIssue(INFO, (byte) 2, "Config [{}] declared Block Resistance values for <{}> when {{}} was not loaded or does not exist in this modpack | Skipping Block...", logFileName(PRESET_FOLDER_NAME + "blocks.toml"), blockId, blockId.substring(0, blockId.indexOf(":")));
         });
     }
 
     private static Optional<Float> getOptionalFloat(Config values, String key) {
+        try {
+            //noinspection RedundantClassCall
+            Number.class.cast(values.get(key));
+        } catch (Exception e) {
+            addConfigIssue(WARN, (byte) 4, "Value: \"{}\" for \"{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Ignoring property...", CONFIG.get(key), key, logFileName(PRESET_FOLDER_NAME + "tools.toml"), Float.class.getTypeName(), values.get(key).getClass().getTypeName());
+            return Optional.empty();
+        }
         Number explosionResistance = values.get(key);
         return explosionResistance == null ? Optional.empty() : Optional.of(explosionResistance.floatValue());
-
     }
 
     @SuppressWarnings("DataFlowIssue")
