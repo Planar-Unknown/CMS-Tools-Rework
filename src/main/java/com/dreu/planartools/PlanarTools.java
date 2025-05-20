@@ -32,7 +32,6 @@ public class PlanarTools {
 
     @SuppressWarnings("unchecked") public static final TagKey<Block>[] TAG_KEYS_BY_TOOL_TYPE = new TagKey[REGISTERED_TOOL_TYPES.size()];
 
-
     public PlanarTools() {
         populateTagKeys();
         preloadConfigs();

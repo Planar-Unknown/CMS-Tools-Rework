@@ -12,5 +12,6 @@
   "planar_tools.logTitle.<INFO>": "⚑ INFO ⚑",
   "planar_tools.logTitle.<TRACE>": "⚙ TRACE ⚙",
   "planar_tools.logTitle.<WARN>": "⚠ WARN ⚠",
-  "planar_tools.clickToOpen": "Click to Open"
+  "planar_tools.clickToOpen": "Click to Open",
+  "planar_tools.readMoreAt": "More issues, view them at: "
 }
