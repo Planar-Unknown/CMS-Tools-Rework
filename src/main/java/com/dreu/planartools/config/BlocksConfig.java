@@ -110,7 +110,7 @@ public class BlocksConfig {
             //noinspection RedundantClassCall
             Number.class.cast(values.get(key));
         } catch (Exception e) {
-            addConfigIssue(WARN, (byte) 4, "Value: \"{}\" for \"{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Ignoring property...", CONFIG.get(key), key, logFileName(PRESET_FOLDER_NAME + "tools.toml"), Float.class.getTypeName(), values.get(key).getClass().getTypeName());
+            addConfigIssue(WARN, (byte) 4, "Value: \"{}\" for \"{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Ignoring property...", values.get(key), key, logFileName(PRESET_FOLDER_NAME + "tools.toml"), Float.class.getTypeName(), values.get(key).getClass().getTypeName());
             return Optional.empty();
         }
         Number explosionResistance = values.get(key);

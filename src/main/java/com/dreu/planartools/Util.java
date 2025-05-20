@@ -16,23 +16,25 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.function.BiConsumer;
 
 import static com.dreu.planartools.PlanarTools.LOGGER;
-
+import static com.dreu.planartools.PlanarTools.MODID;
 
 
 public class Util {
+    public static boolean wereIssuesWrittenToFile = false;
+    public static byte MAX_DISPLAYED_ISSUES = 3;
 
     @SuppressWarnings("unused")
     public enum LogLevel {
         TRACE(LOGGER::trace, "<TRACE>", 0xAAAAFF, "Fine-grained debug info"),
         DEBUG(LOGGER::debug, "<DEBUG>", 0x55FF55, "General debugging output"),
-        INFO(LOGGER::info, "<INFO>", 0xFFFF55, "Something minor went wrong, but its handled"),
-        WARN(LOGGER::warn, "<WARN>", 0xFFAA00, "Something unexpected happened, may or may not cause issues"),
-        ERROR(LOGGER::error, "<ERROR>", 0xFF5555, "A serious problem occurred, your game WILL crash at some point");
+        INFO(LOGGER::info, "<INFO>", 0xFFFF55, "Something minor went wrong, the mod may not work as expected"),
+        WARN(LOGGER::warn, "<WARN>", 0xFFAA00, "Something important failed, the mod will not work as expected"),
+        ERROR(LOGGER::error, "<ERROR>", 0xFF5555, "A serious problem occurred, your game may crash at some point");
 
         private final MutableComponent header;
         private final BiConsumer<String, Object[]> func;
@@ -80,8 +82,9 @@ public class Util {
     public static void addConfigIssue(LogLevel level, byte priority, String message, Object... args) {
         level.log(message, args);
         String formattable = message.replace("{}", "%s");
-        CONFIG_ISSUES.add(new Issue(level.header().append(formatError(String.format(formattable, args))), priority));
-        Collections.sort(CONFIG_ISSUES);
+        CONFIG_ISSUES.add(new Issue(level.header().copy().append(formatError(String.format(formattable, args))), priority));
+//        Collections.sort(CONFIG_ISSUES);
+        //Todo: debug here with a for loop on config issues
     }
 
     public static @NotNull MutableComponent formatError(String msg) {
@@ -140,31 +143,32 @@ public class Util {
             MutableComponent part;
 
             switch (endChar) {
-                case '>':
-                    part = Component.literal(bracketed).withStyle(ChatFormatting.AQUA);
-                    break;
-                case ']':
-                    part = Component.literal(bracketed).withStyle(ChatFormatting.GOLD);
-                    if (Files.exists(Path.of("config/planar_tools/" + inner).toAbsolutePath())) {
-                        part = part.withStyle(style ->
-                                style.withClickEvent(new ClickEvent(
-                                        ClickEvent.Action.OPEN_FILE,
-                                        Path.of("config/planar_tools/" + inner).toAbsolutePath().toString()
-                                )).withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable("planar_tools.clickToOpen")))
+                case '>' -> part = Component.literal(bracketed).withStyle(ChatFormatting.AQUA);
+                case ']' -> {
+                    try {
+                        Paths.get(inner);
+                    } catch (Exception ignored) {
+                        if (inner.contains(":")) {
+                            part = Component.literal(bracketed).withStyle(style -> style.withColor(ChatFormatting.AQUA));
+                            break;
+                        }
+                        part = Component.literal(bracketed).withStyle(style -> style.withColor(ChatFormatting.RED));
+                        break;
+                    }
+                    part = Component.literal(bracketed).withStyle(style -> style.withColor(0x3381ff));
+                    if (Files.exists(Path.of("config/" + MODID + "/" + inner).toAbsolutePath())) {
+                        part = part.withStyle(style -> style
+                                .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE,
+                                        Path.of("config/" + MODID + "/" + inner).toAbsolutePath().toString()))
+                                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                        Component.translatable("planar_tools.clickToOpen")))
                         );
                     }
-                    break;
-                case '}':
-                    part = Component.literal(bracketed).withStyle(ChatFormatting.YELLOW);
-                    break;
-                case '"':
-                    part = Component.literal(bracketed).withStyle(ChatFormatting.GREEN);
-                    break;
-                case '\'':
-                    part = Component.literal(bracketed).withStyle(ChatFormatting.WHITE);
-                    break;
-                default:
-                    part = Component.literal(bracketed);
+                }
+                case '}' -> part = Component.literal(bracketed).withStyle(ChatFormatting.GOLD);
+                case '"' -> part = Component.literal(bracketed).withStyle(ChatFormatting.GREEN);
+                case '\'' -> part = Component.literal(bracketed).withStyle(ChatFormatting.WHITE);
+                default -> part = Component.literal(bracketed);
             }
 
             fullComponent.append(part);
@@ -241,6 +245,7 @@ public class Util {
 
     public static Config parseFileOrDefault(String fileName, String defaultConfig, boolean rewriteIfFailedToParse) {
         Path filePath = Path.of(fileName);
+        System.out.println(fileName);
         try {
             Files.createDirectories(filePath.getParent());
             return new TomlParser().parse(filePath.toAbsolutePath(),
@@ -251,16 +256,16 @@ public class Util {
                         return true;
                     });
         } catch (Exception e) {
-            LOGGER.error("Exception encountered during parsing of config file: [{}]. The hardcoded default config will be used | Exception: {}", fileName, e.getMessage());
+            addConfigIssue(LogLevel.ERROR, (byte) 10, "Exception encountered during parsing of config file: [{}]. The hardcoded default config will be used | Exception: {}", fileName, e.getMessage());
             if (rewriteIfFailedToParse) {
-                LOGGER.info("Rewriting config file: [{}] in response to parsing failure", fileName);
+                addConfigIssue(LogLevel.INFO, (byte) 2, "Rewriting config file: [{}] in response to parsing failure", fileName);
                 try (FileWriter writer = new FileWriter(filePath.toFile().getAbsolutePath())) {
                     writer.write(defaultConfig);
                 } catch (IOException io) {
-                    LOGGER.error("Exception encountered during rewriting of faulty config file: [{}] | Exception: {}", fileName, io.getMessage());
+                    addConfigIssue(LogLevel.ERROR, (byte) 10, "Unexpected exception encountered during rewriting of faulty config file: [{}] | Exception: {}", fileName, io.getMessage());
                 }
             } else {
-                LOGGER.info("Not rewriting config file: [{}] even though it failed to parse", fileName);
+//                addConfigIssue(LogLevel.INFO, (byte) 2, "Not rewriting config file: [{}] even though it failed to parse", fileName);
             }
             return new TomlParser().parse(defaultConfig);
         }
