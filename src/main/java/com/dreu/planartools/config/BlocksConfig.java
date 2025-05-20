@@ -65,7 +65,7 @@ public class BlocksConfig {
             if (ModList.get().isLoaded(blockId.substring(0, blockId.indexOf(":")))) {
                 Map<Byte, ResistanceData> resistanceDataMap = new HashMap<>();
 
-                Integer defaultResistance = ((Config) block).getOrElse("DefaultResistance", 0);
+                Integer defaultResistance = getOrElse(((Config) block), blockId, "DefaultResistance", 0, Integer.class);
 
                 for (Map.Entry<String, Object> property : ((Config) block).valueMap().entrySet()) {
                     switch (property.getKey()) {
@@ -73,8 +73,8 @@ public class BlocksConfig {
                         default -> resistanceDataMap.put(
                                 (byte) REGISTERED_TOOL_TYPES.indexOf(property.getKey()),
                                 new ResistanceData(
-                                        ((Config) property.getValue()).getIntOrElse("Resistance", defaultResistance),
-                                        ((Config) property.getValue()).getOrElse("ApplyMiningSpeed", false)
+                                        getOrElse(((Config) property.getValue()), property.getKey(), "Resistance", defaultResistance, Integer.class),
+                                        getOrElse(((Config) property.getValue()), property.getKey(), "ApplyMiningSpeed", false, Boolean.class)
                                 )
                         );
                     }
@@ -92,6 +92,17 @@ public class BlocksConfig {
             } else
                 addConfigIssue(INFO, (byte) 2, "Config [{}] declared Block Resistance values for <{}> when {{}} was not loaded or does not exist in this modpack | Skipping Block...", logFileName(PRESET_FOLDER_NAME + "blocks.toml"), blockId, blockId.substring(0, blockId.indexOf(":")));
         });
+    }
+
+    private static <T> T getOrElse(Config config, String parentKey, String key, T fallback, Class<T> clazz) {
+        try {
+            clazz.cast(config.get(key));
+        } catch (Exception e) {
+            addConfigIssue(WARN, (byte) 4, "Value: \"{}\" for \"{}.{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Ignoring property...", config.get(key), parentKey, key, logFileName(PRESET_FOLDER_NAME + "blocks.toml"), Float.class.getTypeName(), config.get(key).getClass().getTypeName());
+            return fallback;
+        }
+        T toReturn = config.get(key);
+        return toReturn == null ? fallback : toReturn;
     }
 
     private static Optional<Float> getOptionalFloat(Config values, String key) {
