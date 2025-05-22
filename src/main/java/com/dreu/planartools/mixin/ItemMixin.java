@@ -59,13 +59,7 @@ public class ItemMixin {
                 }
                 cir.setReturnValue(canMine ? (applyMiningSpeed ? toolProperties.get().miningSpeed() : 1.0f) : 0.0f);
             } else {
-                for (String toolType : REGISTERED_TOOL_TYPES) {
-                    BlocksConfig.ResistanceData data = blockProperties.data().get((byte) REGISTERED_TOOL_TYPES.indexOf(toolType));
-                    if (data != null && data.resistance() == 0) {
-                        cir.setReturnValue(1.0f);
-                    }
-                }
-                cir.setReturnValue(0f);
+                cir.setReturnValue(blockProperties.defaultResistance() == 0 ? 1f : 0f);
             }
         } else if (toolProperties.get() != null) {
             cir.setReturnValue(isCorrectToolForDrops(blockState) ? toolProperties.get().miningSpeed() : 1.0f);
@@ -80,7 +74,7 @@ public class ItemMixin {
             if (blockProperties != null) {
                 for (ToolsConfig.PowerData powerData : toolProperties.get().data()) {
                     BlocksConfig.ResistanceData resistanceData = blockProperties.data().get(powerData.toolTypeId());
-                    if (resistanceData != null && resistanceData.applyMiningSpeed()) {
+                    if (resistanceData != null) {
                         if (resistanceData.resistance() >= 0 && powerData.power() >= resistanceData.resistance()) {
                             cir.setReturnValue(true);
                         }

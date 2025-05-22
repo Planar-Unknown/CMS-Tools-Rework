@@ -41,35 +41,35 @@ public class ToolsConfig {
             "minecraft:wooden_pickaxe" = {Pickaxe = 20, MiningSpeed = 2}
             "minecraft:stone_pickaxe" = {Pickaxe = 40, MiningSpeed = 4}
             "minecraft:iron_pickaxe" = {Pickaxe = 60, MiningSpeed = 6}
-            "minecraft:golden_pickaxe" = {Pickaxe = 60, MiningSpeed = 12}
+            "minecraft:golden_pickaxe" = {Pickaxe = 20, MiningSpeed = 12}
             "minecraft:diamond_pickaxe" = {Pickaxe = 80, MiningSpeed = 8}
             "minecraft:netherite_pickaxe" = {Pickaxe = 100, MiningSpeed = 9}
             
             "minecraft:wooden_shovel" = {Shovel = 20, MiningSpeed = 2}
             "minecraft:stone_shovel" = {Shovel = 40, MiningSpeed = 4}
             "minecraft:iron_shovel" = {Shovel = 60, MiningSpeed = 6}
-            "minecraft:golden_shovel" = {Shovel = 60, MiningSpeed = 12}
+            "minecraft:golden_shovel" = {Shovel = 20, MiningSpeed = 12}
             "minecraft:diamond_shovel" = {Shovel = 80, MiningSpeed = 8}
             "minecraft:netherite_shovel" = {Shovel = 100, MiningSpeed = 9}
             
             "minecraft:wooden_hoe" = {Hoe = 20, MiningSpeed = 2}
             "minecraft:stone_hoe" = {Hoe = 40, MiningSpeed = 4}
             "minecraft:iron_hoe" = {Hoe = 60, MiningSpeed = 6}
-            "minecraft:golden_hoe" = {Hoe = 60, MiningSpeed = 12}
+            "minecraft:golden_hoe" = {Hoe = 20, MiningSpeed = 12}
             "minecraft:diamond_hoe" = {Hoe = 80, MiningSpeed = 8}
             "minecraft:netherite_hoe" = {Hoe = 100, MiningSpeed = 9}
             
             "minecraft:wooden_axe" = {Axe = 20, MiningSpeed = 2}
             "minecraft:stone_axe" = {Axe = 40, MiningSpeed = 4}
             "minecraft:iron_axe" = {Axe = 60, MiningSpeed = 6}
-            "minecraft:golden_axe" = {Axe = 60, MiningSpeed = 12}
+            "minecraft:golden_axe" = {Axe = 20, MiningSpeed = 12}
             "minecraft:diamond_axe" = {Axe = 80, MiningSpeed = 8}
             "minecraft:netherite_axe" = {Axe = 100, MiningSpeed = 9}
             
             "minecraft:wooden_sword" = {Shears = 20, MiningSpeed = 2}
             "minecraft:stone_sword" = {Shears = 40, MiningSpeed = 4}
             "minecraft:iron_sword" = {Shears = 60, MiningSpeed = 6}
-            "minecraft:golden_sword" = {Shears = 60, MiningSpeed = 12}
+            "minecraft:golden_sword" = {Shears = 20, MiningSpeed = 12}
             "minecraft:diamond_sword" = {Shears = 80, MiningSpeed = 8}
             "minecraft:netherite_sword" = {Shears = 100, MiningSpeed = 9}
             
