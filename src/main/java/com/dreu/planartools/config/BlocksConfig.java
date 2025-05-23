@@ -16,7 +16,6 @@ import static com.dreu.planartools.config.GeneralConfig.PRESET_FOLDER_NAME;
 import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 
 public class BlocksConfig {
-
     public static final String templateFileName = "config/" + MODID + "/presets/template/blocks.toml";
     public static final String TEMPLATE_CONFIG_STRING = """
     # Modded Items that override the getDestroySpeed method will not be valid.
@@ -56,7 +55,7 @@ public class BlocksConfig {
     public static final Config CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "blocks.toml", TEMPLATE_CONFIG_STRING, false);
 
     public static final Map<String, Properties> BLOCKS = new HashMap<>();
-    static {
+    public static void populateBlocks() {
         CONFIG.valueMap().forEach((blockId, block) -> {
             if (!blockId.contains(":")) {
                 addConfigIssue(INFO, (byte) 2, "No namespace found in item id: <{}> declared in config: [{}] | Skipping...", blockId, logFileName(templateFileName));

@@ -33,7 +33,7 @@ public class ShearsItemMixin {
         return (Item) (Object) this;
     }
     @SuppressWarnings("DataFlowIssue")
-    Supplier<ToolsConfig.Properties> toolProperties = Suppliers.memoize(() -> TOOLS.get(ForgeRegistries.ITEMS.getKey(self()).toString()));
+    final Supplier<ToolsConfig.Properties> toolProperties = Suppliers.memoize(() -> TOOLS.get(ForgeRegistries.ITEMS.getKey(self()).toString()));
 
     @Inject(method = "getDestroySpeed", at = @At("HEAD"), cancellable = true)
     private void onGetDestroySpeed(ItemStack itemInHand, BlockState blockState, CallbackInfoReturnable<Float> cir) {
@@ -101,6 +101,7 @@ public class ShearsItemMixin {
         }
     }
 
+    @SuppressWarnings("SameReturnValue")
     @Shadow
     public boolean isCorrectToolForDrops(BlockState blockState) {return false;}
 }

@@ -21,7 +21,6 @@ import java.util.function.Supplier;
 import static com.dreu.planartools.PlanarTools.TAG_KEYS_BY_TOOL_TYPE;
 import static com.dreu.planartools.Util.getTierIfPresent;
 import static com.dreu.planartools.config.BlocksConfig.getBlockProperties;
-import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 import static com.dreu.planartools.config.ToolsConfig.TOOLS;
 
 @Mixin(Item.class)
@@ -32,7 +31,7 @@ public class ItemMixin {
         return (Item) (Object) this;
     }
     @SuppressWarnings("DataFlowIssue")
-    Supplier<ToolsConfig.Properties> toolProperties = Suppliers.memoize(() -> TOOLS.get(ForgeRegistries.ITEMS.getKey(self()).toString()));
+    final Supplier<ToolsConfig.Properties> toolProperties = Suppliers.memoize(() -> TOOLS.get(ForgeRegistries.ITEMS.getKey(self()).toString()));
 
     @Inject(method = "getDestroySpeed", at = @At("HEAD"), cancellable = true)
     private void onGetDestroySpeed(ItemStack itemInHand, BlockState blockState, CallbackInfoReturnable<Float> cir) {
@@ -94,6 +93,7 @@ public class ItemMixin {
         }
     }
 
+    @SuppressWarnings("SameReturnValue")
     @Shadow
     public boolean isCorrectToolForDrops(BlockState blockState) {return false;}
 }

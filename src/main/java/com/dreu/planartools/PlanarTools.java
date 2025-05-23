@@ -14,10 +14,13 @@ import org.slf4j.Logger;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static com.dreu.planartools.Util.LogLevel.WARN;
 import static com.dreu.planartools.Util.addConfigIssue;
-import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
+import static com.dreu.planartools.config.BlocksConfig.populateBlocks;
+import static com.dreu.planartools.config.ToolsConfig.*;
 
 @Mod(PlanarTools.MODID)
 public class PlanarTools {
@@ -34,8 +37,11 @@ public class PlanarTools {
 
     public PlanarTools() {
         populateTagKeys();
-        preloadConfigs();
         if (GeneralConfig.needsRepair) GeneralConfig.repair();
+        populateToolTypes();
+        populateTools();
+        populateBlocks();
+//        preloadConfigs();
         resetTemplate(BlocksConfig.templateFileName, BlocksConfig.TEMPLATE_CONFIG_STRING);
         resetTemplate(ToolsConfig.templateFileName, ToolsConfig.TEMPLATE_CONFIG_STRING);
     }
@@ -49,17 +55,13 @@ public class PlanarTools {
     }
 
     public static void resetTemplate(String fileName, String contents) {
-        try (FileWriter writer = new FileWriter(new File(fileName).getAbsolutePath())) {
-            String warning = "# DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!\n";
-            writer.write(warning + contents);
+        try {
+            Files.createDirectories(Path.of(fileName).getParent());
+            FileWriter writer = new FileWriter(new File(fileName).getAbsolutePath());
+            writer.write("# DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!\n" + contents);
+            writer.close();
         } catch (IOException e) {
             addConfigIssue(WARN, (byte) 5, "Exception during template replacement: {}", e.getMessage());
         }
-    }
-
-    private void preloadConfigs() {
-        GeneralConfig.CONFIG.valueMap().put("Preloaded", true);
-        ToolsConfig.CONFIG.valueMap().put("Preloaded", true);
-        BlocksConfig.CONFIG.valueMap().put("Preloaded", true);
     }
 }

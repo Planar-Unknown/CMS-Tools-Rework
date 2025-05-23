@@ -40,7 +40,7 @@ public class GeneralConfig {
             # To use a custom preset, create a folder in: config/planar_tools/presets/[your-preset-name]
             # Add both blocks.toml and tools.toml to your preset folder.
             # Use the "template" preset in config/planar_tools/presets/template as an example.
-            Preset = "template"
+            Preset = "custom"
             """;
 
     public static final Config DEFAULT_CONFIG = new TomlParser().parse(DEFAULT_CONFIG_STRING);

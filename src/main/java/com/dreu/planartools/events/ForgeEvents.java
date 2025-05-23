@@ -3,35 +3,27 @@ package com.dreu.planartools.events;
 import com.dreu.planartools.Util;
 import com.dreu.planartools.config.BlocksConfig;
 import com.dreu.planartools.config.ToolsConfig;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.datafixers.util.Either;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil;
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.client.event.RenderTooltipEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
-import org.spongepowered.asm.mixin.injection.struct.InjectorGroupInfo;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -40,12 +32,12 @@ import java.util.*;
 
 import static com.dreu.planartools.PlanarTools.MODID;
 import static com.dreu.planartools.Util.*;
-import static com.dreu.planartools.config.BlocksConfig.BLOCKS;
 import static com.dreu.planartools.config.BlocksConfig.getBlockProperties;
 import static com.dreu.planartools.config.ToolsConfig.*;
 import static net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.FORGE;
 
-@Mod.EventBusSubscriber(modid = MODID, bus = FORGE) @SuppressWarnings("unused")
+@Mod.EventBusSubscriber(modid = MODID, bus = FORGE)
+@SuppressWarnings({"unused", "DataFlowIssue"})
 public class ForgeEvents {
 
     @SubscribeEvent
@@ -125,7 +117,6 @@ public class ForgeEvents {
         String item = ForgeRegistries.ITEMS.getKey(event.getItemStack().getItem()).toString();
         if (TOOLS.containsKey(item)) {
             event.getTooltipElements().add(Either.left(Component.translatable("planar_tools.power_title")));
-            System.out.println(Arrays.toString(TOOLS.get(item).data()));
             for (ToolsConfig.PowerData data : TOOLS.get(item).data()) {
                 event.getTooltipElements().add(Either.left(
                         Component.literal(" ")
@@ -137,9 +128,11 @@ public class ForgeEvents {
         }
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @SubscribeEvent
     public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!wereIssuesWrittenToFile) {
+            wereIssuesWrittenToFile = true;
             StringBuilder contents = new StringBuilder();
             for (Util.Issue issue : CONFIG_ISSUES) {
                 contents.append(issue.message().getString()).append("\n");
@@ -161,7 +154,6 @@ public class ForgeEvents {
                         .append(Component.literal(" {" + MODID + "}: ").withStyle(ChatFormatting.YELLOW))
                 );
                 for (int i = 0; i < Math.min(MAX_DISPLAYED_ISSUES, CONFIG_ISSUES.size()); i++) {
-                    System.out.println(CONFIG_ISSUES.get(i).message().getString());
                     player.sendSystemMessage(CONFIG_ISSUES.get(i).message());
                 }
                 if (CONFIG_ISSUES.size() > MAX_DISPLAYED_ISSUES) {

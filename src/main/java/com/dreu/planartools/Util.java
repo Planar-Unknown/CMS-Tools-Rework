@@ -26,7 +26,7 @@ import static com.dreu.planartools.PlanarTools.MODID;
 
 public class Util {
     public static boolean wereIssuesWrittenToFile = false;
-    public static byte MAX_DISPLAYED_ISSUES = 3;
+    public static final byte MAX_DISPLAYED_ISSUES = 3;
 
     @SuppressWarnings("unused")
     public enum LogLevel {
@@ -179,73 +179,8 @@ public class Util {
     }
 
 
-
-
-//    public static @NotNull MutableComponent formatError(String msg) {
-//        MutableComponent fullComponent = Component.empty();
-//        msg = " " + msg;
-//
-//        int index = 0;
-//        while (index < msg.length()) {
-//            int nextBracket = msg.indexOf('[', index);
-//            int nextAngle = msg.indexOf('<', index);
-//            int nextCurly = msg.indexOf('{', index);
-//
-//            int start;
-//            char endChar;
-//
-//            if (nextBracket != -1 && (nextAngle == -1 || nextBracket < nextAngle) && (nextCurly == -1 || nextBracket < nextCurly)) {
-//                start = nextBracket;
-//                endChar = ']';
-//            } else if (nextAngle != -1 && (nextCurly == -1 || nextAngle < nextCurly)) {
-//                start = nextAngle;
-//                endChar = '>';
-//            } else if (nextCurly != -1) {
-//                start = nextCurly;
-//                endChar = '}';
-//            } else {
-//                fullComponent.append(Component.literal(msg.substring(index)).withStyle(ChatFormatting.GRAY));
-//                break;
-//            }
-//
-//            int end = msg.indexOf(endChar, start);
-//            if (end == -1) {
-//                fullComponent.append(Component.literal(msg.substring(index)).withStyle(ChatFormatting.GRAY));
-//                break;
-//            }
-//
-//            if (start > index) {
-//                fullComponent.append(Component.literal(msg.substring(index, start)).withStyle(ChatFormatting.GRAY));
-//            }
-//
-//            String bracketed = msg.substring(start, end + 1);
-//            String inner = msg.substring(start + 1, end);
-//
-//            MutableComponent part;
-//            if (endChar == '>') {
-//                part = Component.literal(bracketed).withStyle(ChatFormatting.AQUA);
-//            } else if (endChar == ']') {
-//                part = Component.literal(bracketed).withStyle(ChatFormatting.GOLD);
-//                if (Files.exists(Path.of(inner).toAbsolutePath())) {
-//                    part = part.withStyle(style ->
-//                            style.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, Path.of(inner).toAbsolutePath().toString()))
-//                    );
-//                }
-//            } else {
-//                part = Component.literal(bracketed).withStyle(ChatFormatting.YELLOW);
-//            }
-//
-//            fullComponent.append(part);
-//            index = end + 1;
-//        }
-//
-//        return fullComponent;
-//    }
-
-
     public static Config parseFileOrDefault(String fileName, String defaultConfig, boolean rewriteIfFailedToParse) {
         Path filePath = Path.of(fileName);
-        System.out.println(fileName);
         try {
             Files.createDirectories(filePath.getParent());
             return new TomlParser().parse(filePath.toAbsolutePath(),
@@ -265,7 +200,7 @@ public class Util {
                     addConfigIssue(LogLevel.ERROR, (byte) 10, "Unexpected exception encountered during rewriting of faulty config file: [{}] | Exception: {}", fileName, io.getMessage());
                 }
             } else {
-//                addConfigIssue(LogLevel.INFO, (byte) 2, "Not rewriting config file: [{}] even though it failed to parse", fileName);
+                addConfigIssue(LogLevel.INFO, (byte) 2, "Not rewriting config file: [{}] even though it failed to parse", fileName);
             }
             return new TomlParser().parse(defaultConfig);
         }

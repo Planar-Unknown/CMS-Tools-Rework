@@ -25,6 +25,7 @@ public class BlockStateBaseMixin {
 
 
 
+    @SuppressWarnings("SameReturnValue")
     @Shadow public Block getBlock() {
         return null;
     }

@@ -17,6 +17,7 @@ import static com.dreu.planartools.config.BlocksConfig.BLOCKS;
 @Mixin(Block.class)
 @SuppressWarnings("unused")
 public class BlockMixin {
+    @SuppressWarnings("DataFlowIssue")
     private final Supplier<BlocksConfig.Properties> blockProperties = Suppliers.memoize(() -> BLOCKS.get(ForgeRegistries.BLOCKS.getKey(this.asBlock()).toString()));
 
     @Inject(method = "getExplosionResistance", at = @At("HEAD"), cancellable = true)
@@ -28,6 +29,7 @@ public class BlockMixin {
         }
     }
 
+    @SuppressWarnings("SameReturnValue")
     @Shadow
     protected Block asBlock() {
         return null;

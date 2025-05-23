@@ -81,7 +81,7 @@ public class ToolsConfig {
     public static final ArrayList<String> REGISTERED_TOOL_TYPES = new ArrayList<>();
     public static final ArrayList<Integer> REGISTERED_TOOL_COLORS = new ArrayList<>();
 
-    static {
+    public static void populateToolTypes() {
         //noinspection unchecked
         getOrDefault("ToolTypes", ArrayList.class).forEach((toolType) -> {
             String entry = toolType.toString();
@@ -96,7 +96,7 @@ public class ToolsConfig {
     }
 
     public static final Map<String, Properties> TOOLS = new HashMap<>();
-    static {
+    public static void populateTools() {
         getOrDefault("Tools", Config.class).valueMap().forEach((itemId, tool) -> {
             if (!itemId.contains(":")) {
                 addConfigIssue(INFO, (byte) 2, "No namespace found in item id: <{}> declared in config: [{}] | Skipping...", itemId, logFileName(templateFileName));
