@@ -89,7 +89,7 @@ public class ShearsItemMixin {
                 }
             } else {
                 for (ToolsConfig.PowerData data : toolProperties.get().data()) {
-                    TagKey<Block> tag = TAG_KEYS_BY_TOOL_TYPE[data.toolTypeId()];
+                    TagKey<Block> tag = TAG_KEYS_BY_TOOL_TYPE.get(data.toolTypeId());
                     if (blockState.is(tag)) {
                         var tier = getTierIfPresent(data.toolTypeId(), toolProperties.get());
                         if (tier != null && TierSortingRegistry.isCorrectTierForDrops(tier, blockState)) {

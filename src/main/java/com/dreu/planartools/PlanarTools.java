@@ -16,6 +16,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 
 import static com.dreu.planartools.Util.LogLevel.WARN;
 import static com.dreu.planartools.Util.addConfigIssue;
@@ -28,17 +29,16 @@ public class PlanarTools {
     //Todo: Nbt system for upgrading tools
     //Todo: Tags compatibility, Vanilla tags and Custom TOML / Json tags
     //Todo: Make enchantments work on items that have been given tool types
-    //Todo: Make log file for all config issues to be printed in
     //Eventually make blocks store their destroy progress
     public static final String MODID = "planar_tools";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    @SuppressWarnings("unchecked") public static final TagKey<Block>[] TAG_KEYS_BY_TOOL_TYPE = new TagKey[REGISTERED_TOOL_TYPES.size()];
+    @SuppressWarnings("unchecked") public static final ArrayList<TagKey<Block>> TAG_KEYS_BY_TOOL_TYPE = new ArrayList<>();
 
     public PlanarTools() {
+        populateToolTypes();
         populateTagKeys();
         if (GeneralConfig.needsRepair) GeneralConfig.repair();
-        populateToolTypes();
         populateTools();
         populateBlocks();
 //        preloadConfigs();
@@ -50,7 +50,7 @@ public class PlanarTools {
         for (int i = 0; i < REGISTERED_TOOL_TYPES.size(); i++) {
             String toolType = REGISTERED_TOOL_TYPES.get(i);
             String tagKeyName = "mineable/" + toolType.toLowerCase();
-            TAG_KEYS_BY_TOOL_TYPE[i] = BlockTags.create(new ResourceLocation(tagKeyName));
+            TAG_KEYS_BY_TOOL_TYPE.add(BlockTags.create(new ResourceLocation(tagKeyName)));
         }
     }
 
