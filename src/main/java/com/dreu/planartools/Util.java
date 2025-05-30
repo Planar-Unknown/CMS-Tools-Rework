@@ -1,5 +1,7 @@
 package com.dreu.planartools;
 
+import com.dreu.planartools.config.BlocksConfig;
+import com.dreu.planartools.config.GeneralConfig;
 import com.dreu.planartools.config.ToolsConfig;
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.toml.TomlParser;
@@ -20,8 +22,11 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.function.BiConsumer;
 
-import static com.dreu.planartools.PlanarTools.LOGGER;
-import static com.dreu.planartools.PlanarTools.MODID;
+import static com.dreu.planartools.PlanarTools.*;
+import static com.dreu.planartools.config.BlocksConfig.populateBlocks;
+import static com.dreu.planartools.config.GeneralConfig.populateGeneralConfig;
+import static com.dreu.planartools.config.ToolsConfig.populateToolTypes;
+import static com.dreu.planartools.config.ToolsConfig.populateTools;
 
 
 public class Util {
@@ -72,7 +77,7 @@ public class Util {
         }
 
         public void log(String message, Object... args) {
-            func.accept(message, args);
+            func.accept("[" + MODID + "] " + message, args);
         }
 
         public MutableComponent header() {
@@ -100,8 +105,8 @@ public class Util {
 
     public static void addConfigIssue(LogLevel level, byte priority, String message, Object... args) {
         level.log(message, args);
-        String formattable = message.replace("{}", "%s");
-        CONFIG_ISSUES.add(new Issue(level.header().copy().append(formatError(String.format(formattable, args))), priority));
+        String toFormat = message.replace("{}", "%s");
+        CONFIG_ISSUES.add(new Issue(level.header().copy().append(formatError(String.format(toFormat, args))), priority));
 //        Collections.sort(CONFIG_ISSUES);
         //Todo: debug here with a for loop on config issues
     }
@@ -218,8 +223,6 @@ public class Util {
                 } catch (IOException io) {
                     addConfigIssue(LogLevel.ERROR, (byte) 10, "Unexpected exception encountered during rewriting of faulty config file: [{}] | Exception: {}", fileName, io.getMessage());
                 }
-            } else {
-                addConfigIssue(LogLevel.INFO, (byte) 2, "Not rewriting config file: [{}] even though it failed to parse", fileName);
             }
             return new TomlParser().parse(defaultConfig);
         }
