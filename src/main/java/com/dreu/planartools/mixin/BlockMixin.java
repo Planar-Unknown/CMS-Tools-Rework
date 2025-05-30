@@ -1,7 +1,7 @@
 package com.dreu.planartools.mixin;
 
+import com.dreu.planartools.CachedSupplier;
 import com.dreu.planartools.config.BlocksConfig;
-import com.google.common.base.Suppliers;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.spongepowered.asm.mixin.Mixin;
@@ -10,15 +10,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.function.Supplier;
-
 import static com.dreu.planartools.config.BlocksConfig.BLOCKS;
 
 @Mixin(Block.class)
 @SuppressWarnings("unused")
 public class BlockMixin {
     @SuppressWarnings("DataFlowIssue")
-    private final Supplier<BlocksConfig.Properties> blockProperties = Suppliers.memoize(() -> BLOCKS.get(ForgeRegistries.BLOCKS.getKey(this.asBlock()).toString()));
+    private final CachedSupplier<BlocksConfig.Properties> blockProperties = CachedSupplier.of(() -> BLOCKS.get(ForgeRegistries.BLOCKS.getKey(this.asBlock()).toString()));
 
     @Inject(method = "getExplosionResistance", at = @At("HEAD"), cancellable = true)
     private void onGetExplosionResistance(CallbackInfoReturnable<Float> cir) {
