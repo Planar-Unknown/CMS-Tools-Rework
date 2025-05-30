@@ -102,6 +102,10 @@ tasks.named('jar', Jar).configure {
     finalizedBy 'reobfJar'
 }
 
+tasks.matching { it.name == "runClient" }.all {
+    jvmArgs "-Xmx4G", "-Xms1G"
+}
+
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
