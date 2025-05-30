@@ -2,6 +2,7 @@ package com.dreu.planartools.config;
 
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.toml.TomlParser;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.Tiers;
@@ -75,15 +76,19 @@ public class ToolsConfig {
             
             "minecraft:shears" = {Shears = 100, MiningSpeed = 12}
             """;
-    public static final Config CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "tools.toml", TEMPLATE_CONFIG_STRING, false);
+    public static Config CONFIG;
+    public static void parse() {
+        CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "tools.toml", TEMPLATE_CONFIG_STRING, false);
+    }
     private static final Config TEMPLATE_CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
 
     public static final ArrayList<String> REGISTERED_TOOL_TYPES = new ArrayList<>();
     public static final ArrayList<Integer> REGISTERED_TOOL_COLORS = new ArrayList<>();
 
     public static void populateToolTypes() {
+        REGISTERED_TOOL_TYPES.clear();
         //noinspection unchecked
-        getOrDefault("ToolTypes", ArrayList.class).forEach((toolType) -> {
+        getOrDefault("ToolTypes", ArrayList.class).forEach(toolType -> {
             String entry = toolType.toString();
             String[] parts = entry.split(":");
             REGISTERED_TOOL_TYPES.add(parts[0]);
@@ -95,8 +100,9 @@ public class ToolsConfig {
         });
     }
 
-    public static final Map<String, Properties> TOOLS = new HashMap<>();
+    public static Map<String, Properties> TOOLS = new HashMap<>();
     public static void populateTools() {
+        TOOLS.clear();
         getOrDefault("Tools", Config.class).valueMap().forEach((itemId, tool) -> {
             if (!itemId.contains(":")) {
                 addConfigIssue(INFO, (byte) 2, "No namespace found in item id: <{}> declared in config: [{}] | Skipping...", itemId, logFileName(templateFileName));
@@ -142,6 +148,38 @@ public class ToolsConfig {
         }
     }
 
-    public record Properties(PowerData[] data, int miningSpeed) {}
-    public record PowerData(byte toolTypeId, byte tierId, int power) {}
+    public record Properties(PowerData[] data, int miningSpeed) {
+        public void write(FriendlyByteBuf buf) {
+            PowerData[] dataArray = this.data();
+            buf.writeVarInt(dataArray.length);
+            for (PowerData pd : dataArray)
+                PowerData.write(buf, pd);
+            buf.writeInt(this.miningSpeed());
+        }
+
+        public static Properties read(FriendlyByteBuf buf) {
+            int length = buf.readVarInt();
+            PowerData[] dataArray = new PowerData[length];
+            for (int i = 0; i < length; i++)
+                dataArray[i] = PowerData.readPowerData(buf);
+            int miningSpeed = buf.readInt();
+            return new Properties(dataArray, miningSpeed);
+        }
+
+
+    }
+    public record PowerData(byte toolTypeId, byte tierId, int power) {
+        public static void write(FriendlyByteBuf buf, PowerData powerData) {
+            buf.writeByte(powerData.toolTypeId());
+            buf.writeByte(powerData.tierId());
+            buf.writeInt(powerData.power());
+        }
+
+        public static PowerData readPowerData(FriendlyByteBuf buf) {
+            byte toolTypeId = buf.readByte();
+            byte tierId = buf.readByte();
+            int power = buf.readInt();
+            return new PowerData(toolTypeId, tierId, power);
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package com.dreu.planartools.config;
 
 import com.electronwill.nightconfig.core.Config;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -52,44 +53,54 @@ public class BlocksConfig {
     Axe = {ApplyMiningSpeed = true}
     """;
 
-    public static final Config CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "blocks.toml", TEMPLATE_CONFIG_STRING, false);
-
-    public static final Map<String, Properties> BLOCKS = new HashMap<>();
+    public static Config CONFIG;
+    public static void parse() {
+        CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "blocks.toml", TEMPLATE_CONFIG_STRING, false);
+    }
+    public static Map<String, Properties> BLOCKS = new HashMap<>();
     public static void populateBlocks() {
+        BLOCKS.clear();
         CONFIG.valueMap().forEach((blockId, block) -> {
             if (!blockId.contains(":")) {
                 addConfigIssue(INFO, (byte) 2, "No namespace found in item id: <{}> declared in config: [{}] | Skipping...", blockId, logFileName(templateFileName));
                 return;
             }
-            if (ModList.get().isLoaded(blockId.substring(0, blockId.indexOf(":")))) {
-                Map<Byte, ResistanceData> resistanceDataMap = new HashMap<>();
-
-                Integer defaultResistance = getOrElse(((Config) block), blockId, "DefaultResistance", 0, Integer.class);
-
-                for (Map.Entry<String, Object> property : ((Config) block).valueMap().entrySet()) {
-                    switch (property.getKey()) {
-                        case "DefaultResistance", "ExplosionResistance", "Hardness" -> {continue;}
-                        default -> resistanceDataMap.put(
-                                (byte) REGISTERED_TOOL_TYPES.indexOf(property.getKey()),
-                                new ResistanceData(
-                                        getOrElse(((Config) property.getValue()), property.getKey(), "Resistance", defaultResistance, Integer.class),
-                                        getOrElse(((Config) property.getValue()), property.getKey(), "ApplyMiningSpeed", false, Boolean.class)
-                                )
-                        );
-                    }
-                    if (!REGISTERED_TOOL_TYPES.contains(property.getKey())) {
-                        addConfigIssue(ERROR, (byte) 6, "\"{}\" in config file [{}] is NOT a registered tool type!", property.getKey(), logFileName(PRESET_FOLDER_NAME + "blocks.toml"));
-                    }
-                }
-
-                BLOCKS.put(blockId, new Properties(
-                        getOptionalFloat(((Config) block), "Hardness"),
-                        getOptionalFloat(((Config) block), "ExplosionResistance"),
-                        defaultResistance,
-                        resistanceDataMap
-                ));
-            } else
+            char[] chars = blockId.toCharArray();
+            if (chars[1] == '#') {
+                //Handle tag loading here
+                return;
+            }
+            if (!ModList.get().isLoaded(blockId.substring(0, blockId.indexOf(":")))) {
                 addConfigIssue(INFO, (byte) 2, "Config [{}] declared Block Resistance values for <{}> when {{}} was not loaded or does not exist in this modpack | Skipping Block...", logFileName(PRESET_FOLDER_NAME + "blocks.toml"), blockId, blockId.substring(0, blockId.indexOf(":")));
+                return;
+            }
+
+            Map<Byte, ResistanceData> resistanceDataMap = new HashMap<>();
+
+            Integer defaultResistance = getOrElse(((Config) block), blockId, "DefaultResistance", 0, Integer.class);
+
+            for (Map.Entry<String, Object> property : ((Config) block).valueMap().entrySet()) {
+                switch (property.getKey()) {
+                    case "DefaultResistance", "ExplosionResistance", "Hardness" -> {continue;}
+                    default -> resistanceDataMap.put(
+                            (byte) REGISTERED_TOOL_TYPES.indexOf(property.getKey()),
+                            new ResistanceData(
+                                    getOrElse(((Config) property.getValue()), property.getKey(), "Resistance", defaultResistance, Integer.class),
+                                    getOrElse(((Config) property.getValue()), property.getKey(), "ApplyMiningSpeed", false, Boolean.class)
+                            )
+                    );
+                }
+                if (!REGISTERED_TOOL_TYPES.contains(property.getKey())) {
+                    addConfigIssue(ERROR, (byte) 6, "\"{}\" in config file [{}] is NOT a registered tool type!", property.getKey(), logFileName(PRESET_FOLDER_NAME + "blocks.toml"));
+                }
+            }
+
+            BLOCKS.put(blockId, new Properties(
+                    getOptionalFloat(((Config) block), "Hardness"),
+                    getOptionalFloat(((Config) block), "ExplosionResistance"),
+                    defaultResistance,
+                    resistanceDataMap
+            ));
         });
     }
 
@@ -121,6 +132,40 @@ public class BlocksConfig {
         return BLOCKS.get(ForgeRegistries.BLOCKS.getKey(block).toString());
     }
 
-    public record Properties(Optional<Float> hardness, Optional<Float> explosionResistance, int defaultResistance, Map<Byte, ResistanceData> data) {}
+    public record Properties(Optional<Float> hardness, Optional<Float> explosionResistance, int defaultResistance, Map<Byte, ResistanceData> data) {
+
+        public void write(FriendlyByteBuf buf) {
+            buf.writeBoolean(this.hardness().isPresent());
+            this.hardness().ifPresent(buf::writeFloat);
+
+            buf.writeBoolean(this.explosionResistance().isPresent());
+            this.explosionResistance().ifPresent(buf::writeFloat);
+
+            buf.writeInt(this.defaultResistance());
+
+            Map<Byte, ResistanceData> map = this.data();
+            buf.writeInt(map.size());
+            for (Map.Entry<Byte, ResistanceData> entry : map.entrySet()) {
+                buf.writeByte(entry.getKey());
+                buf.writeInt(entry.getValue().resistance());
+                buf.writeBoolean(entry.getValue().applyMiningSpeed());
+            }
+        }
+
+        public static Properties read(FriendlyByteBuf buf) {
+            Optional<Float> hardness = buf.readBoolean() ? Optional.of(buf.readFloat()) : Optional.empty();
+            Optional<Float> explosionResistance = buf.readBoolean() ? Optional.of(buf.readFloat()) : Optional.empty();
+            int defaultResistance = buf.readInt();
+
+            int mapSize = buf.readInt();
+            Map<Byte, ResistanceData> map = new HashMap<>();
+            for (int i = 0; i < mapSize; i++) {
+                byte key = buf.readByte();
+                ResistanceData value = new ResistanceData(buf.readInt(), buf.readBoolean());
+                map.put(key, value);
+            }
+            return new Properties(hardness, explosionResistance, defaultResistance, map);
+        }
+    }
     public record ResistanceData(int resistance, boolean applyMiningSpeed) {}
 }

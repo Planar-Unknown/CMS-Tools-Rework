@@ -45,13 +45,22 @@ public class GeneralConfig {
 
     public static final Config DEFAULT_CONFIG = new TomlParser().parse(DEFAULT_CONFIG_STRING);
 
-    public static final Config CONFIG = parseFileOrDefault(fileName, DEFAULT_CONFIG_STRING, true);
+    public static Config CONFIG;
+    public static void parse() {
+        CONFIG = parseFileOrDefault(fileName, DEFAULT_CONFIG_STRING, true);
+    }
 
-    public static final boolean USE_GLOBAL_DEFAULT = getOrDefault("UseGlobalDefault", Boolean.class);
-    public static final int GLOBAL_DEFAULT_RESISTANCE = USE_GLOBAL_DEFAULT ? getOrDefault("GlobalDefaultResistance", Integer.class) : 0;
+    public static int GLOBAL_DEFAULT_RESISTANCE;
+    public static boolean USE_GLOBAL_DEFAULT;
+    private static String PRESET;
+    public static String PRESET_FOLDER_NAME;
 
-    private static final String PRESET = getOrDefault("Preset", String.class);
-    public static final String PRESET_FOLDER_NAME = String.format("config/%s/presets/%s/", MODID, PRESET);
+    public static void populateGeneralConfig() {
+        USE_GLOBAL_DEFAULT = getOrDefault("UseGlobalDefault", Boolean.class);
+        GLOBAL_DEFAULT_RESISTANCE = USE_GLOBAL_DEFAULT ? getOrDefault("GlobalDefaultResistance", Integer.class) : 0;
+        PRESET = getOrDefault("Preset", String.class);
+        PRESET_FOLDER_NAME = String.format("config/%s/presets/%s/", MODID, PRESET);
+    }
 
     private static <T> T getOrDefault(String key, Class<T> clazz) {
         try {

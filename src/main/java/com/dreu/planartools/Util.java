@@ -27,6 +27,25 @@ import static com.dreu.planartools.PlanarTools.MODID;
 public class Util {
     public static boolean wereIssuesWrittenToFile = false;
     public static final byte MAX_DISPLAYED_ISSUES = 3;
+    public static int shouldUpdateTime = getUpdateTime();
+
+    public static void parseAndProcessConfig() {
+        CONFIG_ISSUES.clear();
+        wereIssuesWrittenToFile = false;
+        GeneralConfig.parse();
+        populateGeneralConfig();
+        if (GeneralConfig.needsRepair) GeneralConfig.repair();
+        BlocksConfig.parse();
+        ToolsConfig.parse();
+        populateToolTypes();
+        populateTagKeys();
+        populateTools();
+        populateBlocks();
+    }
+
+    public static int getUpdateTime() {
+        return (int) (System.currentTimeMillis() / 1000);
+    }
 
     @SuppressWarnings("unused")
     public enum LogLevel {

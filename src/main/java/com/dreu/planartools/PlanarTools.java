@@ -1,8 +1,8 @@
 package com.dreu.planartools;
 
 import com.dreu.planartools.config.BlocksConfig;
-import com.dreu.planartools.config.GeneralConfig;
 import com.dreu.planartools.config.ToolsConfig;
+import com.dreu.planartools.network.PacketHandler;
 import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
@@ -20,8 +20,7 @@ import java.util.ArrayList;
 
 import static com.dreu.planartools.Util.LogLevel.WARN;
 import static com.dreu.planartools.Util.addConfigIssue;
-import static com.dreu.planartools.config.BlocksConfig.populateBlocks;
-import static com.dreu.planartools.config.ToolsConfig.*;
+import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 
 @Mod(PlanarTools.MODID)
 public class PlanarTools {
@@ -33,22 +32,17 @@ public class PlanarTools {
     public static final String MODID = "planar_tools";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    @SuppressWarnings("unchecked") public static final ArrayList<TagKey<Block>> TAG_KEYS_BY_TOOL_TYPE = new ArrayList<>();
+    public static final ArrayList<TagKey<Block>> TAG_KEYS_BY_TOOL_TYPE = new ArrayList<>();
 
     public PlanarTools() {
-        populateToolTypes();
-        populateTagKeys();
-        if (GeneralConfig.needsRepair) GeneralConfig.repair();
-        populateTools();
-        populateBlocks();
-//        preloadConfigs();
+        PacketHandler.register();
         resetTemplate(BlocksConfig.templateFileName, BlocksConfig.TEMPLATE_CONFIG_STRING);
         resetTemplate(ToolsConfig.templateFileName, ToolsConfig.TEMPLATE_CONFIG_STRING);
     }
 
-    private void populateTagKeys() {
-        for (int i = 0; i < REGISTERED_TOOL_TYPES.size(); i++) {
-            String toolType = REGISTERED_TOOL_TYPES.get(i);
+    public static void populateTagKeys() {
+        TAG_KEYS_BY_TOOL_TYPE.clear();
+        for (String toolType : REGISTERED_TOOL_TYPES) {
             String tagKeyName = "mineable/" + toolType.toLowerCase();
             TAG_KEYS_BY_TOOL_TYPE.add(BlockTags.create(new ResourceLocation(tagKeyName)));
         }
