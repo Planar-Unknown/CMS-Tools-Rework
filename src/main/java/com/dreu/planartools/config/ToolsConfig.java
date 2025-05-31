@@ -3,10 +3,12 @@ package com.dreu.planartools.config;
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.toml.TomlParser;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.Tiers;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.*;
 
@@ -77,7 +79,7 @@ public class ToolsConfig {
             """;
     public static Config CONFIG;
     public static void parse() {
-        CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "tools.toml", TEMPLATE_CONFIG_STRING, false);
+        CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "tools.toml", TEMPLATE_CONFIG_STRING);
     }
     private static final Config TEMPLATE_CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
 
@@ -104,45 +106,61 @@ public class ToolsConfig {
         TOOLS.clear();
         getOrDefault("Tools", Config.class).valueMap().forEach((itemId, tool) -> {
             if (!itemId.contains(":")) {
-                addConfigIssue(INFO, (byte) 2, "No namespace found in item id: <{}> declared in config: [{}] | Skipping...", itemId, logFileName(templateFileName));
+                addConfigIssue(INFO, (byte) 2, "No namespace found in item id: <{}> declared in config: [{}] | Skipping...", itemId, PRESET_FOLDER_NAME + "tools.toml");
                 return;
             }
             if (ModList.get().isLoaded(itemId.substring(0, itemId.indexOf(":")))) {
-                List<PowerData> powerDataList = new ArrayList<>();
-                Integer miningSpeed = 1;
-                for (Map.Entry<String, Object> property : ((Config) tool).valueMap().entrySet()) {
-                    if (property.getKey().equals("MiningSpeed")) miningSpeed = (Integer) property.getValue();
-                    else {
-                        if (!REGISTERED_TOOL_TYPES.contains(property.getKey())) {
-                            addConfigIssue(ERROR, (byte) 6, "\"{}\" declared for <{}> in config file [{}] is NOT a registered tool type!", property.getKey(), itemId, logFileName(PRESET_FOLDER_NAME + "tools.toml"));
+                if (ForgeRegistries.ITEMS.containsKey(new ResourceLocation(itemId))) {
+                    List<PowerData> powerDataList = new ArrayList<>();
+                    Integer miningSpeed = 1;
+                    for (Map.Entry<String, Object> property : ((Config) tool).valueMap().entrySet()) {
+                        if (property.getKey().equals("MiningSpeed")) miningSpeed = (Integer) property.getValue();
+                        else {
+                            String toolType = property.getKey();
+                            if (!REGISTERED_TOOL_TYPES.contains(toolType)) {
+                                addConfigIssue(ERROR, (byte) 6, "\"{}\" declared for <{}> in config file [{}] is NOT a registered tool type! | Skipping power type...", toolType, itemId, PRESET_FOLDER_NAME + "tools.toml");
+                                break;
+                            }
+                            Integer toolPower = tryCast(property.getValue(), Integer.class, itemId +  "." + toolType);
+                            if (toolPower == null) break;
+                            powerDataList.add(new PowerData(
+                                (byte) REGISTERED_TOOL_TYPES.indexOf(toolType),
+                                (byte) Mth.clamp(Math.floor(toolPower * 0.05), 0, TIERS_BY_ID.length),
+                                toolPower
+                            ));
+
                         }
-                        powerDataList.add(new PowerData(
-                                (byte) REGISTERED_TOOL_TYPES.indexOf(property.getKey()),
-                                (byte) Mth.clamp(Math.floor((int)property.getValue()*0.05), 0, TIERS_BY_ID.length),
-                                (int) property.getValue()
-                        ));
-
                     }
-                }
-                powerDataList.sort(Comparator.comparingInt(PowerData::toolTypeId));
 
-                TOOLS.put(itemId, new Properties(
-                    powerDataList.toArray(new PowerData[0]),
-                    miningSpeed
-                ));
-            } else addConfigIssue(INFO, (byte) 2, "Config [{}] declared tool power values for <{}> when {{}} was not loaded or does not exist in this modpack | Skipping Item...", logFileName(templateFileName), itemId, itemId.substring(0, itemId.indexOf(":")));
+                    powerDataList.sort(Comparator.comparingInt(PowerData::toolTypeId));
+
+                    TOOLS.put(itemId, new Properties(
+                        powerDataList.toArray(new PowerData[0]),
+                        miningSpeed
+                    ));
+                } else addConfigIssue(INFO, (byte) 2, "Config [{}] declared tool power values for <{}> which does not exist, check for typos! | Skipping Item...", PRESET_FOLDER_NAME + "tools.toml", itemId);
+            } else addConfigIssue(INFO, (byte) 2, "Config [{}] declared tool power values for <{}> when {{}} was not loaded or does not exist in this modpack | Skipping Item...", PRESET_FOLDER_NAME + "tools.toml", itemId, itemId.substring(0, itemId.indexOf(":")));
         });
+    }
+
+    private static <T> T tryCast(Object value, Class<T> clazz, String key) {
+        try {
+            return clazz.cast(value);
+        } catch (Exception e) {
+            addConfigIssue(ERROR, (byte) 4, "Value: \"{}\" for '{}' is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Skipping power type...", value, key, PRESET_FOLDER_NAME + "tools.toml", clazz.getSimpleName(), value.getClass().getSimpleName());
+            return null;
+        }
     }
 
     private static <T> T getOrDefault(String key, Class<T> clazz) {
         try {
             if ((CONFIG.get(key) == null)) {
-                addConfigIssue(ERROR, (byte) 4, "Key \"{}\" is missing from config [{}] | Using basic Template instead...", key, logFileName(PRESET_FOLDER_NAME + "tools.toml"));
+                addConfigIssue(ERROR, (byte) 4, "Key \"{}\" is missing from config [{}] | Using basic Template instead...", key, PRESET_FOLDER_NAME + "tools.toml");
                 return clazz.cast(TEMPLATE_CONFIG.get(key));
             }
             return clazz.cast(CONFIG.get(key));
         } catch (Exception e) {
-            addConfigIssue(ERROR, (byte) 4, "Value: \"{}\" for \"{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Using basic Template instead...", CONFIG.get(key), key, logFileName(PRESET_FOLDER_NAME + "tools.toml"), clazz.getTypeName(), CONFIG.get(key).getClass().getTypeName());
+            addConfigIssue(ERROR, (byte) 4, "Value: \"{}\" for '{}' is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Using basic Template instead...", CONFIG.get(key), key, PRESET_FOLDER_NAME + "tools.toml", clazz.getSimpleName(), CONFIG.get(key).getClass().getSimpleName());
             return clazz.cast(TEMPLATE_CONFIG.get(key));
         }
     }

@@ -265,7 +265,7 @@ public class Helpers {
         }
     }
 
-    public static Config parseFileOrDefault(String fileName, String defaultConfig, boolean rewriteIfFailedToParse) {
+    public static Config parseFileOrDefault(String fileName, String defaultConfig) {
         Path filePath = Path.of(fileName);
         try {
             Files.createDirectories(filePath.getParent());
@@ -278,14 +278,6 @@ public class Helpers {
                     });
         } catch (Exception e) {
             addConfigIssue(LogLevel.ERROR, (byte) 10, "Exception encountered during parsing of config file: [{}]. The hardcoded default config will be used | Exception: {}", fileName, e.getMessage());
-            if (rewriteIfFailedToParse) {
-                addConfigIssue(LogLevel.INFO, (byte) 2, "Rewriting config file: [{}] in response to parsing failure", fileName);
-                try (FileWriter writer = new FileWriter(filePath.toFile().getAbsolutePath())) {
-                    writer.write(defaultConfig);
-                } catch (IOException io) {
-                    addConfigIssue(LogLevel.ERROR, (byte) 10, "Unexpected exception encountered during rewriting of faulty config file: [{}] | Exception: {}", fileName, io.getMessage());
-                }
-            }
             return new TomlParser().parse(defaultConfig);
         }
     }

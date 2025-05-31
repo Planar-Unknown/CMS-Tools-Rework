@@ -55,14 +55,14 @@ public class BlocksConfig {
 
     public static Config CONFIG;
     public static void parse() {
-        CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "blocks.toml", TEMPLATE_CONFIG_STRING, false);
+        CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "blocks.toml", TEMPLATE_CONFIG_STRING);
     }
     public static Map<String, Properties> BLOCKS = new HashMap<>();
     public static void populateBlocks() {
         BLOCKS.clear();
         CONFIG.valueMap().forEach((blockId, block) -> {
             if (!blockId.contains(":")) {
-                addConfigIssue(INFO, (byte) 2, "No namespace found in item id: <{}> declared in config: [{}] | Skipping...", blockId, logFileName(templateFileName));
+                addConfigIssue(INFO, (byte) 2, "No namespace found in item id: <{}> declared in config: [{}] | Skipping...", blockId, PRESET_FOLDER_NAME + "blocks.toml");
                 return;
             }
             char[] chars = blockId.toCharArray();
@@ -71,7 +71,7 @@ public class BlocksConfig {
                 return;
             }
             if (!ModList.get().isLoaded(blockId.substring(0, blockId.indexOf(":")))) {
-                addConfigIssue(INFO, (byte) 2, "Config [{}] declared Block Resistance values for <{}> when {{}} was not loaded or does not exist in this modpack | Skipping Block...", logFileName(PRESET_FOLDER_NAME + "blocks.toml"), blockId, blockId.substring(0, blockId.indexOf(":")));
+                addConfigIssue(INFO, (byte) 2, "Config [{}] declared Block Resistance values for <{}> when {{}} was not loaded or does not exist in this modpack | Skipping Block...", PRESET_FOLDER_NAME + "blocks.toml", blockId, blockId.substring(0, blockId.indexOf(":")));
                 return;
             }
 
@@ -91,7 +91,7 @@ public class BlocksConfig {
                     );
                 }
                 if (!REGISTERED_TOOL_TYPES.contains(property.getKey())) {
-                    addConfigIssue(ERROR, (byte) 6, "\"{}\" in config file [{}] is NOT a registered tool type!", property.getKey(), logFileName(PRESET_FOLDER_NAME + "blocks.toml"));
+                    addConfigIssue(ERROR, (byte) 6, "\"{}\" in config file [{}] is NOT a registered tool type!", property.getKey(), PRESET_FOLDER_NAME + "blocks.toml");
                 }
             }
 
@@ -108,7 +108,7 @@ public class BlocksConfig {
         try {
             clazz.cast(config.get(key));
         } catch (Exception e) {
-            addConfigIssue(WARN, (byte) 4, "Value: \"{}\" for \"{}.{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Ignoring property...", config.get(key), parentKey, key, logFileName(PRESET_FOLDER_NAME + "blocks.toml"), Float.class.getTypeName(), config.get(key).getClass().getTypeName());
+            addConfigIssue(WARN, (byte) 4, "Value: \"{}\" for \"{}.{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Ignoring property...", config.get(key), parentKey, key, PRESET_FOLDER_NAME + "blocks.toml", clazz.getSimpleName(), config.get(key).getClass().getSimpleName());
             return fallback;
         }
         T toReturn = config.get(key);
@@ -120,7 +120,7 @@ public class BlocksConfig {
             //noinspection RedundantClassCall
             Number.class.cast(values.get(key));
         } catch (Exception e) {
-            addConfigIssue(WARN, (byte) 4, "Value: \"{}\" for \"{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Ignoring property...", values.get(key), key, logFileName(PRESET_FOLDER_NAME + "tools.toml"), Float.class.getTypeName(), values.get(key).getClass().getTypeName());
+            addConfigIssue(WARN, (byte) 4, "Value: \"{}\" for \"{}\" is an invalid type in config [{}] | Expected: 'Float' but got: '{}' | Ignoring property...", values.get(key), key, PRESET_FOLDER_NAME + "tools.toml", values.get(key).getClass().getSimpleName());
             return Optional.empty();
         }
         Number explosionResistance = values.get(key);

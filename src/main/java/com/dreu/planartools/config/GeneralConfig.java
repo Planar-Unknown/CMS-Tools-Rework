@@ -23,10 +23,14 @@ public class GeneralConfig {
                     "# To use a custom preset, create a folder in: config/planar_tools/presets/[your-preset-name]\n" +
                     "# Add both blocks.toml and tools.toml to your preset folder.\n" +
                     "# Use the \"template\" preset in config/planar_tools/presets/template as an example.\n" +
-                    "Preset = \"" + PRESET + "\""
+                    "Preset = \"" + PRESET + "\"\n\n" +
+                    "# When true, the config will be parsed every time you join a world. This is so modpack\n" +
+                    "# developers can test changes without needing to constantly restart the whole game.\n" +
+                    "# If a server has this enabled it will parse every time any player joins.\n" +
+                    "Hotswappable = " + HOTSWAPPABLE + " # This should be false for regular gameplay."
             );
-        } catch (IOException io) {
-            addConfigIssue(ERROR, (byte) 5, "Encountered exception while writing repaired config file [{}] | Exception: {}", fileName, io.getMessage());
+        } catch (Exception e) {
+            addConfigIssue(ERROR, (byte) 5, "Encountered exception while writing repaired config file [{}] | Exception: {}", fileName, e.getMessage());
         }
     }
 
@@ -51,7 +55,7 @@ public class GeneralConfig {
 
     public static Config CONFIG;
     public static void parse() {
-        CONFIG = parseFileOrDefault(fileName, DEFAULT_CONFIG_STRING, true);
+        CONFIG = parseFileOrDefault(fileName, DEFAULT_CONFIG_STRING);
     }
 
     public static int GLOBAL_DEFAULT_RESISTANCE;
@@ -71,13 +75,13 @@ public class GeneralConfig {
     public static <T> T getOrDefault(String key, Class<T> clazz) {
         try {
             if ((CONFIG.get(key) == null)) {
-                addConfigIssue(WARN, (byte) 4, "Key \"{}\" is missing from config [{}] | Marking config file for repair...", key, logFileName(fileName));
+                addConfigIssue(WARN, (byte) 4, "Key \"{}\" is missing from config [{}] | Marking config file for repair...", key, fileName);
                 needsRepair = true;
                 return clazz.cast(DEFAULT_CONFIG.get(key));
             }
             return clazz.cast(CONFIG.get(key));
         } catch (Exception e) {
-            addConfigIssue(WARN, (byte) 4, "Value: \"{}\" for \"{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Marking config file for repair...", CONFIG.get(key), key, logFileName(fileName), clazz.getTypeName(), CONFIG.get(key).getClass().getTypeName());
+            addConfigIssue(WARN, (byte) 4, "Value: \"{}\" for \"{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Marking config file for repair...", CONFIG.get(key), key, fileName, clazz.getSimpleName(), CONFIG.get(key).getClass().getSimpleName());
             needsRepair = true;
             return clazz.cast(DEFAULT_CONFIG.get(key));
         }
