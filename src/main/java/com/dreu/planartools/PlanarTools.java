@@ -1,6 +1,7 @@
 package com.dreu.planartools;
 
 import com.dreu.planartools.config.BlocksConfig;
+import com.dreu.planartools.config.GeneralConfig;
 import com.dreu.planartools.config.ToolsConfig;
 import com.dreu.planartools.network.PacketHandler;
 import com.mojang.logging.LogUtils;
@@ -24,10 +25,14 @@ import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 
 @Mod(PlanarTools.MODID)
 public class PlanarTools {
+    //Todo: Test cachedsuppliers
+    //Todo: Check if items/blocks exist before adding them
+    //Todo: lastUpdateTimePacket
     //Todo: Toggleable Waila
-    //Todo: Nbt system for upgrading tools
     //Todo: Tags compatibility, Vanilla tags and Custom TOML / Json tags
     //Todo: Make enchantments work on items that have been given tool types
+    //Todo: Nbt system for upgrading tools
+    //Todo: modpack creator configurable enchants that interact with the Nbt system
     //Eventually make blocks store their destroy progress
     public static final String MODID = "planar_tools";
     public static final Logger LOGGER = LogUtils.getLogger();
@@ -36,6 +41,10 @@ public class PlanarTools {
 
     public PlanarTools() {
         PacketHandler.register();
+        GeneralConfig.parse();
+        GeneralConfig.populate();
+        ToolsConfig.parse();
+        BlocksConfig.parse();
         resetTemplate(BlocksConfig.templateFileName, BlocksConfig.TEMPLATE_CONFIG_STRING);
         resetTemplate(ToolsConfig.templateFileName, ToolsConfig.TEMPLATE_CONFIG_STRING);
     }

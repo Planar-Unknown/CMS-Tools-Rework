@@ -10,6 +10,7 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.Tiers;
 import org.jetbrains.annotations.NotNull;
@@ -20,16 +21,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.function.BiConsumer;
 
 import static com.dreu.planartools.PlanarTools.*;
 import static com.dreu.planartools.config.BlocksConfig.populateBlocks;
-import static com.dreu.planartools.config.GeneralConfig.populateGeneralConfig;
+import static com.dreu.planartools.config.GeneralConfig.populate;
 import static com.dreu.planartools.config.ToolsConfig.populateToolTypes;
 import static com.dreu.planartools.config.ToolsConfig.populateTools;
+import static java.lang.String.format;
 
 
 public class Util {
+    public static boolean configHasBeenParsed = false;
     public static boolean wereIssuesWrittenToFile = false;
     public static final byte MAX_DISPLAYED_ISSUES = 3;
     public static int shouldUpdateTime = getUpdateTime();
@@ -38,7 +42,7 @@ public class Util {
         CONFIG_ISSUES.clear();
         wereIssuesWrittenToFile = false;
         GeneralConfig.parse();
-        populateGeneralConfig();
+        populate();
         if (GeneralConfig.needsRepair) GeneralConfig.repair();
         BlocksConfig.parse();
         ToolsConfig.parse();
@@ -46,6 +50,9 @@ public class Util {
         populateTagKeys();
         populateTools();
         populateBlocks();
+        configHasBeenParsed = true;
+        writeConfigIssuesToFile();
+        shouldUpdateTime = getUpdateTime();
     }
 
     public static int getUpdateTime() {
@@ -81,7 +88,7 @@ public class Util {
         }
 
         public MutableComponent header() {
-            return header;
+            return header.copy();
         }
     }
 
@@ -94,10 +101,13 @@ public class Util {
         return logFileName;
     }
 
-    public record Issue(Component message, byte priority) implements Comparable<Issue> {
+    public record Issue(LogLevel level, String contents, byte priority) implements Comparable<Issue> {
         @Override
         public int compareTo(@NotNull Issue other) {
             return Byte.compare(other.priority, this.priority);
+        }
+        public Component message() {
+            return level.header().append(formatError(contents));
         }
     }
 
@@ -106,9 +116,7 @@ public class Util {
     public static void addConfigIssue(LogLevel level, byte priority, String message, Object... args) {
         level.log(message, args);
         String toFormat = message.replace("{}", "%s");
-        CONFIG_ISSUES.add(new Issue(level.header().copy().append(formatError(String.format(toFormat, args))), priority));
-//        Collections.sort(CONFIG_ISSUES);
-        //Todo: debug here with a for loop on config issues
+        CONFIG_ISSUES.add(new Issue(level, format(toFormat, args), priority));
     }
 
     public static @NotNull MutableComponent formatError(String msg) {
@@ -180,10 +188,10 @@ public class Util {
                         break;
                     }
                     part = Component.literal(bracketed).withStyle(style -> style.withColor(0x3381ff));
-                    if (Files.exists(Path.of("config/" + MODID + "/" + inner).toAbsolutePath())) {
+                    if (Files.exists(Path.of(inner).toAbsolutePath())) {
                         part = part.withStyle(style -> style
                                 .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE,
-                                        Path.of("config/" + MODID + "/" + inner).toAbsolutePath().toString()))
+                                        Path.of(inner).toAbsolutePath().toString()))
                                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                                         Component.translatable("planar_tools.clickToOpen")))
                         );
@@ -202,6 +210,59 @@ public class Util {
         return fullComponent;
     }
 
+    public static void sendConfigIssuesInChat(Player player) {
+        if (!CONFIG_ISSUES.isEmpty()) {
+            Collections.sort(CONFIG_ISSUES);
+            player.sendSystemMessage(Component.literal("-----------------------------------------------------").withStyle(ChatFormatting.LIGHT_PURPLE));
+            player.sendSystemMessage(
+                Component.literal("[" + CONFIG_ISSUES.size() + "] ").withStyle(ChatFormatting.GREEN)
+                    .append(Component.translatable("planar_tools.issuesDetected").withStyle(ChatFormatting.GOLD))
+                    .append(Component.literal(" {" + MODID + "}: ").withStyle(ChatFormatting.YELLOW))
+            );
+            for (int i = 0; i < Math.min(MAX_DISPLAYED_ISSUES, CONFIG_ISSUES.size()); i++) {
+                player.sendSystemMessage(CONFIG_ISSUES.get(i).message());
+            }
+
+            if (CONFIG_ISSUES.size() > MAX_DISPLAYED_ISSUES) {
+                player.sendSystemMessage(Component.literal("")
+                    .append(Component.literal("[+" + (CONFIG_ISSUES.size() - MAX_DISPLAYED_ISSUES) + "] ").withStyle(ChatFormatting.GREEN))
+                    .append(Component.translatable("planar_tools.readMoreAt").withStyle(ChatFormatting.GOLD))
+                    .append(Component.literal("[config/" + MODID + "/issues.log]").withStyle(style ->
+                        style.withColor(0x3381ff)
+                            .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, Path.of("config/" + MODID + "/issues.log").toAbsolutePath().toString()))
+                            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable("planar_tools.clickToOpen")))
+                    ))
+                );
+            } else {
+                player.sendSystemMessage(Component.literal("")
+                    .append(Component.translatable("planar_tools.reviewAt").withStyle(ChatFormatting.GOLD))
+                    .append(Component.literal("[config/" + MODID + "/issues.log]").withStyle(style ->
+                        style.withColor(0x3381ff)
+                            .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, Path.of("config/" + MODID + "/issues.log").toAbsolutePath().toString()))
+                            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable("planar_tools.clickToOpen")))
+                    ))
+                );
+            }
+            player.sendSystemMessage(Component.literal("-----------------------------------------------------").withStyle(ChatFormatting.LIGHT_PURPLE));
+        }
+    }
+
+    public static void writeConfigIssuesToFile() {
+        if (!wereIssuesWrittenToFile) {
+            wereIssuesWrittenToFile = true;
+            StringBuilder contents = new StringBuilder();
+            for (Issue issue : CONFIG_ISSUES) {
+                contents.append(issue.message().getString()).append("\n\n");
+            }
+            try (FileWriter writer = new FileWriter(Path.of("config/" + MODID + "/issues.log").toAbsolutePath().toString())) {
+                //noinspection ResultOfMethodCallIgnored
+                Path.of("config/" + MODID + "/").toFile().mkdirs();
+                writer.write(contents.toString());
+            } catch (IOException io) {
+                addConfigIssue(LogLevel.WARN, (byte) 10, "Unexpected Exception occurred while writing [config/planar_tools/issues.log]| Exception: {}", io.getMessage());
+            }
+        }
+    }
 
     public static Config parseFileOrDefault(String fileName, String defaultConfig, boolean rewriteIfFailedToParse) {
         Path filePath = Path.of(fileName);

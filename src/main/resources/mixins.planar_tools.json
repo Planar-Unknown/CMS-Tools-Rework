@@ -5,10 +5,10 @@
   "minVersion": "0.8",
   "refmap": "planar_tools.refmap.json",
   "mixins": [
-    "DiggerItemMixin",
-    "ItemMixin",
     "BlockMixin",
     "BlockStateBaseMixin",
+    "DiggerItemMixin",
+    "ItemMixin",
     "ShearsItemMixin"
   ],
   "injectors": {

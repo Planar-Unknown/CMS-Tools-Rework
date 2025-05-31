@@ -149,19 +149,19 @@ public class ToolsConfig {
     }
 
     public record Properties(PowerData[] data, int miningSpeed) {
-        public void write(FriendlyByteBuf buf) {
+        public void writeToBuffer(FriendlyByteBuf buf) {
             PowerData[] dataArray = this.data();
             buf.writeVarInt(dataArray.length);
             for (PowerData pd : dataArray)
-                PowerData.write(buf, pd);
+                PowerData.writeToBuffer(buf, pd);
             buf.writeInt(this.miningSpeed());
         }
 
-        public static Properties read(FriendlyByteBuf buf) {
+        public static Properties readFromBuffer(FriendlyByteBuf buf) {
             int length = buf.readVarInt();
             PowerData[] dataArray = new PowerData[length];
             for (int i = 0; i < length; i++)
-                dataArray[i] = PowerData.readPowerData(buf);
+                dataArray[i] = PowerData.readFromBuffer(buf);
             int miningSpeed = buf.readInt();
             return new Properties(dataArray, miningSpeed);
         }
@@ -169,13 +169,13 @@ public class ToolsConfig {
 
     }
     public record PowerData(byte toolTypeId, byte tierId, int power) {
-        public static void write(FriendlyByteBuf buf, PowerData powerData) {
+        public static void writeToBuffer(FriendlyByteBuf buf, PowerData powerData) {
             buf.writeByte(powerData.toolTypeId());
             buf.writeByte(powerData.tierId());
             buf.writeInt(powerData.power());
         }
 
-        public static PowerData readPowerData(FriendlyByteBuf buf) {
+        public static PowerData readFromBuffer(FriendlyByteBuf buf) {
             byte toolTypeId = buf.readByte();
             byte tierId = buf.readByte();
             int power = buf.readInt();

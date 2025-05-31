@@ -41,6 +41,11 @@ public class GeneralConfig {
             # Add both blocks.toml and tools.toml to your preset folder.
             # Use the "template" preset in config/planar_tools/presets/template as an example.
             Preset = "custom"
+            
+            # When true, the config will be parsed every time you join a world. This is so modpack
+            # developers can test changes without needing to constantly restart the whole game.
+            # If a server has this enabled it will parse every time any player joins.
+            Hotswappable = false # This should be false for regular gameplay.
             """;
 
     public static final Config DEFAULT_CONFIG = new TomlParser().parse(DEFAULT_CONFIG_STRING);
@@ -54,15 +59,17 @@ public class GeneralConfig {
     public static boolean USE_GLOBAL_DEFAULT;
     private static String PRESET;
     public static String PRESET_FOLDER_NAME;
+    public static boolean HOTSWAPPABLE;
 
-    public static void populateGeneralConfig() {
+    public static void populate() {
         USE_GLOBAL_DEFAULT = getOrDefault("UseGlobalDefault", Boolean.class);
         GLOBAL_DEFAULT_RESISTANCE = USE_GLOBAL_DEFAULT ? getOrDefault("GlobalDefaultResistance", Integer.class) : 0;
         PRESET = getOrDefault("Preset", String.class);
         PRESET_FOLDER_NAME = String.format("config/%s/presets/%s/", MODID, PRESET);
+        HOTSWAPPABLE = getOrDefault("Hotswappable", Boolean.class);
     }
 
-    private static <T> T getOrDefault(String key, Class<T> clazz) {
+    public static <T> T getOrDefault(String key, Class<T> clazz) {
         try {
             if ((CONFIG.get(key) == null)) {
                 addConfigIssue(WARN, (byte) 4, "Key \"{}\" is missing from config [{}] | Marking config file for repair...", key, logFileName(fileName));

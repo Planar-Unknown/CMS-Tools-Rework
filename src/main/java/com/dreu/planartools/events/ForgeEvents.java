@@ -9,12 +9,11 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil;
-import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.BlockHitResult;
@@ -27,31 +26,24 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.*;
 
 import static com.dreu.planartools.PlanarTools.MODID;
-import static com.dreu.planartools.Util.*;
-import static com.dreu.planartools.config.BlocksConfig.*;
-import static com.dreu.planartools.config.GeneralConfig.GLOBAL_DEFAULT_RESISTANCE;
-import static com.dreu.planartools.config.GeneralConfig.USE_GLOBAL_DEFAULT;
+import static com.dreu.planartools.config.BlocksConfig.ResistanceData;
+import static com.dreu.planartools.config.BlocksConfig.getBlockProperties;
 import static com.dreu.planartools.config.ToolsConfig.*;
 import static net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.FORGE;
 
 @Mod.EventBusSubscriber(modid = MODID, bus = FORGE)
 @SuppressWarnings({"unused", "DataFlowIssue"})
 public class ForgeEvents {
+    public static final Set<Player> playersToSendIssuesTo = new HashSet<>();
 
     @SubscribeEvent
     public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
-        writeConfigIssuesToFile();
-        if (Minecraft.getInstance().isLocalServer()){
-            parseAndProcessConfig();
-            sendConfigIssues(((ServerPlayer) event.getEntity()));
-        } else if (event.getEntity() instanceof ServerPlayer player) {
-            syncConfigs(player);
+        if (event.getEntity() instanceof ServerPlayer player) {
+            playersToSendIssuesTo.add(player);
+            PacketHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new SyncConfigS2CPacket());
         }
     }
 
@@ -140,69 +132,6 @@ public class ForgeEvents {
                         .append(": " + data.power()))
                 ));
             }
-        }
-    }
-
-
-    private static void writeConfigIssuesToFile() {
-        if (!wereIssuesWrittenToFile) {
-            wereIssuesWrittenToFile = true;
-            StringBuilder contents = new StringBuilder();
-            for (Issue issue : CONFIG_ISSUES) {
-                contents.append(issue.message().getString()).append("\n");
-            }
-            try (FileWriter writer = new FileWriter(Path.of("config/" + MODID + "/issues.log").toAbsolutePath().toString())) {
-              //noinspection ResultOfMethodCallIgnored
-              Path.of("config/" + MODID + "/").toFile().mkdirs();
-                writer.write(contents.toString());
-            } catch (IOException io) {
-                addConfigIssue(LogLevel.WARN, (byte) 10, "Unexpected Exception occurred while writing [config/planar_tools/issues.log]| Exception: {}", io.getMessage());
-            }
-        }
-    }
-
-    private static void syncConfigs(ServerPlayer player) {
-        PacketHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new SyncConfigS2CPacket(
-            BLOCKS,
-            TOOLS,
-            USE_GLOBAL_DEFAULT,
-            GLOBAL_DEFAULT_RESISTANCE
-        ));
-    }
-
-    private static void sendConfigIssues(ServerPlayer player) {
-        if (!CONFIG_ISSUES.isEmpty()) {
-            Collections.sort(CONFIG_ISSUES);
-            player.sendSystemMessage(Component.literal("-----------------------------------------------------").withStyle(ChatFormatting.LIGHT_PURPLE));
-            player.sendSystemMessage(
-                Component.literal("[" + CONFIG_ISSUES.size() + "] ").withStyle(ChatFormatting.GREEN)
-                    .append(Component.translatable("planar_tools.issuesDetected").withStyle(ChatFormatting.GOLD))
-                    .append(Component.literal(" {" + MODID + "}: ").withStyle(ChatFormatting.YELLOW))
-            );
-            for (int i = 0; i < Math.min(MAX_DISPLAYED_ISSUES, CONFIG_ISSUES.size()); i++) {
-                player.sendSystemMessage(CONFIG_ISSUES.get(i).message());
-            }
-            if (CONFIG_ISSUES.size() > MAX_DISPLAYED_ISSUES) {
-                player.sendSystemMessage(Component.literal("")
-                    .append(Component.literal("[+" + (CONFIG_ISSUES.size() - MAX_DISPLAYED_ISSUES) + "] ").withStyle(ChatFormatting.GREEN))
-                    .append(Component.translatable("planar_tools.readMoreAt").withStyle(ChatFormatting.GOLD))
-                    .append(Component.literal("[config/" + MODID + "/issues.log]").withStyle(style ->
-                        style.withColor(0x3381ff)
-                            .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, Path.of("config/" + MODID + "/issues.log").toAbsolutePath().toString()))
-                            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable("planar_tools.clickToOpen")))
-                    ))
-                );
-            } else {
-                player.sendSystemMessage(Component.literal("")
-                    .append(Component.translatable("planar_tools.reviewAt").withStyle(ChatFormatting.GOLD))
-                    .append(Component.literal("[config/" + MODID + "/issues.log]").withStyle(style ->
-                        style.withColor(0x3381ff)
-                            .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, Path.of("config/" + MODID + "/issues.log").toAbsolutePath().toString()))
-                            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable("planar_tools.clickToOpen")))
-                    ))
-                );
-            }
-            player.sendSystemMessage(Component.literal("-----------------------------------------------------").withStyle(ChatFormatting.LIGHT_PURPLE));
         }
     }
 }
