@@ -33,6 +33,7 @@ import static java.lang.String.format;
 
 
 public class Util {
+public class Helpers {
     public static boolean configHasBeenParsed = false;
     public static boolean wereIssuesWrittenToFile = false;
     public static final byte MAX_DISPLAYED_ISSUES = 3;
@@ -42,7 +43,7 @@ public class Util {
         CONFIG_ISSUES.clear();
         wereIssuesWrittenToFile = false;
         GeneralConfig.parse();
-        populate();
+        GeneralConfig.populate();
         if (GeneralConfig.needsRepair) GeneralConfig.repair();
         BlocksConfig.parse();
         ToolsConfig.parse();
@@ -92,7 +93,7 @@ public class Util {
         }
     }
 
-    public static String logFileName(String fullFileName) {
+    public static String abridgeFileName(String fullFileName) {
         String logFileName = fullFileName;
         if (logFileName.contains("config/"))
             logFileName = logFileName.replace("config/", "");
@@ -187,7 +188,7 @@ public class Util {
                         part = Component.literal(bracketed).withStyle(style -> style.withColor(ChatFormatting.RED));
                         break;
                     }
-                    part = Component.literal(bracketed).withStyle(style -> style.withColor(0x3381ff));
+                    part = Component.literal(abridgeFileName(bracketed)).withStyle(style -> style.withColor(0x3381ff));
                     if (Files.exists(Path.of(inner).toAbsolutePath())) {
                         part = part.withStyle(style -> style
                                 .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE,

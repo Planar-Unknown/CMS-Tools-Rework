@@ -11,10 +11,9 @@ import net.minecraftforge.fml.ModList;
 import java.util.*;
 
 import static com.dreu.planartools.PlanarTools.MODID;
-import static com.dreu.planartools.Util.LogLevel.ERROR;
-import static com.dreu.planartools.Util.LogLevel.INFO;
-import static com.dreu.planartools.Util.*;
+import static com.dreu.planartools.util.Helpers.*;
 import static com.dreu.planartools.config.GeneralConfig.PRESET_FOLDER_NAME;
+import static com.dreu.planartools.util.Helpers.LogLevel.*;
 
 @SuppressWarnings({"SameParameterValue"})
 public class ToolsConfig {

@@ -4,12 +4,11 @@ import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.toml.TomlParser;
 
 import java.io.FileWriter;
-import java.io.IOException;
 
 import static com.dreu.planartools.PlanarTools.MODID;
-import static com.dreu.planartools.Util.LogLevel.ERROR;
-import static com.dreu.planartools.Util.LogLevel.WARN;
-import static com.dreu.planartools.Util.*;
+import static com.dreu.planartools.util.Helpers.LogLevel.ERROR;
+import static com.dreu.planartools.util.Helpers.LogLevel.WARN;
+import static com.dreu.planartools.util.Helpers.*;
 
 public class GeneralConfig {
     public static boolean needsRepair;

@@ -19,20 +19,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
-import static com.dreu.planartools.Util.LogLevel.WARN;
-import static com.dreu.planartools.Util.addConfigIssue;
+import static com.dreu.planartools.util.Helpers.LogLevel.WARN;
+import static com.dreu.planartools.util.Helpers.addConfigIssue;
 import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 
 @Mod(PlanarTools.MODID)
 public class PlanarTools {
-    //Todo: Test cachedsuppliers
-    //Todo: Check if items/blocks exist before adding them
-    //Todo: lastUpdateTimePacket
-    //Todo: Toggleable Waila
     //Todo: Tags compatibility, Vanilla tags and Custom TOML / Json tags
     //Todo: Make enchantments work on items that have been given tool types
     //Todo: Nbt system for upgrading tools
     //Todo: modpack creator configurable enchants that interact with the Nbt system
+    //Todo: Test CachedSuppliers with 3 instances and hotswappable
     //Eventually make blocks store their destroy progress
     public static final String MODID = "planar_tools";
     public static final Logger LOGGER = LogUtils.getLogger();

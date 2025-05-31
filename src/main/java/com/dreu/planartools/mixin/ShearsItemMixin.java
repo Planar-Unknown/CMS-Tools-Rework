@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.function.Supplier;
 
 import static com.dreu.planartools.PlanarTools.TAG_KEYS_BY_TOOL_TYPE;
-import static com.dreu.planartools.Util.getTierIfPresent;
+import static com.dreu.planartools.util.Helpers.getTierIfPresent;
 import static com.dreu.planartools.config.BlocksConfig.getBlockProperties;
 import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 import static com.dreu.planartools.config.ToolsConfig.TOOLS;

@@ -1,5 +1,6 @@
 package com.dreu.planartools.events;
 
+import com.dreu.planartools.util.Helpers;
 import com.dreu.planartools.config.BlocksConfig;
 import com.dreu.planartools.config.ToolsConfig;
 import com.dreu.planartools.network.PacketHandler;
@@ -121,8 +122,9 @@ public class ForgeEvents {
 
     @SubscribeEvent @SuppressWarnings("DataFlowIssue")
     public static void appendTooltipEvent(RenderTooltipEvent.GatherComponents event) {
+        //Todo: tooltips for blocks
         String item = ForgeRegistries.ITEMS.getKey(event.getItemStack().getItem()).toString();
-        if (TOOLS.containsKey(item)) {
+        if (TOOLS.containsKey(item) && TOOLS.get(item).data().length > 0) {
             event.getTooltipElements().add(Either.left(Component.translatable("planar_tools.power_title")));
             for (PowerData data : TOOLS.get(item).data()) {
                 event.getTooltipElements().add(Either.left(

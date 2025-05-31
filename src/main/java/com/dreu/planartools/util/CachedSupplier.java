@@ -1,8 +1,8 @@
-package com.dreu.planartools;
+package com.dreu.planartools.util;
 
 import java.util.function.Supplier;
 
-import static com.dreu.planartools.Util.shouldUpdateTime;
+import static com.dreu.planartools.util.Helpers.shouldUpdateTime;
 
 @SuppressWarnings("unused")
 public class CachedSupplier<T> {
