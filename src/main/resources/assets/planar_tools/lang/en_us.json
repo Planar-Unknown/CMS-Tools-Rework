@@ -17,5 +17,7 @@
   "planar_tools.reviewAt": "Review all issues here: ",
   "planar_tools.powerNames.Banana": "Banana",
   "planar_tools.powerNames.Magic": "Magic",
-  "planar_tools.powerNames.Custom": "Custom"
+  "planar_tools.powerNames.Custom": "Custom",
+  "key.categories.planar_tools": "Planar Tools",
+  "key.planar_tools.toggleWaila": "Toggle WAILA overlay"
 }

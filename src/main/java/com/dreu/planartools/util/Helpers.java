@@ -1,4 +1,4 @@
-package com.dreu.planartools;
+package com.dreu.planartools.util;
 
 import com.dreu.planartools.config.BlocksConfig;
 import com.dreu.planartools.config.GeneralConfig;
@@ -26,18 +26,28 @@ import java.util.function.BiConsumer;
 
 import static com.dreu.planartools.PlanarTools.*;
 import static com.dreu.planartools.config.BlocksConfig.populateBlocks;
-import static com.dreu.planartools.config.GeneralConfig.populate;
 import static com.dreu.planartools.config.ToolsConfig.populateToolTypes;
 import static com.dreu.planartools.config.ToolsConfig.populateTools;
 import static java.lang.String.format;
 
 
-public class Util {
 public class Helpers {
+    public static WailaPosition WAILA_POSITION = WailaPosition.INVISIBLE;
     public static boolean configHasBeenParsed = false;
     public static boolean wereIssuesWrittenToFile = false;
     public static final byte MAX_DISPLAYED_ISSUES = 3;
     public static int shouldUpdateTime = getUpdateTime();
+
+    public enum WailaPosition {
+        INVISIBLE,
+        LEFT,
+        MIDDLE,
+        RIGHT;
+
+        public WailaPosition next() {
+            return values()[(ordinal() + 1) % values().length];
+        }
+    }
 
     public static void parseAndProcessConfig() {
         CONFIG_ISSUES.clear();

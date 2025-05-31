@@ -20,6 +20,8 @@ public class GeneralConfig {
                     "# To reset this config to default, delete this file and rerun the game.\n\n" +
                     "UseGlobalDefault = " + USE_GLOBAL_DEFAULT + "\n" +
                     "GlobalDefaultResistance = " + GLOBAL_DEFAULT_RESISTANCE + "\n\n" +
+                    "# Where the waila will be located by default. Valid values are \"left\", \"middle\", \"right\", or \"invisible\"\n" +
+                    "DefaultWailaPosition = \"" + DEFAULT_WAILA_POSITION.toString().toLowerCase() + "\"\n\n" +
                     "# To use a custom preset, create a folder in: config/planar_tools/presets/[your-preset-name]\n" +
                     "# Add both blocks.toml and tools.toml to your preset folder.\n" +
                     "# Use the \"template\" preset in config/planar_tools/presets/template as an example.\n" +
@@ -39,6 +41,9 @@ public class GeneralConfig {
             
             UseGlobalDefault = true
             GlobalDefaultResistance = -1
+            
+            # Where the waila will be located by default. Valid values are "left", "middle", "right", or "invisible"
+            DefaultWailaPosition = "middle"
             
             # To use a custom preset, create a folder in: config/planar_tools/presets/[your-preset-name]
             # Add both blocks.toml and tools.toml to your preset folder.
@@ -63,6 +68,7 @@ public class GeneralConfig {
     private static String PRESET;
     public static String PRESET_FOLDER_NAME;
     public static boolean HOTSWAPPABLE;
+    public static WailaPosition DEFAULT_WAILA_POSITION;
 
     public static void populate() {
         USE_GLOBAL_DEFAULT = getOrDefault("UseGlobalDefault", Boolean.class);
@@ -70,6 +76,8 @@ public class GeneralConfig {
         PRESET = getOrDefault("Preset", String.class);
         PRESET_FOLDER_NAME = String.format("config/%s/presets/%s/", MODID, PRESET);
         HOTSWAPPABLE = getOrDefault("Hotswappable", Boolean.class);
+        DEFAULT_WAILA_POSITION = wailaPosFromString(getOrDefault("DefaultWailaPosition", String.class));
+        WAILA_POSITION = DEFAULT_WAILA_POSITION;
     }
 
     public static <T> T getOrDefault(String key, Class<T> clazz) {
@@ -85,5 +93,13 @@ public class GeneralConfig {
             needsRepair = true;
             return clazz.cast(DEFAULT_CONFIG.get(key));
         }
+    }
+
+    public static WailaPosition wailaPosFromString(String name) {
+        for (WailaPosition position : WailaPosition.values())
+            if (position.toString().equalsIgnoreCase(name)) return position;
+        addConfigIssue(LogLevel.INFO, (byte) 1, "'DefaultWailaPosition' is an invalid value in config: [{}] | Expected: \"left\", \"middle\", \"right\", or \"invisible\" but got: \"{}\" | Marking config file for repair...", fileName, name);
+        GeneralConfig.needsRepair = true;
+        return WailaPosition.MIDDLE;
     }
 }

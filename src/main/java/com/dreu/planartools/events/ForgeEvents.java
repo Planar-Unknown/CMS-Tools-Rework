@@ -56,6 +56,7 @@ public class ForgeEvents {
 
     @SubscribeEvent
     public static void renderGuiEvent(RenderGuiEvent event) {
+        if (Helpers.WAILA_POSITION == Helpers.WailaPosition.INVISIBLE) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !(mc.hitResult instanceof BlockHitResult blockHitResult)) return;
 
@@ -114,7 +115,12 @@ public class ForgeEvents {
                 .orElse(0);
 
         int boxWidth = fontWidth + 4;
-        int left = (guiGraphics.guiWidth() - boxWidth) / 2;
+        int left = switch (Helpers.WAILA_POSITION) {
+            case LEFT -> 5;
+            case MIDDLE -> (guiGraphics.guiWidth() - boxWidth) / 2;
+            case RIGHT -> guiGraphics.guiWidth() - boxWidth - 5;
+            case INVISIBLE -> 0;
+        };
         int lineHeight = mc.font.lineHeight + 2;
         int boxHeight = lineHeight * components.size();
 
