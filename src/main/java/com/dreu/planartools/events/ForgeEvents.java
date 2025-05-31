@@ -32,6 +32,7 @@ import java.util.*;
 import static com.dreu.planartools.PlanarTools.MODID;
 import static com.dreu.planartools.config.BlocksConfig.ResistanceData;
 import static com.dreu.planartools.config.BlocksConfig.getBlockProperties;
+import static com.dreu.planartools.config.GeneralConfig.HOTSWAPPABLE;
 import static com.dreu.planartools.config.ToolsConfig.*;
 import static net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.FORGE;
 
@@ -42,9 +43,14 @@ public class ForgeEvents {
 
     @SubscribeEvent
     public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            playersToSendIssuesTo.add(player);
-            PacketHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new SyncConfigS2CPacket());
+        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            playersToSendIssuesTo.add(serverPlayer);
+            if (HOTSWAPPABLE) {
+                for (Player player : serverPlayer.level().players())
+                    PacketHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) player), new SyncConfigS2CPacket());
+            } else {
+                PacketHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new SyncConfigS2CPacket());
+            }
         }
     }
 
