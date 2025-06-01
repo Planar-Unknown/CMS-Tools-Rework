@@ -96,8 +96,8 @@ public class BlocksConfig {
             }
 
             BLOCKS.put(blockId, new Properties(
-                    getOptionalFloat(((Config) block), "Hardness"),
-                    getOptionalFloat(((Config) block), "ExplosionResistance"),
+                    getOptionalFloat(((Config) block), "Hardness", blockId),
+                    getOptionalFloat(((Config) block), "ExplosionResistance", blockId),
                     defaultResistance,
                     resistanceDataMap
             ));
@@ -115,12 +115,12 @@ public class BlocksConfig {
         return toReturn == null ? fallback : toReturn;
     }
 
-    private static Optional<Float> getOptionalFloat(Config values, String key) {
+    private static Optional<Float> getOptionalFloat(Config values, String key, String parent) {
         try {
             //noinspection RedundantClassCall
             Number.class.cast(values.get(key));
         } catch (Exception e) {
-            addConfigIssue(WARN, (byte) 4, "Value: \"{}\" for \"{}\" is an invalid type in config [{}] | Expected: 'Float' but got: '{}' | Ignoring property...", values.get(key), key, PRESET_FOLDER_NAME + "tools.toml", values.get(key).getClass().getSimpleName());
+            addConfigIssue(WARN, (byte) 4, "Value: \"{}\" for \"{}.{}\" is an invalid type in config [{}] | Expected: 'Float' but got: '{}' | Ignoring property...", values.get(key), parent, key, PRESET_FOLDER_NAME + "blocks.toml", values.get(key).getClass().getSimpleName());
             return Optional.empty();
         }
         Number explosionResistance = values.get(key);
