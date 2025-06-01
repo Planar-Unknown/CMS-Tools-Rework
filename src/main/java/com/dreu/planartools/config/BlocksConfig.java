@@ -1,6 +1,9 @@
 package com.dreu.planartools.config;
 
 import com.electronwill.nightconfig.core.Config;
+import net.minecraft.core.Holder;
+import net.minecraft.data.BlockFamilies;
+import net.minecraft.data.BlockFamily;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
@@ -41,7 +44,8 @@ public class BlocksConfig {
     Shovel = {Resistance = 40, ApplyMiningSpeed = false}  # Tools with ShovelPower ≥ 40 can mine this block but their MiningSpeed is NOT applied.
     Pickaxe = {Resistance = 20, ApplyMiningSpeed = true}  # Tools with PickaxePower ≥ 20 can mine this block and their MiningSpeed IS applied.
     
-    ["#minecraft:dirt"] # You can specify a tag (denoted by the "#"), and all blocks in that tag will receive the values declared
+    # You can specify a tag (denoted by the "#"), and all blocks in that tag will receive the values declared
+    ["#minecraft:dirt"]
     DefaultResistance = 0 # Zero indicates no resistance, meaning no power is required to mine it. So any tool, item (or fist) works!
     Shovel = {ApplyMiningSpeed = true} # Even though ANYTHING can mine it, only tools/items that have ShovelPower apply their MiningSpeed.
     
@@ -50,6 +54,11 @@ public class BlocksConfig {
     Hoe = {ApplyMiningSpeed = true}
     
     ["minecraft:deepslate"]
+    DefaultResistance = -1
+    Pickaxe = {Resistance = 40, ApplyMiningSpeed = true}
+    
+    # You can specify a Block Family (denoted by the "$"), and all blocks in that family will receive the values declared
+    ["$minecraft:cobbled_deepslate"] # A Block Family contains all variants of the base block, (e.g., stairs, slabs, walls, etc)
     DefaultResistance = -1
     Pickaxe = {Resistance = 40, ApplyMiningSpeed = true}
     
@@ -73,7 +82,7 @@ public class BlocksConfig {
     @SuppressWarnings("DataFlowIssue")
     public static void populateBlocks() {
         BLOCKS.clear();
-        CONFIG.valueMap().forEach((blockId, block) -> {
+        CONFIG.valueMap().forEach((blockId, blockProperties) -> {
             if (blockId.charAt(0) == '#') {
                 if (!ResourceLocation.isValidResourceLocation(blockId.substring(1))) {
                     addConfigIssue(INFO, (byte) 2, "Not a valid Tag ResourceLocation: <{}> declared in config: [{}] | Skipping...", blockId, PRESET_FOLDER_NAME + "blocks.toml");
@@ -81,16 +90,32 @@ public class BlocksConfig {
                 }
                 TagKey<Block> tagKey = BlockTags.create(new ResourceLocation(blockId.substring(1)));
                 if (ForgeRegistries.BLOCKS.tags().isKnownTagName(tagKey)) {
-                    Properties properties = assembleProperties(blockId, (Config) block);
+                    Properties properties = assembleProperties(blockId, (Config) blockProperties);
                     ForgeRegistries.BLOCKS.tags().getTag(tagKey).stream().forEach(tagBlock ->
                         addBlock(ForgeRegistries.BLOCKS.getKey(tagBlock).toString(), properties));
                 }
             }
+            if (blockId.charAt(0) == '$') {
+                if (!ResourceLocation.isValidResourceLocation(blockId.substring(1))) {
+                    addConfigIssue(INFO, (byte) 2, "Not a valid Block ResourceLocation: <{}> declared in config: [{}] | Skipping...", blockId, PRESET_FOLDER_NAME + "blocks.toml");
+                    return;
+                }
+                Optional<Holder.Reference<Block>> blockDelegate = ForgeRegistries.BLOCKS.getDelegate(new ResourceLocation(blockId.substring(1)));
+                if (blockDelegate.isPresent()) {
+                    if (BlockFamilies.MAP.containsKey(blockDelegate.get().get())) {
+                        BlockFamily family = BlockFamilies.MAP.get(blockDelegate.get().get());
+                        Properties properties = assembleProperties(blockId, (Config) blockProperties);
+                        family.getVariants().values().forEach(familyBlock ->
+                            addBlock(ForgeRegistries.BLOCKS.getKey(familyBlock).toString(), properties));
+                        addBlock(ForgeRegistries.BLOCKS.getKey(family.getBaseBlock()).toString(), properties);
+                    }
+                }
+            }
         });
 
-        CONFIG.valueMap().forEach((blockId, block) -> {
-            Config blockConfig = (Config) block;
-            if (blockId.contains("#")) return;
+        CONFIG.valueMap().forEach((blockId, blockProperties) -> {
+            Config blockPropertiesConfig = (Config) blockProperties;
+            if (blockId.contains("#") || blockId.contains("$")) return;
             if (!ResourceLocation.isValidResourceLocation(blockId)) {
                 addConfigIssue(INFO, (byte) 2, "Not a valid Block ResourceLocation: <{}> declared in config: [{}] | Skipping...", blockId, PRESET_FOLDER_NAME + "blocks.toml");
                 return;
@@ -101,15 +126,15 @@ public class BlocksConfig {
             }
             if (BLOCKS.containsKey(blockId)) {
                 Properties right = BLOCKS.get(blockId);
-                Integer defaultResistance = getOrElse(blockConfig, blockId, "DefaultResistance", right.defaultResistance(), Integer.class);
-                Map<Byte, ResistanceData> resistanceDataMap = getResistanceDataMapOverride(blockConfig, defaultResistance, right.data());
+                Integer defaultResistance = getOrElse(blockPropertiesConfig, blockId, "DefaultResistance", right.defaultResistance(), Integer.class);
+                Map<Byte, ResistanceData> resistanceDataMap = getResistanceDataMapOverride(blockPropertiesConfig, defaultResistance, right.data());
                 for (Map.Entry<Byte, ResistanceData> rightEntry : right.data().entrySet()) {
                     if (!resistanceDataMap.containsKey(rightEntry.getKey())) {
                         resistanceDataMap.put(rightEntry.getKey(), rightEntry.getValue());
                     }
                 }
-                Optional<Float> leftHardness = getOptionalFloat(blockConfig, "Hardness", blockId);
-                Optional<Float> leftExplosionResistance = getOptionalFloat(blockConfig, "ExplosionResistance", blockId);
+                Optional<Float> leftHardness = getOptionalFloat(blockPropertiesConfig, "Hardness", blockId);
+                Optional<Float> leftExplosionResistance = getOptionalFloat(blockPropertiesConfig, "ExplosionResistance", blockId);
 
                 BLOCKS.put(blockId, new Properties(
                     leftHardness.isPresent() ? leftHardness : right.hardness(),
@@ -118,7 +143,7 @@ public class BlocksConfig {
                     resistanceDataMap
                 ));
             } else {
-                addBlock(blockId, assembleProperties(blockId, blockConfig));
+                addBlock(blockId, assembleProperties(blockId, blockPropertiesConfig));
             }
         });
     }
