@@ -26,13 +26,12 @@ import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 @Mod(PlanarTools.MODID)
 public class PlanarTools {
 
-    //Todo: Block family compatibility, denoted by "$"
+    //Todo: Custom block lists compat, denoted by "@"
     //Todo: Make enchantments work on items that have been given tool types
     //Todo: Test CachedSuppliers with 3 instances and hotswappable
 
     //Todo: Make option for all registered resistances on a block must be exceeded
     //Todo: Nbt system for upgrading tools
-    //Todo: Custom block lists compat, denoted by "@"
     //Todo: modpack creator configurable enchants that interact with the Nbt system
     //Eventually make blocks store their destroy progress on config option
 
