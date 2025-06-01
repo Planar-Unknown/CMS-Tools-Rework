@@ -5,7 +5,8 @@
   "planar_tools.powerNames.Hoe": "Hoe",
   "planar_tools.powerNames.Shears": "Shears",
   "planar_tools.powerNames.Sword": "Sword",
-  "planar_tools.power_title": "Powers:",
+  "planar_tools.tooltip.powerTitle": "Powers:",
+  "planar_tools.tooltip.resistanceTitle": "Resistances:",
   "planar_tools.issuesDetected": "Config Issues Detected with Planar Tools",
   "planar_tools.logTitle.<ERROR>": "☠ ERROR ☠",
   "planar_tools.logTitle.<DEBUG>": "⛏ DEBUG ⛏",
@@ -19,5 +20,6 @@
   "planar_tools.powerNames.Magic": "Magic",
   "planar_tools.powerNames.Custom": "Custom",
   "key.categories.planar_tools": "Planar Tools",
-  "key.planar_tools.toggleWaila": "Toggle WAILA overlay"
+  "key.planar_tools.toggleWaila": "Toggle WAILA overlay",
+  "planar_tools.displayTooltips": "Display Tooltips"
 }

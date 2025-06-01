@@ -5,6 +5,7 @@ import com.dreu.planartools.config.BlocksConfig;
 import com.dreu.planartools.config.ToolsConfig;
 import com.dreu.planartools.network.PacketHandler;
 import com.dreu.planartools.network.SyncConfigS2CPacket;
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.datafixers.util.Either;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -20,6 +21,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.client.event.RenderTooltipEvent;
+import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
@@ -30,10 +32,12 @@ import net.minecraftforge.registries.ForgeRegistries;
 import java.util.*;
 
 import static com.dreu.planartools.PlanarTools.MODID;
-import static com.dreu.planartools.config.BlocksConfig.ResistanceData;
-import static com.dreu.planartools.config.BlocksConfig.getBlockProperties;
+import static com.dreu.planartools.config.BlocksConfig.*;
 import static com.dreu.planartools.config.GeneralConfig.HOTSWAPPABLE;
 import static com.dreu.planartools.config.ToolsConfig.*;
+import static com.dreu.planartools.events.ClientEvents.TOGGLE_TOOLTIPS_KEY_MAPPING;
+import static com.dreu.planartools.util.Helpers.displayTooltips;
+import static com.dreu.planartools.util.Helpers.toggleTooltipDisplay;
 import static net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.FORGE;
 
 @Mod.EventBusSubscriber(modid = MODID, bus = FORGE)
@@ -52,6 +56,12 @@ public class ForgeEvents {
                 PacketHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new SyncConfigS2CPacket());
             }
         }
+    }
+
+    @SubscribeEvent
+    public static void onKeyPressed(ScreenEvent.KeyPressed.Pre event) {
+        if (TOGGLE_TOOLTIPS_KEY_MAPPING.isActiveAndMatches(InputConstants.getKey(event.getKeyCode(), event.getScanCode())))
+            toggleTooltipDisplay();
     }
 
     @SubscribeEvent
@@ -134,10 +144,21 @@ public class ForgeEvents {
 
     @SubscribeEvent @SuppressWarnings("DataFlowIssue")
     public static void appendTooltipEvent(RenderTooltipEvent.GatherComponents event) {
-        //Todo: tooltips for blocks
+        if (!displayTooltips) return;
         String item = ForgeRegistries.ITEMS.getKey(event.getItemStack().getItem()).toString();
+        if (BLOCKS.containsKey(item) && !BLOCKS.get(item).data().isEmpty()) {
+            event.getTooltipElements().add(Either.left(Component.translatable("planar_tools.tooltip.resistanceTitle")));
+            for (Map.Entry<Byte, ResistanceData> data : BLOCKS.get(item).data().entrySet()) {
+                event.getTooltipElements().add(Either.left(
+                    Component.literal(" ")
+                    .append(Component.translatable("planar_tools.powerNames." + REGISTERED_TOOL_TYPES.get(data.getKey())))
+                        .withStyle(style -> style.withColor(REGISTERED_TOOL_COLORS.get(data.getKey())))
+                    .append(Component.literal(": " + data.getValue().resistance()))
+                ));
+            }
+        }
         if (TOOLS.containsKey(item) && TOOLS.get(item).data().length > 0) {
-            event.getTooltipElements().add(Either.left(Component.translatable("planar_tools.power_title")));
+            event.getTooltipElements().add(Either.left(Component.translatable("planar_tools.tooltip.powerTitle")));
             for (PowerData data : TOOLS.get(item).data()) {
                 event.getTooltipElements().add(Either.left(
                         Component.literal(" ")

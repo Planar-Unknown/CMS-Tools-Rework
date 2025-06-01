@@ -6,6 +6,7 @@ import com.dreu.planartools.config.ToolsConfig;
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.toml.TomlParser;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -32,6 +33,7 @@ import static java.lang.String.format;
 
 
 public class Helpers {
+    public static boolean displayTooltips = true;
     public static WailaPosition WAILA_POSITION = WailaPosition.INVISIBLE;
     public static boolean configHasBeenParsed = false;
     public static boolean wereIssuesWrittenToFile = false;
@@ -48,6 +50,21 @@ public class Helpers {
             return values()[(ordinal() + 1) % values().length];
         }
     }
+
+    public static void toggleTooltipDisplay() {
+        displayTooltips = !displayTooltips;
+        if (Minecraft.getInstance().player != null) {
+            Minecraft.getInstance().player.sendSystemMessage(Component.literal("")
+                .append(Component.literal("[" + MODID + "] ").withStyle(ChatFormatting.GOLD))
+                .append(Component.translatable("planar_tools.displayTooltips")).append(Component.literal(": "))
+                .append(displayTooltips
+                    ? Component.translatable("options.on").withStyle(ChatFormatting.GREEN)
+                    : Component.translatable("options.off").withStyle(ChatFormatting.RED)
+                )
+            );
+        }
+    }
+
 
     public static void parseAndProcessConfig() {
         CONFIG_ISSUES.clear();
