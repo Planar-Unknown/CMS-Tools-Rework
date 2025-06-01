@@ -25,12 +25,17 @@ import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 
 @Mod(PlanarTools.MODID)
 public class PlanarTools {
-    //Todo: Tags compatibility, Vanilla tags and Custom TOML / Json tags
+
+    //Todo: Block family compatibility, denoted by "$"
     //Todo: Make enchantments work on items that have been given tool types
-    //Todo: Nbt system for upgrading tools
-    //Todo: modpack creator configurable enchants that interact with the Nbt system
     //Todo: Test CachedSuppliers with 3 instances and hotswappable
-    //Eventually make blocks store their destroy progress
+
+    //Todo: Make option for all registered resistances on a block must be exceeded
+    //Todo: Nbt system for upgrading tools
+    //Todo: Custom block lists compat, denoted by "@"
+    //Todo: modpack creator configurable enchants that interact with the Nbt system
+    //Eventually make blocks store their destroy progress on config option
+
     public static final String MODID = "planar_tools";
     public static final Logger LOGGER = LogUtils.getLogger();
 

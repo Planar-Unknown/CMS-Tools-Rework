@@ -2,9 +2,13 @@ package com.dreu.planartools.config;
 
 import com.electronwill.nightconfig.core.Config;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +25,7 @@ public class BlocksConfig {
     public static final String TEMPLATE_CONFIG_STRING = """
     # Modded Items that override the getDestroySpeed method will not be valid.
     # To request compatibility with a specific mod, let us know in our Discord | https://discord.gg/RrY3rXuAH5
+    # Specifically declared blocks will override any values it inherited from specified tags
     
     # This table shows the default power level of each tier of tool.
     ########################################################################
@@ -36,9 +41,13 @@ public class BlocksConfig {
     Shovel = {Resistance = 40, ApplyMiningSpeed = false}  # Tools with ShovelPower ≥ 40 can mine this block but their MiningSpeed is NOT applied.
     Pickaxe = {Resistance = 20, ApplyMiningSpeed = true}  # Tools with PickaxePower ≥ 20 can mine this block and their MiningSpeed IS applied.
     
-    ["minecraft:dirt"]
+    ["#minecraft:dirt"] # You can specify a tag (denoted by the "#"), and all blocks in that tag will receive the values declared
     DefaultResistance = 0 # Zero indicates no resistance, meaning no power is required to mine it. So any tool, item (or fist) works!
     Shovel = {ApplyMiningSpeed = true} # Even though ANYTHING can mine it, only tools/items that have ShovelPower apply their MiningSpeed.
+    
+    ["minecraft:moss"] # Moss exists in the tag #minecraft:dirt, but you can override any of the values declared for the tag
+    Shovel = {ApplyMiningSpeed = false} # Now moss will no longer grant mining speed to shovels but keeps any other values declared for tags
+    Hoe = {ApplyMiningSpeed = true}
     
     ["minecraft:deepslate"]
     DefaultResistance = -1
@@ -48,60 +57,134 @@ public class BlocksConfig {
     DefaultResistance = -1
     Pickaxe = {Resistance = 80, ApplyMiningSpeed = true}
     
-    ["minecraft:oak_log"] # Same as vanilla
+    ["#minecraft:logs"] # Same as vanilla
     DefaultResistance = 0
     Axe = {ApplyMiningSpeed = true}
     """;
 
     public static Config CONFIG;
+
     public static void parse() {
         CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "blocks.toml", TEMPLATE_CONFIG_STRING);
     }
+
     public static Map<String, Properties> BLOCKS = new HashMap<>();
+
+    @SuppressWarnings("DataFlowIssue")
     public static void populateBlocks() {
         BLOCKS.clear();
         CONFIG.valueMap().forEach((blockId, block) -> {
-            if (!blockId.contains(":")) {
-                addConfigIssue(INFO, (byte) 2, "No namespace found in item id: <{}> declared in config: [{}] | Skipping...", blockId, PRESET_FOLDER_NAME + "blocks.toml");
-                return;
+            if (blockId.charAt(0) == '#') {
+                if (!ResourceLocation.isValidResourceLocation(blockId.substring(1))) {
+                    addConfigIssue(INFO, (byte) 2, "Not a valid Tag ResourceLocation: <{}> declared in config: [{}] | Skipping...", blockId, PRESET_FOLDER_NAME + "blocks.toml");
+                    return;
+                }
+                TagKey<Block> tagKey = BlockTags.create(new ResourceLocation(blockId.substring(1)));
+                if (ForgeRegistries.BLOCKS.tags().isKnownTagName(tagKey)) {
+                    Properties properties = assembleProperties(blockId, (Config) block);
+                    ForgeRegistries.BLOCKS.tags().getTag(tagKey).stream().forEach(tagBlock ->
+                        addBlock(ForgeRegistries.BLOCKS.getKey(tagBlock).toString(), properties));
+                }
             }
-            char[] chars = blockId.toCharArray();
-            if (chars[1] == '#') {
-                //Handle tag loading here
+        });
+
+        CONFIG.valueMap().forEach((blockId, block) -> {
+            Config blockConfig = (Config) block;
+            if (blockId.contains("#")) return;
+            if (!ResourceLocation.isValidResourceLocation(blockId)) {
+                addConfigIssue(INFO, (byte) 2, "Not a valid Block ResourceLocation: <{}> declared in config: [{}] | Skipping...", blockId, PRESET_FOLDER_NAME + "blocks.toml");
                 return;
             }
             if (!ModList.get().isLoaded(blockId.substring(0, blockId.indexOf(":")))) {
                 addConfigIssue(INFO, (byte) 2, "Config [{}] declared Block Resistance values for <{}> when {{}} was not loaded or does not exist in this modpack | Skipping Block...", PRESET_FOLDER_NAME + "blocks.toml", blockId, blockId.substring(0, blockId.indexOf(":")));
                 return;
             }
-
-            Map<Byte, ResistanceData> resistanceDataMap = new HashMap<>();
-
-            Integer defaultResistance = getOrElse(((Config) block), blockId, "DefaultResistance", 0, Integer.class);
-
-            for (Map.Entry<String, Object> property : ((Config) block).valueMap().entrySet()) {
-                switch (property.getKey()) {
-                    case "DefaultResistance", "ExplosionResistance", "Hardness" -> {continue;}
-                    default -> resistanceDataMap.put(
-                            (byte) REGISTERED_TOOL_TYPES.indexOf(property.getKey()),
-                            new ResistanceData(
-                                    getOrElse(((Config) property.getValue()), property.getKey(), "Resistance", defaultResistance, Integer.class),
-                                    getOrElse(((Config) property.getValue()), property.getKey(), "ApplyMiningSpeed", false, Boolean.class)
-                            )
-                    );
+            if (BLOCKS.containsKey(blockId)) {
+                Properties right = BLOCKS.get(blockId);
+                Integer defaultResistance = getOrElse(blockConfig, blockId, "DefaultResistance", right.defaultResistance(), Integer.class);
+                Map<Byte, ResistanceData> resistanceDataMap = getResistanceDataMapOverride(blockConfig, defaultResistance, right.data());
+                for (Map.Entry<Byte, ResistanceData> rightEntry : right.data().entrySet()) {
+                    if (!resistanceDataMap.containsKey(rightEntry.getKey())) {
+                        resistanceDataMap.put(rightEntry.getKey(), rightEntry.getValue());
+                    }
                 }
-                if (!REGISTERED_TOOL_TYPES.contains(property.getKey())) {
-                    addConfigIssue(ERROR, (byte) 6, "\"{}\" in config file [{}] is NOT a registered tool type!", property.getKey(), PRESET_FOLDER_NAME + "blocks.toml");
-                }
-            }
+                Optional<Float> leftHardness = getOptionalFloat(blockConfig, "Hardness", blockId);
+                Optional<Float> leftExplosionResistance = getOptionalFloat(blockConfig, "ExplosionResistance", blockId);
 
-            BLOCKS.put(blockId, new Properties(
-                    getOptionalFloat(((Config) block), "Hardness", blockId),
-                    getOptionalFloat(((Config) block), "ExplosionResistance", blockId),
+                BLOCKS.put(blockId, new Properties(
+                    leftHardness.isPresent() ? leftHardness : right.hardness(),
+                    leftExplosionResistance.isPresent() ? leftExplosionResistance : right.explosionResistance(),
                     defaultResistance,
                     resistanceDataMap
-            ));
+                ));
+            } else {
+                addBlock(blockId, assembleProperties(blockId, blockConfig));
+            }
         });
+    }
+
+    private static Map<Byte, ResistanceData> getResistanceDataMapOverride(Config block, int defaultResistance, Map<Byte, ResistanceData> right) {
+        Map<Byte, ResistanceData> resistanceDataMap = new HashMap<>();
+        for (Map.Entry<String, Object> property : block.valueMap().entrySet()) {
+            switch (property.getKey()) {
+                case "DefaultResistance", "ExplosionResistance", "Hardness" -> {continue;}
+                default -> {
+                    byte toolType = (byte) REGISTERED_TOOL_TYPES.indexOf(property.getKey());
+                    resistanceDataMap.put(
+                        toolType,
+                        new ResistanceData(
+                            getOrElse(((Config) property.getValue()), property.getKey(), "Resistance", right.containsKey(toolType) ? right.get(toolType).resistance() : defaultResistance, Integer.class),
+                            getOrElse(((Config) property.getValue()), property.getKey(), "ApplyMiningSpeed", right.containsKey(toolType) && right.get(toolType).applyMiningSpeed(), Boolean.class)
+                        )
+                    );
+                }
+            }
+            if (!REGISTERED_TOOL_TYPES.contains(property.getKey())) {
+                addConfigIssue(ERROR, (byte) 6, "\"{}\" in config file [{}] is NOT a registered tool type!", property.getKey(), PRESET_FOLDER_NAME + "blocks.toml");
+            }
+        }
+        return resistanceDataMap;
+    }
+
+
+    private static void addBlock(String key, Properties properties) {
+        if (BLOCKS.containsKey(key)) {
+            BLOCKS.put(key, Properties.merged(properties, BLOCKS.get(key)));
+        } else {
+            BLOCKS.put(key, properties);
+        }
+
+    }
+
+    private static @NotNull Properties assembleProperties(String blockId, Config block) {
+        Integer defaultResistance = getOrElse(block, blockId, "DefaultResistance", 0, Integer.class);
+        Map<Byte, ResistanceData> resistanceDataMap = getResistanceDataMap(block, defaultResistance);
+        return new Properties(
+            getOptionalFloat(block, "Hardness", blockId),
+            getOptionalFloat(block, "ExplosionResistance", blockId),
+            defaultResistance,
+            resistanceDataMap
+        );
+    }
+
+    private static @NotNull Map<Byte, ResistanceData> getResistanceDataMap(Config block, Integer defaultResistance) {
+        Map<Byte, ResistanceData> resistanceDataMap = new HashMap<>();
+        for (Map.Entry<String, Object> property : block.valueMap().entrySet()) {
+            switch (property.getKey()) {
+                case "DefaultResistance", "ExplosionResistance", "Hardness" -> {continue;}
+                default -> resistanceDataMap.put(
+                        (byte) REGISTERED_TOOL_TYPES.indexOf(property.getKey()),
+                        new ResistanceData(
+                                getOrElse(((Config) property.getValue()), property.getKey(), "Resistance", defaultResistance, Integer.class),
+                                getOrElse(((Config) property.getValue()), property.getKey(), "ApplyMiningSpeed", false, Boolean.class)
+                        )
+                );
+            }
+            if (!REGISTERED_TOOL_TYPES.contains(property.getKey())) {
+                addConfigIssue(ERROR, (byte) 6, "\"{}\" in config file [{}] is NOT a registered tool type!", property.getKey(), PRESET_FOLDER_NAME + "blocks.toml");
+            }
+        }
+        return resistanceDataMap;
     }
 
     private static <T> T getOrElse(Config config, String parentKey, String key, T fallback, Class<T> clazz) {
@@ -133,6 +216,42 @@ public class BlocksConfig {
     }
 
     public record Properties(Optional<Float> hardness, Optional<Float> explosionResistance, int defaultResistance, Map<Byte, ResistanceData> data) {
+
+        public static Properties merged(Properties left, Properties right) {
+            Optional<Float> hardness = mergeOptionalNumbers(left.hardness(), right.hardness());
+            Optional<Float> explosionResistance = mergeOptionalNumbers(left.explosionResistance(), right.explosionResistance());
+            int defaultResistance = Math.max(left.defaultResistance(), right.defaultResistance());
+            return new Properties(hardness, explosionResistance, defaultResistance, mergeResistanceDataMaps(left, right));
+        }
+
+        private static Map<Byte, ResistanceData> mergeResistanceDataMaps(Properties left, Properties right) {
+            Map<Byte, ResistanceData> newMap = right.data();
+            for (Map.Entry<Byte, ResistanceData> leftEntry : left.data().entrySet()) {
+                if (newMap.containsKey(leftEntry.getKey())) {
+                    ResistanceData rightResData = right.data().get(leftEntry.getKey());
+                    ResistanceData newResData = new ResistanceData(
+                        Math.min(leftEntry.getValue().resistance(), rightResData.resistance()),
+                        leftEntry.getValue().applyMiningSpeed() || rightResData.applyMiningSpeed()
+                    );
+                    newMap.put(leftEntry.getKey(), newResData);
+                } else {
+                    newMap.put(leftEntry.getKey(), leftEntry.getValue());
+                }
+            }
+            return newMap;
+        }
+
+        @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+        private static <T extends Number> Optional<T> mergeOptionalNumbers(Optional<T> left, Optional<T> right) {
+            return left.isPresent()
+                ? right.isPresent()
+                    ? left.get().doubleValue() >= right.get().doubleValue()
+                        ? left
+                        : right
+                    : left
+                : Optional.empty();
+        }
+
 
         public void write(FriendlyByteBuf buf) {
             buf.writeBoolean(this.hardness().isPresent());
