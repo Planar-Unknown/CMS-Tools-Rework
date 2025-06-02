@@ -91,6 +91,7 @@ public class BlocksConfig {
 
   public static void populateBlocks() {
     BLOCKS.clear();
+    Map<String, Config> singleBlocks = new HashMap<>();
 
     CONFIG.valueMap().forEach((configKey, blockProperties) -> {
       if (configKey.startsWith("#")) {
@@ -100,12 +101,10 @@ public class BlocksConfig {
       } else if (configKey.startsWith("@")) {
         handleCollection(configKey, (Config) blockProperties);
       }
+      singleBlocks.put(configKey, (Config) blockProperties);
     });
 
-    CONFIG.valueMap().forEach((blockId, blockProperties) -> {
-      if (blockId.contains("#") || blockId.contains("$") || blockId.contains("@")) return;
-      handleSingleBlock(blockId, (Config) blockProperties);
-    });
+    singleBlocks.forEach(BlocksConfig::handleSingleBlock);
     BLOCKS.keySet().forEach(System.out::println);
   }
 
