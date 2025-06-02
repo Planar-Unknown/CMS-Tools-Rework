@@ -45,9 +45,9 @@ public class BlocksConfig {
     Shovel = {Resistance = 40, ApplyMiningSpeed = false}  # Tools with ShovelPower ≥ 40 can mine this block but their MiningSpeed is NOT applied.
     Pickaxe = {Resistance = 20, ApplyMiningSpeed = true}  # Tools with PickaxePower ≥ 20 can mine this block and their MiningSpeed IS applied.
     
-    ["minecraft:amethyst_block"] # A simple example
+    ["minecraft:amethyst_block"] # A simple example of making Amethyst only mineable with Golden Tools
     DefaultResistance = -1 # Not mineable by default
-    Arcane = {Resistance = 30, ApplyMiningSpeed = true} # Tools with Arcane power 80 or above (Diamond in vanilla) can mine it
+    Arcane = {Resistance = 30, ApplyMiningSpeed = true} # Tools with Arcane power 30 or above can mine it
     # Note that in the tools.toml, we have given all @golden_tools Arcane power of 30
     
     # You can specify a tag (denoted by the "#"), and all blocks in that tag will receive the values declared
