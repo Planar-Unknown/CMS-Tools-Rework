@@ -60,13 +60,7 @@ public class ShearsItemMixin {
                 }
                 cir.setReturnValue(canMine ? (applyMiningSpeed ? toolProperties.get().miningSpeed().orElse(1) : 1.0f) : 0.0f);
             } else {
-                for (String toolType : REGISTERED_TOOL_TYPES) {
-                    BlocksConfig.ResistanceData data = blockProperties.data().get((byte) REGISTERED_TOOL_TYPES.indexOf(toolType));
-                    if (data != null && data.resistance() == 0) {
-                        cir.setReturnValue(1.0f);
-                    }
-                }
-                cir.setReturnValue(0f);
+                cir.setReturnValue(blockProperties.defaultResistance() == 0 ? 1f : 0f);
             }
         } else if (toolProperties.get() != null) {
             cir.setReturnValue(isCorrectToolForDrops(blockState) ? toolProperties.get().miningSpeed().orElse(1) : 1.0f);
