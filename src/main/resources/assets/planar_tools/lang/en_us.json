@@ -5,6 +5,7 @@
   "planar_tools.powerNames.Hoe": "Hoe",
   "planar_tools.powerNames.Shears": "Shears",
   "planar_tools.powerNames.Sword": "Sword",
+  "planar_tools.powerNames.Arcane": "Arcane",
   "planar_tools.tooltip.powerTitle": "Powers:",
   "planar_tools.tooltip.resistanceTitle": "Resistances:",
   "planar_tools.issuesDetected": "Config Issues Detected with Planar Tools",

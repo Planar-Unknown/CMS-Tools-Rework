@@ -30,6 +30,7 @@ public class PlanarTools {
     //Todo: Add all item group functionality to ToolsConfig
     //Todo: Make enchantments work on items that have been given tool types
     //Todo: Test CachedSuppliers with 3 instances and hotswappable
+    //Todo: Add defaultCanDrop to blocks and CanDrop to each tool type of blocks
 
     //Todo: Make option for all registered resistances on a block must be exceeded
     //Todo: Nbt system for upgrading tools
