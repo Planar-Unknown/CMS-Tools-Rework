@@ -28,73 +28,83 @@ import static com.dreu.planartools.util.Helpers.getTierIfPresent;
 @SuppressWarnings("unused")
 @Mixin(ShearsItem.class)
 public class ShearsItemMixin {
-    @SuppressWarnings("DataFlowIssue")
-    private Item self() {
-        return (Item) (Object) this;
-    }
-    @SuppressWarnings("DataFlowIssue")
-    final Supplier<ToolsConfig.Properties> toolProperties = Suppliers.memoize(() -> TOOLS.get(ForgeRegistries.ITEMS.getKey(self()).toString()));
+  @SuppressWarnings("DataFlowIssue")
+  private Item self() {
+    return (Item) (Object) this;
+  }
 
-    @Inject(method = "getDestroySpeed", at = @At("HEAD"), cancellable = true)
-    private void onGetDestroySpeed(ItemStack itemInHand, BlockState blockState, CallbackInfoReturnable<Float> cir) {
-        BlocksConfig.Properties blockProperties = getBlockProperties(blockState.getBlock());
-        if (blockProperties != null) {
-            boolean applyMiningSpeed = false;
-            if (toolProperties.get() != null) {
-                boolean canMine = false;
-                for (Map.Entry<Byte, Integer> powerData : toolProperties.get().powers().entrySet()) {
-                    BlocksConfig.ResistanceData resistanceData = blockProperties.data().get(powerData.getKey());
-                    if (resistanceData != null) {
-                        int resistance = resistanceData.resistance();
-                        if (resistance >= 0 && powerData.getValue() >= resistance) {
-                            canMine = true;
-                            if (resistanceData.applyMiningSpeed()) {
-                                applyMiningSpeed = true;
-                            }
-                        }
-                    } else {
-                        int defaultResistance = blockProperties.defaultResistance();
-                        if (defaultResistance != -1 && powerData.getValue() >= defaultResistance)
-                            canMine = true;
-                    }
-                }
-                cir.setReturnValue(canMine ? (applyMiningSpeed ? toolProperties.get().miningSpeed().orElse(1) : 1.0f) : 0.0f);
-            } else {
-                cir.setReturnValue(blockProperties.defaultResistance() == 0 ? 1f : 0f);
+  @SuppressWarnings("DataFlowIssue")
+  final Supplier<ToolsConfig.Properties> toolProperties = Suppliers.memoize(() -> TOOLS.get(ForgeRegistries.ITEMS.getKey(self()).toString()));
+
+  @Inject(method = "getDestroySpeed", at = @At("HEAD"), cancellable = true)
+  private void onGetDestroySpeed(ItemStack itemInHand, BlockState blockState, CallbackInfoReturnable<Float> cir) {
+    BlocksConfig.Properties blockProperties = getBlockProperties(blockState.getBlock());
+    if (blockProperties != null) {
+      boolean applyMiningSpeed = false;
+      if (toolProperties.get() != null) {
+        boolean canMine = false;
+        for (Map.Entry<Byte, Integer> powerData : toolProperties.get().powers().entrySet()) {
+          BlocksConfig.ResistanceData resistanceData = blockProperties.data().get(powerData.getKey());
+          if (resistanceData != null) {
+            int resistance = resistanceData.resistance();
+            if (resistance >= 0 && powerData.getValue() >= resistance) {
+              canMine = true;
+              if (resistanceData.applyMiningSpeed()) {
+                applyMiningSpeed = true;
+              }
             }
-        } else if (toolProperties.get() != null) {
-            cir.setReturnValue(isCorrectToolForDrops(blockState) ? toolProperties.get().miningSpeed().orElse(1) : 1.0f);
+          } else {
+            int defaultResistance = blockProperties.defaultResistance();
+            if (defaultResistance != -1 && powerData.getValue() >= defaultResistance)
+              canMine = true;
+          }
         }
+        if (canMine) {
+          if (applyMiningSpeed) {
+            if (toolProperties.get().miningSpeed().isPresent())
+              cir.setReturnValue(Float.valueOf(toolProperties.get().miningSpeed().get()));
+          } else
+            cir.setReturnValue(1f);
+        } else
+          cir.setReturnValue(0f);
+      } else {
+        cir.setReturnValue(blockProperties.defaultResistance() == 0 ? 1f : 0f);
+      }
+    } else if (toolProperties.get() != null) {
+      cir.setReturnValue(isCorrectToolForDrops(blockState) ? toolProperties.get().miningSpeed().orElse(1) : 1.0f);
     }
+  }
 
-    @Inject(method = "isCorrectToolForDrops", at = @At("HEAD"), cancellable = true)
-    private void onIsCorrectToolForDrops(BlockState blockState, CallbackInfoReturnable<Boolean> cir) {
-        BlocksConfig.Properties blockProperties = getBlockProperties(blockState.getBlock());
-        if (toolProperties.get() != null) {
-            if (blockProperties != null) {
-                for (Map.Entry<Byte, Integer> powerData : toolProperties.get().powers().entrySet()) {
-                    BlocksConfig.ResistanceData resistanceData = blockProperties.data().get(powerData.getKey());
-                    if (resistanceData != null) {
-                        if (resistanceData.resistance() >= 0 && powerData.getValue() >= resistanceData.resistance()) {
-                            cir.setReturnValue(true);
-                        }
-                    }
-                }
-            } else {
-                for (Map.Entry<Byte, Integer> powerData : toolProperties.get().powers().entrySet()) {
-                    TagKey<Block> tag = TAG_KEYS_BY_TOOL_TYPE.get(powerData.getKey());
-                    if (blockState.is(tag)) {
-                        var tier = getTierIfPresent(powerData.getKey(), toolProperties.get());
-                        if (tier != null && TierSortingRegistry.isCorrectTierForDrops(tier, blockState)) {
-                            cir.setReturnValue(true);
-                        }
-                    }
-                }
+  @Inject(method = "isCorrectToolForDrops", at = @At("HEAD"), cancellable = true)
+  private void onIsCorrectToolForDrops(BlockState blockState, CallbackInfoReturnable<Boolean> cir) {
+    BlocksConfig.Properties blockProperties = getBlockProperties(blockState.getBlock());
+    if (toolProperties.get() != null) {
+      if (blockProperties != null) {
+        for (Map.Entry<Byte, Integer> powerData : toolProperties.get().powers().entrySet()) {
+          BlocksConfig.ResistanceData resistanceData = blockProperties.data().get(powerData.getKey());
+          if (resistanceData != null) {
+            if (resistanceData.resistance() >= 0 && powerData.getValue() >= resistanceData.resistance()) {
+              cir.setReturnValue(true);
             }
+          }
         }
+      } else {
+        for (Map.Entry<Byte, Integer> powerData : toolProperties.get().powers().entrySet()) {
+          TagKey<Block> tag = TAG_KEYS_BY_TOOL_TYPE.get(powerData.getKey());
+          if (blockState.is(tag)) {
+            var tier = getTierIfPresent(powerData.getKey(), toolProperties.get());
+            if (tier != null && TierSortingRegistry.isCorrectTierForDrops(tier, blockState)) {
+              cir.setReturnValue(true);
+            }
+          }
+        }
+      }
     }
+  }
 
-    @SuppressWarnings("SameReturnValue")
-    @Shadow
-    public boolean isCorrectToolForDrops(BlockState blockState) {return false;}
+  @SuppressWarnings("SameReturnValue")
+  @Shadow
+  public boolean isCorrectToolForDrops(BlockState blockState) {
+    return false;
+  }
 }

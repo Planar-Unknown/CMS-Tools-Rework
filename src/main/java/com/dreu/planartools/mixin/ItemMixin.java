@@ -58,7 +58,14 @@ public class ItemMixin {
               canMine = true;
           }
         }
-        cir.setReturnValue(canMine ? (applyMiningSpeed ? toolProperties.get().miningSpeed().orElse(1) : 1.0f) : 0.0f);
+        if (canMine) {
+          if (applyMiningSpeed) {
+            if (toolProperties.get().miningSpeed().isPresent())
+              cir.setReturnValue(Float.valueOf(toolProperties.get().miningSpeed().get()));
+          } else
+            cir.setReturnValue(1f);
+        } else
+          cir.setReturnValue(0f);
       } else {
         cir.setReturnValue(blockProperties.defaultResistance() == 0 ? 1f : 0f);
       }
