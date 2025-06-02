@@ -2,41 +2,100 @@ package com.dreu.planartools.mixin;
 
 import com.dreu.planartools.config.BlocksConfig;
 import com.dreu.planartools.config.ToolsConfig;
+import com.dreu.planartools.util.CachedSupplier;
+import com.google.common.base.Suppliers;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.DiggerItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.common.TierSortingRegistry;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import static com.dreu.planartools.config.BlocksConfig.BLOCKS;
-import static com.dreu.planartools.config.ToolsConfig.TOOLS;
+import java.util.Map;
+import java.util.function.Supplier;
 
-@Mixin(DiggerItem.class) @SuppressWarnings("unused")
+import static com.dreu.planartools.PlanarTools.TAG_KEYS_BY_TOOL_TYPE;
+import static com.dreu.planartools.config.BlocksConfig.BLOCKS;
+import static com.dreu.planartools.config.BlocksConfig.getBlockProperties;
+import static com.dreu.planartools.config.ToolsConfig.TOOLS;
+import static com.dreu.planartools.util.Helpers.getTierIfPresent;
+
+@Mixin(value = DiggerItem.class)
+@SuppressWarnings("unused")
 public class DiggerItemMixin {
-    @Inject(method = "getDestroySpeed", at = @At("HEAD"), cancellable = true) @SuppressWarnings("DataFlowIssue")
-    public void onGetDestroySpeed(ItemStack itemInHand, BlockState blockState, CallbackInfoReturnable<Float> cir) {
-        ToolsConfig.Properties toolProperties = TOOLS.get(ForgeRegistries.ITEMS.getKey(itemInHand.getItem()).toString());
-        BlocksConfig.Properties blockProperties = BLOCKS.get(ForgeRegistries.BLOCKS.getKey(blockState.getBlock()).toString());
-        if (toolProperties != null && blockProperties != null) {
-            boolean canMine = false;
-            boolean applyMiningSpeed = false;
-            for (ToolsConfig.PowerData powerData : toolProperties.data()) {
-                BlocksConfig.ResistanceData resistanceData = blockProperties.data().get(powerData.toolTypeId());
-                if (resistanceData != null && resistanceData.resistance() >= 0 && powerData.power() >= resistanceData.resistance()) {
-                    canMine = true;
-                    if (resistanceData.applyMiningSpeed()) {
-                        applyMiningSpeed = true;
-                    }
-                } else {
-                    int defaultResistance = blockProperties.defaultResistance();
-                    if (defaultResistance != -1 && powerData.power() >= defaultResistance)
-                        canMine = true;
-                }
+  private final CachedSupplier<ToolsConfig.Properties> toolProperties = CachedSupplier.of(() -> TOOLS.get(ForgeRegistries.ITEMS.getKey(self()).toString()));
+
+  @Inject(method = "getDestroySpeed", at = @At("HEAD"), cancellable = true)
+  @SuppressWarnings("DataFlowIssue")
+  public void onGetDestroySpeed(ItemStack itemInHand, BlockState blockState, CallbackInfoReturnable<Float> cir) {
+    BlocksConfig.Properties blockProperties = getBlockProperties(blockState.getBlock());
+    if (blockProperties != null) {
+      boolean applyMiningSpeed = false;
+      if (toolProperties.get() != null) {
+        boolean canMine = false;
+        for (Map.Entry<Byte, Integer> powerData : toolProperties.get().powers().entrySet()) {
+          BlocksConfig.ResistanceData resistanceData = blockProperties.data().get(powerData.getKey());
+          if (resistanceData != null) {
+            int resistance = resistanceData.resistance();
+            if (resistance >= 0 && powerData.getValue() >= resistance) {
+              canMine = true;
+              if (resistanceData.applyMiningSpeed())
+                applyMiningSpeed = true;
             }
-            cir.setReturnValue(canMine ? applyMiningSpeed ? toolProperties.miningSpeed() : 1.0f : 0.0f);
+          } else {
+            int defaultResistance = blockProperties.defaultResistance();
+            if (defaultResistance != -1 && powerData.getValue() >= defaultResistance) canMine = true;
+          }
         }
+        cir.setReturnValue(canMine ? (applyMiningSpeed ? toolProperties.get().miningSpeed().orElse(1) : 1.0f) : 0.0f);
+      } else {
+        cir.setReturnValue(blockProperties.defaultResistance() == 0 ? 1f : 0f);
+      }
+    } else if (toolProperties.get() != null) {
+      cir.setReturnValue(isCorrectToolForDrops(itemInHand, blockState) ? toolProperties.get().miningSpeed().orElse(1) : 1.0f);
     }
+  }
+
+  @Inject(method = "isCorrectToolForDrops(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/block/state/BlockState;)Z", at = @At("HEAD"), cancellable = true, remap = false)
+  private void onIsCorrectToolForDrops(ItemStack itemStack, BlockState blockState, CallbackInfoReturnable<Boolean> cir) {
+    BlocksConfig.Properties blockProperties = getBlockProperties(blockState.getBlock());
+    if (toolProperties.get() != null) {
+      if (blockProperties != null) {
+        for (Map.Entry<Byte, Integer> powerData : toolProperties.get().powers().entrySet()) {
+          BlocksConfig.ResistanceData resistanceData = blockProperties.data().get(powerData.getKey());
+          if (resistanceData != null) {
+            if (resistanceData.resistance() != -1 && powerData.getValue() >= resistanceData.resistance()) {
+              cir.setReturnValue(true);
+            }
+          }
+        }
+      } else {
+        for (Map.Entry<Byte, Integer> powerData : toolProperties.get().powers().entrySet()) {
+          TagKey<Block> tag = TAG_KEYS_BY_TOOL_TYPE.get(powerData.getKey());
+          if (blockState.is(tag)) {
+            var tier = getTierIfPresent(powerData.getKey(), toolProperties.get());
+            if (tier != null && TierSortingRegistry.isCorrectTierForDrops(tier, blockState)) {
+              cir.setReturnValue(true);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @Shadow
+  public boolean isCorrectToolForDrops(ItemStack itemStack, BlockState blockState) {
+    return false;
+  }
+
+  public Item self() {
+    return (Item) (Object) this;
+  }
 }
