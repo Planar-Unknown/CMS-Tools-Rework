@@ -1,7 +1,7 @@
 package com.dreu.planartools.mixin;
 
-import com.dreu.planartools.util.CachedSupplier;
 import com.dreu.planartools.config.BlocksConfig;
+import com.dreu.planartools.util.CachedSupplier;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.spongepowered.asm.mixin.Mixin;

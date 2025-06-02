@@ -1,10 +1,10 @@
 package com.dreu.planartools.events;
 
-import com.dreu.planartools.util.Helpers;
 import com.dreu.planartools.config.BlocksConfig;
 import com.dreu.planartools.config.ToolsConfig;
 import com.dreu.planartools.network.PacketHandler;
 import com.dreu.planartools.network.SyncConfigS2CPacket;
+import com.dreu.planartools.util.Helpers;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.datafixers.util.Either;
 import net.minecraft.ChatFormatting;

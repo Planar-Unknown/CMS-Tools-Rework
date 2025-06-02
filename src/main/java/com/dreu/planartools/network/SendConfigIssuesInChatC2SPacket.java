@@ -1,7 +1,7 @@
 package com.dreu.planartools.network;
 
-import com.dreu.planartools.util.Helpers;
 import com.dreu.planartools.events.ForgeEvents;
+import com.dreu.planartools.util.Helpers;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;

@@ -20,9 +20,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
+import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 import static com.dreu.planartools.util.Helpers.LogLevel.WARN;
 import static com.dreu.planartools.util.Helpers.addConfigIssue;
-import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 
 @Mod(PlanarTools.MODID)
 public class PlanarTools {

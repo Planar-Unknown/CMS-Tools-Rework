@@ -12,13 +12,16 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static com.dreu.planartools.PlanarTools.MODID;
-import static com.dreu.planartools.util.Helpers.LogLevel.*;
-import static com.dreu.planartools.util.Helpers.*;
 import static com.dreu.planartools.config.GeneralConfig.PRESET_FOLDER_NAME;
 import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
+import static com.dreu.planartools.util.Helpers.LogLevel.*;
+import static com.dreu.planartools.util.Helpers.*;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class BlocksConfig {

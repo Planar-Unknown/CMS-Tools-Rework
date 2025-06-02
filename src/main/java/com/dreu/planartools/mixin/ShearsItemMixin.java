@@ -21,9 +21,9 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import static com.dreu.planartools.PlanarTools.TAG_KEYS_BY_TOOL_TYPE;
-import static com.dreu.planartools.util.Helpers.getTierIfPresent;
 import static com.dreu.planartools.config.BlocksConfig.getBlockProperties;
 import static com.dreu.planartools.config.ToolsConfig.TOOLS;
+import static com.dreu.planartools.util.Helpers.getTierIfPresent;
 
 @SuppressWarnings("unused")
 @Mixin(ShearsItem.class)

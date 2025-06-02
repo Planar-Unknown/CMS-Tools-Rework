@@ -6,9 +6,9 @@ import com.electronwill.nightconfig.toml.TomlParser;
 import java.io.FileWriter;
 
 import static com.dreu.planartools.PlanarTools.MODID;
+import static com.dreu.planartools.util.Helpers.*;
 import static com.dreu.planartools.util.Helpers.LogLevel.ERROR;
 import static com.dreu.planartools.util.Helpers.LogLevel.WARN;
-import static com.dreu.planartools.util.Helpers.*;
 
 public class GeneralConfig {
     public static boolean needsRepair;

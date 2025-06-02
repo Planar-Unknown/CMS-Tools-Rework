@@ -3,7 +3,6 @@ package com.dreu.planartools.mixin;
 import com.dreu.planartools.config.BlocksConfig;
 import com.dreu.planartools.config.ToolsConfig;
 import com.dreu.planartools.util.CachedSupplier;
-import com.google.common.base.Suppliers;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.Item;
@@ -19,10 +18,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Map;
-import java.util.function.Supplier;
 
 import static com.dreu.planartools.PlanarTools.TAG_KEYS_BY_TOOL_TYPE;
-import static com.dreu.planartools.config.BlocksConfig.BLOCKS;
 import static com.dreu.planartools.config.BlocksConfig.getBlockProperties;
 import static com.dreu.planartools.config.ToolsConfig.TOOLS;
 import static com.dreu.planartools.util.Helpers.getTierIfPresent;
@@ -30,10 +27,10 @@ import static com.dreu.planartools.util.Helpers.getTierIfPresent;
 @Mixin(value = DiggerItem.class)
 @SuppressWarnings("unused")
 public class DiggerItemMixin {
+  @SuppressWarnings("DataFlowIssue")
   private final CachedSupplier<ToolsConfig.Properties> toolProperties = CachedSupplier.of(() -> TOOLS.get(ForgeRegistries.ITEMS.getKey(self()).toString()));
 
   @Inject(method = "getDestroySpeed", at = @At("HEAD"), cancellable = true)
-  @SuppressWarnings("DataFlowIssue")
   public void onGetDestroySpeed(ItemStack itemInHand, BlockState blockState, CallbackInfoReturnable<Float> cir) {
     BlocksConfig.Properties blockProperties = getBlockProperties(blockState.getBlock());
     if (blockProperties != null) {
@@ -95,6 +92,7 @@ public class DiggerItemMixin {
     return false;
   }
 
+  @SuppressWarnings("DataFlowIssue")
   public Item self() {
     return (Item) (Object) this;
   }

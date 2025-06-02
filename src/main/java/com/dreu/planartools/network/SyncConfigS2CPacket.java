@@ -10,10 +10,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static com.dreu.planartools.util.Helpers.*;
 import static com.dreu.planartools.config.BlocksConfig.BLOCKS;
 import static com.dreu.planartools.config.GeneralConfig.*;
 import static com.dreu.planartools.config.ToolsConfig.*;
+import static com.dreu.planartools.util.Helpers.*;
 
 public class SyncConfigS2CPacket {
 

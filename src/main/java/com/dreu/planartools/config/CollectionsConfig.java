@@ -3,7 +3,9 @@ package com.dreu.planartools.config;
 import java.io.File;
 import java.io.FileWriter;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.dreu.planartools.PlanarTools.LOGGER;
 import static com.dreu.planartools.PlanarTools.MODID;

@@ -12,9 +12,9 @@ import net.minecraftforge.registries.ForgeRegistries;
 import java.util.*;
 
 import static com.dreu.planartools.PlanarTools.MODID;
-import static com.dreu.planartools.util.Helpers.*;
 import static com.dreu.planartools.config.GeneralConfig.PRESET_FOLDER_NAME;
 import static com.dreu.planartools.util.Helpers.LogLevel.*;
+import static com.dreu.planartools.util.Helpers.*;
 
 @SuppressWarnings({"SameParameterValue"})
 public class ToolsConfig {
