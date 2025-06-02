@@ -1,6 +1,7 @@
 package com.dreu.planartools.util;
 
 import com.dreu.planartools.config.BlocksConfig;
+import com.dreu.planartools.config.CollectionsConfig;
 import com.dreu.planartools.config.GeneralConfig;
 import com.dreu.planartools.config.ToolsConfig;
 import com.electronwill.nightconfig.core.Config;
@@ -72,6 +73,7 @@ public class Helpers {
         GeneralConfig.parse();
         GeneralConfig.populate();
         if (GeneralConfig.needsRepair) GeneralConfig.repair();
+        CollectionsConfig.parseAndPopulate();
         BlocksConfig.parse();
         ToolsConfig.parse();
         populateToolTypes();
@@ -278,6 +280,7 @@ public class Helpers {
     public static void writeConfigIssuesToFile() {
         if (!wereIssuesWrittenToFile) {
             wereIssuesWrittenToFile = true;
+            Collections.sort(CONFIG_ISSUES);
             StringBuilder contents = new StringBuilder();
             for (Issue issue : CONFIG_ISSUES) {
                 contents.append(issue.message().getString()).append("\n\n");

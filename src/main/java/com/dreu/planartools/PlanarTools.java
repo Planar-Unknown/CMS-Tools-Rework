@@ -1,6 +1,7 @@
 package com.dreu.planartools;
 
 import com.dreu.planartools.config.BlocksConfig;
+import com.dreu.planartools.config.CollectionsConfig;
 import com.dreu.planartools.config.GeneralConfig;
 import com.dreu.planartools.config.ToolsConfig;
 import com.dreu.planartools.network.PacketHandler;
@@ -26,13 +27,15 @@ import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 @Mod(PlanarTools.MODID)
 public class PlanarTools {
 
-    //Todo: Custom block lists compat, denoted by "@"
+    //Todo: Add all item group functionality to ToolsConfig
     //Todo: Make enchantments work on items that have been given tool types
     //Todo: Test CachedSuppliers with 3 instances and hotswappable
 
     //Todo: Make option for all registered resistances on a block must be exceeded
     //Todo: Nbt system for upgrading tools
     //Todo: modpack creator configurable enchants that interact with the Nbt system
+    //Todo: optimize SyncConfigPacket by creating Map<Properties, List<String>> first,
+    //      then reversing it to reduce instances of Properties
     //Eventually make blocks store their destroy progress on config option
 
     public static final String MODID = "planar_tools";
@@ -41,6 +44,7 @@ public class PlanarTools {
     public static final ArrayList<TagKey<Block>> TAG_KEYS_BY_TOOL_TYPE = new ArrayList<>();
 
     public PlanarTools() {
+        CollectionsConfig.parseAndPopulate();
         PacketHandler.register();
         GeneralConfig.parse();
         GeneralConfig.populate();
