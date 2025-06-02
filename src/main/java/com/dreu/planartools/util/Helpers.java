@@ -24,12 +24,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 import static com.dreu.planartools.PlanarTools.*;
 import static com.dreu.planartools.config.BlocksConfig.populateBlocks;
+import static com.dreu.planartools.config.GeneralConfig.PRESET_FOLDER_NAME;
 import static com.dreu.planartools.config.ToolsConfig.populateToolTypes;
 import static com.dreu.planartools.config.ToolsConfig.populateTools;
+import static com.dreu.planartools.util.Helpers.LogLevel.WARN;
 import static java.lang.String.format;
 
 
@@ -312,13 +317,33 @@ public class Helpers {
         }
     }
 
-    public static Tier getTierIfPresent(int toolType, ToolsConfig.Properties toolProperties) {
-        int power = toolProperties.data()[toolType].power();
-        if (power < 20) return null;
+    public static <T> T getOrElse(Config config, String parentKey, String key, T fallback, Class<T> clazz, String fileName) {
+        try {
+            Object value = config.get(key);
+            if (value == null) return fallback;
+            return clazz.cast(value);
+        } catch (ClassCastException e) {
+            addConfigIssue(WARN, (byte) 4,
+                "Value: \"{}\" for \"{}.{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Ignoring property...",
+                config.get(key), parentKey, key, PRESET_FOLDER_NAME + fileName,
+                clazz.getSimpleName(), config.get(key).getClass().getSimpleName());
+            return fallback;
+        }
+    }
+
+    public static Tier getTierIfPresent(byte toolType, ToolsConfig.Properties toolProperties) {
+        Integer power = toolProperties.powers().get(toolType);
+        if (power == null || power < 20) return null;
         if (power < 40) return Tiers.WOOD;
         if (power < 60) return Tiers.STONE;
         if (power < 80) return Tiers.IRON;
         if (power < 100) return Tiers.DIAMOND;
         return Tiers.NETHERITE;
+    }
+
+    public static <K, V> Map<K, V> mergeMaps(Map<K, V> left, Map<K, V> right, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
+        Map<K, V> mergedMap = new HashMap<>(left);
+        right.forEach((key, value) -> mergedMap.merge(key, value, remappingFunction));
+        return mergedMap;
     }
 }

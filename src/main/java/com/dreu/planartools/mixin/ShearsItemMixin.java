@@ -17,12 +17,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static com.dreu.planartools.PlanarTools.TAG_KEYS_BY_TOOL_TYPE;
 import static com.dreu.planartools.util.Helpers.getTierIfPresent;
 import static com.dreu.planartools.config.BlocksConfig.getBlockProperties;
-import static com.dreu.planartools.config.ToolsConfig.REGISTERED_TOOL_TYPES;
 import static com.dreu.planartools.config.ToolsConfig.TOOLS;
 
 @SuppressWarnings("unused")
@@ -42,11 +42,11 @@ public class ShearsItemMixin {
             boolean applyMiningSpeed = false;
             if (toolProperties.get() != null) {
                 boolean canMine = false;
-                for (ToolsConfig.PowerData powerData : toolProperties.get().data()) {
-                    BlocksConfig.ResistanceData resistanceData = blockProperties.data().get(powerData.toolTypeId());
+                for (Map.Entry<Byte, Integer> powerData : toolProperties.get().powers().entrySet()) {
+                    BlocksConfig.ResistanceData resistanceData = blockProperties.data().get(powerData.getKey());
                     if (resistanceData != null) {
                         int resistance = resistanceData.resistance();
-                        if (resistance >= 0 && powerData.power() >= resistance) {
+                        if (resistance >= 0 && powerData.getValue() >= resistance) {
                             canMine = true;
                             if (resistanceData.applyMiningSpeed()) {
                                 applyMiningSpeed = true;
@@ -54,11 +54,11 @@ public class ShearsItemMixin {
                         }
                     } else {
                         int defaultResistance = blockProperties.defaultResistance();
-                        if (defaultResistance != -1 && powerData.power() >= defaultResistance)
+                        if (defaultResistance != -1 && powerData.getValue() >= defaultResistance)
                             canMine = true;
                     }
                 }
-                cir.setReturnValue(canMine ? (applyMiningSpeed ? toolProperties.get().miningSpeed() : 1.0f) : 0.0f);
+                cir.setReturnValue(canMine ? (applyMiningSpeed ? toolProperties.get().miningSpeed().orElse(1) : 1.0f) : 0.0f);
             } else {
                 for (String toolType : REGISTERED_TOOL_TYPES) {
                     BlocksConfig.ResistanceData data = blockProperties.data().get((byte) REGISTERED_TOOL_TYPES.indexOf(toolType));
@@ -69,29 +69,28 @@ public class ShearsItemMixin {
                 cir.setReturnValue(0f);
             }
         } else if (toolProperties.get() != null) {
-            cir.setReturnValue(isCorrectToolForDrops(blockState) ? toolProperties.get().miningSpeed() : 1.0f);
+            cir.setReturnValue(isCorrectToolForDrops(blockState) ? toolProperties.get().miningSpeed().orElse(1) : 1.0f);
         }
     }
-
 
     @Inject(method = "isCorrectToolForDrops", at = @At("HEAD"), cancellable = true)
     private void onIsCorrectToolForDrops(BlockState blockState, CallbackInfoReturnable<Boolean> cir) {
         BlocksConfig.Properties blockProperties = getBlockProperties(blockState.getBlock());
         if (toolProperties.get() != null) {
             if (blockProperties != null) {
-                for (ToolsConfig.PowerData powerData : toolProperties.get().data()) {
-                    BlocksConfig.ResistanceData resistanceData = blockProperties.data().get(powerData.toolTypeId());
-                    if (resistanceData != null && resistanceData.applyMiningSpeed()) {
-                        if (resistanceData.resistance() >= 0 && powerData.power() >= resistanceData.resistance()) {
+                for (Map.Entry<Byte, Integer> powerData : toolProperties.get().powers().entrySet()) {
+                    BlocksConfig.ResistanceData resistanceData = blockProperties.data().get(powerData.getKey());
+                    if (resistanceData != null) {
+                        if (resistanceData.resistance() >= 0 && powerData.getValue() >= resistanceData.resistance()) {
                             cir.setReturnValue(true);
                         }
                     }
                 }
             } else {
-                for (ToolsConfig.PowerData data : toolProperties.get().data()) {
-                    TagKey<Block> tag = TAG_KEYS_BY_TOOL_TYPE.get(data.toolTypeId());
+                for (Map.Entry<Byte, Integer> powerData : toolProperties.get().powers().entrySet()) {
+                    TagKey<Block> tag = TAG_KEYS_BY_TOOL_TYPE.get(powerData.getKey());
                     if (blockState.is(tag)) {
-                        var tier = getTierIfPresent(data.toolTypeId(), toolProperties.get());
+                        var tier = getTierIfPresent(powerData.getKey(), toolProperties.get());
                         if (tier != null && TierSortingRegistry.isCorrectTierForDrops(tier, blockState)) {
                             cir.setReturnValue(true);
                         }

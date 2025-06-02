@@ -83,11 +83,8 @@ public class ForgeEvents {
             );
 
             Map<Byte, Integer> toolPowers = new HashMap<>();
-            if (toolProperties != null) {
-                for (PowerData data : toolProperties.data()) {
-                    toolPowers.put(data.toolTypeId(), data.power());
-                }
-            }
+            if (toolProperties != null)
+              toolPowers.putAll(toolProperties.powers());
 
             MutableComponent builder = Component.literal("");
             boolean first = true;
@@ -157,14 +154,14 @@ public class ForgeEvents {
                 ));
             }
         }
-        if (TOOLS.containsKey(item) && TOOLS.get(item).data().length > 0) {
+        if (TOOLS.containsKey(item) && !TOOLS.get(item).powers().isEmpty()) {
             event.getTooltipElements().add(Either.left(Component.translatable("planar_tools.tooltip.powerTitle")));
-            for (PowerData data : TOOLS.get(item).data()) {
+            for (Map.Entry<Byte, Integer> powerData : TOOLS.get(item).powers().entrySet()) {
                 event.getTooltipElements().add(Either.left(
                         Component.literal(" ")
-                        .append(Component.translatable("planar_tools.powerNames." + REGISTERED_TOOL_TYPES.get(data.toolTypeId()))
-                            .withStyle(style -> style.withColor(REGISTERED_TOOL_COLORS.get(data.toolTypeId())))
-                        .append(": " + data.power()))
+                        .append(Component.translatable("planar_tools.powerNames." + REGISTERED_TOOL_TYPES.get(powerData.getKey()))
+                            .withStyle(style -> style.withColor(REGISTERED_TOOL_COLORS.get(powerData.getKey())))
+                        .append(": " + powerData.getValue()))
                 ));
             }
         }
