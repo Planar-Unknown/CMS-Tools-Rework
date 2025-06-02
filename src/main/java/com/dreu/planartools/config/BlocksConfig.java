@@ -1,5 +1,6 @@
 package com.dreu.planartools.config;
 
+import com.dreu.planartools.util.Helpers;
 import com.electronwill.nightconfig.core.Config;
 import net.minecraft.data.BlockFamilies;
 import net.minecraft.data.BlockFamily;
@@ -41,9 +42,10 @@ public class BlocksConfig {
     Shovel = {Resistance = 40, ApplyMiningSpeed = false}  # Tools with ShovelPower ≥ 40 can mine this block but their MiningSpeed is NOT applied.
     Pickaxe = {Resistance = 20, ApplyMiningSpeed = true}  # Tools with PickaxePower ≥ 20 can mine this block and their MiningSpeed IS applied.
     
-    ["minecraft:obsidian"] # A simple example
+    ["minecraft:amethyst_block"] # A simple example
     DefaultResistance = -1 # Not mineable by default
-    Pickaxe = {Resistance = 80, ApplyMiningSpeed = true} # Pickaxes of power 80 or above (Diamond in vanilla) can mine it
+    Arcane = {Resistance = 30, ApplyMiningSpeed = true} # Tools with Arcane power 80 or above (Diamond in vanilla) can mine it
+    # Note that in the tools.toml, we have given all @golden_tools Arcane power of 30
     
     # You can specify a tag (denoted by the "#"), and all blocks in that tag will receive the values declared
     ["#minecraft:dirt"]
@@ -55,7 +57,7 @@ public class BlocksConfig {
     Hoe = {ApplyMiningSpeed = true}
     
     # You can specify a Block Family (denoted by the "$"), and all blocks in that family will receive the values declared
-    ["$minecraft:nether_bricks"] # A Block Family contains all variants of the base block, (e.g., stairs, slabs, walls, etc)
+    ["$minecraft:nether_bricks"] # A Block Family contains all variants of the base block, (e.g., stairs, slabs, walls)
     Hardness = 3.0 # All we've done is made nether brick blocks a little tougher
     ExplosionResistance = 7.0
     # Note that not all mod creators implement block families for blocks with variants.
@@ -69,6 +71,12 @@ public class BlocksConfig {
     ["@wood"] # Here is another example collection. This time located at [config/planar_tools/collections/wood.txt]
     DefaultResistance = 0 # We've changed nothing about wood stuff. This is just a nice example of a custom collection
     Axe = {ApplyMiningSpeed = true}
+    
+    ["#minecraft:wool"] # Swords in tools.toml example were declared with 20 Shears power, so they will not mine Wool quickly
+    Shears = {Resistance = 100, ApplyMiningSpeed = true}
+    
+    ["minecraft:cobweb"] # Swords will however mine Cobwebs quickly
+    Shears = {Resistance = 20, ApplyMiningSpeed = true}
     """;
 
   public static Config CONFIG;
@@ -83,7 +91,7 @@ public class BlocksConfig {
 
     CONFIG.valueMap().forEach((configKey, blockProperties) -> {
       if (configKey.startsWith("#")) {
-        handleTagBlocks(configKey, (Config) blockProperties, Optional.empty());
+        handleTag(configKey, (Config) blockProperties, Optional.empty());
       } else if (configKey.startsWith("$")) {
         handleBlockFamily(configKey, (Config) blockProperties, Optional.empty());
       } else if (configKey.startsWith("@")) {
@@ -100,15 +108,14 @@ public class BlocksConfig {
 
   private static void handleCollection(String configKey, Config blockProperties) {
     String collectionId = configKey.substring(1);
-    List<String> collection = CollectionsConfig.MAP.get(collectionId);
+    List<String> collection = CollectionsConfig.BLOCKS_MAP.get(collectionId);
     if (collection == null) {
-      addConfigIssue(WARN, (byte) 4, "Config [{}] declared collection <{}> which does not exist, check for typos! | Skipping Collection...", PRESET_FOLDER_NAME + "blocks.toml", configKey);
+      addConfigIssue(WARN, (byte) 4, "Config [{}] declared block collection <{}> which does not exist, check for typos! | Skipping Collection...", PRESET_FOLDER_NAME + "blocks.toml", configKey);
       return;
     }
-//    System.out.println(configKey + " | " + Arrays.toString(collection.stream().map(string -> string.concat("\n")).toArray()));
     collection.forEach((string) -> {
       if (string.startsWith("#")) {
-        handleTagBlocks(string, blockProperties, Optional.of(collectionId));
+        handleTag(string, blockProperties, Optional.of(collectionId));
       } else if (string.startsWith("$")) {
         handleBlockFamily(string, blockProperties, Optional.of(collectionId));
       } else {
@@ -116,11 +123,10 @@ public class BlocksConfig {
         addBlock(string, assembleProperties(configKey, blockProperties));
       }
     });
-
   }
 
   @SuppressWarnings({"DataFlowIssue", "OptionalUsedAsFieldOrParameterType"})
-  private static void handleTagBlocks(String configKey, Config blockProperties, Optional<String> collectionName) {
+  private static void handleTag(String configKey, Config blockProperties, Optional<String> collectionName) {
     String tagId = configKey.substring(1);
     if (!ResourceLocation.isValidResourceLocation(tagId)) {
       addConfigIssue(INFO, (byte) 2, "Not a valid Tag ResourceLocation: <{}> declared in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "blocks.toml]"));
@@ -132,7 +138,7 @@ public class BlocksConfig {
     }
     Properties properties = assembleProperties(configKey, blockProperties);
     ForgeRegistries.BLOCKS.tags().getTag(BlockTags.create(new ResourceLocation(tagId))).forEach(block ->
-        addBlock(getKey(block), properties)
+        addBlock(getBlockId(block), properties)
     );
   }
 
@@ -150,26 +156,21 @@ public class BlocksConfig {
 
       BlockFamily family = BlockFamilies.MAP.get(delegate.get());
       Properties properties = assembleProperties(configKey, blockProperties);
-      family.getVariants().values().forEach(block -> addBlock(getKey(block), properties));
-      addBlock(getKey(family.getBaseBlock()), properties);
+      family.getVariants().values().forEach(block -> addBlock(getBlockId(block), properties));
+      addBlock(getBlockId(family.getBaseBlock()), properties);
     });
   }
 
   private static void handleSingleBlock(String blockId, Config blockPropertiesConfig) {
     if (blockIsNotValid(blockId, Optional.empty())) return;
 
-    BlocksConfig.Properties singleBlockProperties = assembleProperties(blockId, blockPropertiesConfig);
+    Properties singleBlockProperties = assembleProperties(blockId, blockPropertiesConfig);
     BLOCKS.merge(blockId, singleBlockProperties, (existing, singleBlock) -> {
-      Integer defaultResistance = getOrElse(blockPropertiesConfig, blockId, "DefaultResistance", existing.defaultResistance(), Integer.class);
-      Map<Byte, BlocksConfig.ResistanceData> resistanceDataMap = getResistanceDataMapOverride(blockPropertiesConfig, defaultResistance, existing.data());
+      Integer defaultResistance = getOrElse(blockPropertiesConfig, blockId, "DefaultResistance", existing.defaultResistance(), Integer.class, "blocks.toml");
+      Map<Byte, ResistanceData> resistanceDataMap = getResistanceDataMapOverride(blockPropertiesConfig, defaultResistance, existing.data(), blockId);
+      existing.data().forEach(resistanceDataMap::putIfAbsent);
 
-      for (Map.Entry<Byte, BlocksConfig.ResistanceData> incomingEntry : existing.data().entrySet()) {
-        if (!resistanceDataMap.containsKey(incomingEntry.getKey())) {
-          resistanceDataMap.put(incomingEntry.getKey(), incomingEntry.getValue());
-        }
-      }
-
-      return new BlocksConfig.Properties(
+      return new Properties(
           singleBlock.hardness().isPresent() ? singleBlock.hardness() : existing.hardness(),
           singleBlock.explosionResistance().isPresent() ? singleBlock.explosionResistance() : existing.explosionResistance(),
           defaultResistance,
@@ -194,8 +195,8 @@ public class BlocksConfig {
     return false;
   }
 
-  private static Map<Byte, BlocksConfig.ResistanceData> getResistanceDataMapOverride(Config block, int defaultResistance, Map<Byte, BlocksConfig.ResistanceData> right) {
-    Map<Byte, BlocksConfig.ResistanceData> resistanceDataMap = new HashMap<>();
+  private static Map<Byte, ResistanceData> getResistanceDataMapOverride(Config block, int defaultResistance, Map<Byte, ResistanceData> right, String parent) {
+    Map<Byte, ResistanceData> resistanceDataMap = new HashMap<>();
     for (Map.Entry<String, Object> property : block.valueMap().entrySet()) {
       switch (property.getKey()) {
         case "DefaultResistance", "ExplosionResistance", "Hardness" -> {
@@ -205,15 +206,15 @@ public class BlocksConfig {
           byte toolType = (byte) REGISTERED_TOOL_TYPES.indexOf(property.getKey());
           resistanceDataMap.put(
               toolType,
-              new BlocksConfig.ResistanceData(
-                  getOrElse(((Config) property.getValue()), property.getKey(), "Resistance", right.containsKey(toolType) ? right.get(toolType).resistance() : defaultResistance, Integer.class),
-                  getOrElse(((Config) property.getValue()), property.getKey(), "ApplyMiningSpeed", right.containsKey(toolType) && right.get(toolType).applyMiningSpeed(), Boolean.class)
+              new ResistanceData(
+                  getOrElse(((Config) property.getValue()), property.getKey(), "Resistance", right.containsKey(toolType) ? right.get(toolType).resistance() : defaultResistance, Integer.class, "blocks.toml"),
+                  getOrElse(((Config) property.getValue()), property.getKey(), "ApplyMiningSpeed", right.containsKey(toolType) && right.get(toolType).applyMiningSpeed(), Boolean.class, "blocks.toml")
               )
           );
         }
       }
       if (!REGISTERED_TOOL_TYPES.contains(property.getKey())) {
-        addConfigIssue(ERROR, (byte) 6, "\"{}\" in config file [{}] is NOT a registered tool type!", property.getKey(), PRESET_FOLDER_NAME + "blocks.toml");
+        addConfigIssue(ERROR, (byte) 6, "\"{}\" used in config file [{}] for <{}> is NOT a registered tool type!", property.getKey(), PRESET_FOLDER_NAME + "blocks.toml", parent);
       }
     }
     return resistanceDataMap;
@@ -224,7 +225,7 @@ public class BlocksConfig {
   }
 
   private static @NotNull Properties assembleProperties(String blockId, Config config) {
-    int defaultResistance = getOrElse(config, blockId, "DefaultResistance", 0, Integer.class);
+    int defaultResistance = getOrElse(config, blockId, "DefaultResistance", 0, Integer.class, "blocks.toml");
     return new Properties(
         getOptionalFloat(config, "Hardness", blockId),
         getOptionalFloat(config, "ExplosionResistance", blockId),
@@ -247,8 +248,8 @@ public class BlocksConfig {
       byte type = (byte) REGISTERED_TOOL_TYPES.indexOf(key);
       Config toolConfig = (Config) entry.getValue();
       map.put(type, new ResistanceData(
-          getOrElse(toolConfig, key, "Resistance", defaultResistance, Integer.class),
-          getOrElse(toolConfig, key, "ApplyMiningSpeed", false, Boolean.class)
+          getOrElse(toolConfig, key, "Resistance", defaultResistance, Integer.class, "blocks.toml"),
+          getOrElse(toolConfig, key, "ApplyMiningSpeed", false, Boolean.class, "blocks.toml")
       ));
     }
     return map;
@@ -256,20 +257,6 @@ public class BlocksConfig {
 
   private static boolean isStandardKey(String key) {
     return key.equals("DefaultResistance") || key.equals("ExplosionResistance") || key.equals("Hardness");
-  }
-
-  private static <T> T getOrElse(Config config, String parentKey, String key, T fallback, Class<T> clazz) {
-    try {
-      Object value = config.get(key);
-      if (value == null) return fallback;
-      return clazz.cast(value);
-    } catch (ClassCastException e) {
-      addConfigIssue(WARN, (byte) 4,
-          "Value: \"{}\" for \"{}.{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Ignoring property...",
-          config.get(key), parentKey, key, PRESET_FOLDER_NAME + "blocks.toml",
-          clazz.getSimpleName(), config.get(key).getClass().getSimpleName());
-      return fallback;
-    }
   }
 
   private static Optional<Float> getOptionalFloat(Config values, String key, String parent) {
@@ -286,16 +273,17 @@ public class BlocksConfig {
 
 
   @SuppressWarnings("DataFlowIssue")
-  private static String getKey(Block block) {
+  private static String getBlockId(Block block) {
     return ForgeRegistries.BLOCKS.getKey(block).toString();
   }
 
   public static Properties getBlockProperties(Block block) {
-    return BLOCKS.get(getKey(block));
+    return BLOCKS.get(getBlockId(block));
   }
 
   public record ResistanceData(int resistance, boolean applyMiningSpeed) {}
 
+  // powers is a map of ToolTypeID to ResistanceData(resistance, applyMiningSpeed)
   public record Properties(Optional<Float> hardness, Optional<Float> explosionResistance, int defaultResistance, Map<Byte, ResistanceData> data) {
     public static Properties merged(Properties left, Properties right) {
       return new Properties(
@@ -304,7 +292,11 @@ public class BlocksConfig {
           left.defaultResistance() == -1 || right.defaultResistance() == -1
               ? Math.max(left.defaultResistance, right.defaultResistance)
               : Math.min(left.defaultResistance(), right.defaultResistance()),
-          mergeMaps(left, right)
+          Helpers.mergeMaps(left.data(), right.data(),
+              (rightData, newLeftData) -> new ResistanceData(
+                Math.min(newLeftData.resistance(), rightData.resistance()),
+                newLeftData.applyMiningSpeed() || rightData.applyMiningSpeed()
+          ))
       );
     }
 
@@ -318,17 +310,6 @@ public class BlocksConfig {
             : left
           : Optional.empty();
     }
-
-    private static Map<Byte, ResistanceData> mergeMaps(Properties left, Properties right) {
-      Map<Byte, ResistanceData> mergedMap = new HashMap<>(right.data());
-      left.data().forEach((key, leftData) ->
-          mergedMap.merge(key, leftData, (rightData, newLeftData) -> new ResistanceData(
-          Math.min(newLeftData.resistance(), rightData.resistance()),
-          newLeftData.applyMiningSpeed() || rightData.applyMiningSpeed()
-      )));
-      return mergedMap;
-    }
-
 
     public void write(FriendlyByteBuf buf) {
       buf.writeBoolean(hardness.isPresent());
