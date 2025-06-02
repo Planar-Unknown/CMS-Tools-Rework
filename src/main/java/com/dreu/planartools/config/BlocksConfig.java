@@ -100,8 +100,9 @@ public class BlocksConfig {
         handleBlockFamily(configKey, (Config) blockProperties, Optional.empty());
       } else if (configKey.startsWith("@")) {
         handleCollection(configKey, (Config) blockProperties);
+      } else {
+        singleBlocks.put(configKey, (Config) blockProperties);
       }
-      singleBlocks.put(configKey, (Config) blockProperties);
     });
 
     singleBlocks.forEach(BlocksConfig::handleSingleBlock);

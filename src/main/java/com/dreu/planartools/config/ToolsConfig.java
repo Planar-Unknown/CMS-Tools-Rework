@@ -107,16 +107,17 @@ public class ToolsConfig {
     public static void populateTools() {
         TOOLS.clear();
         Map<String, Object> toolsConfig = getOrDefault("Tools", Config.class).valueMap();
-        Map<String, Config> singleToolConfig = new HashMap<>();
+        Map<String, Config> singleTools = new HashMap<>();
         toolsConfig.forEach((configKey, toolProperties) -> {
             if (configKey.startsWith("#")) {
                 handleTag(configKey, (Config) toolProperties, Optional.empty());
             } else if (configKey.startsWith("@")) {
                 handleCollection(configKey, (Config) toolProperties);
+            } else {
+                singleTools.put(configKey, (Config) toolProperties);
             }
-            singleToolConfig.put(configKey, (Config) toolProperties);
         });
-        singleToolConfig.forEach(ToolsConfig::handleSingleItem);
+        singleTools.forEach(ToolsConfig::handleSingleItem);
     }
 
     @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "DataFlowIssue"})
