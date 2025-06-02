@@ -4,9 +4,8 @@ import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.toml.TomlParser;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
-import net.minecraft.world.item.Tier;
-import net.minecraft.world.item.Tiers;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.item.Item;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -19,7 +18,6 @@ import static com.dreu.planartools.util.Helpers.LogLevel.*;
 
 @SuppressWarnings({"SameParameterValue"})
 public class ToolsConfig {
-    public static final Tier[] TIERS_BY_ID = {Tiers.WOOD, Tiers.STONE, Tiers.IRON, Tiers.DIAMOND, Tiers.NETHERITE};
     public static final String templateFileName = "config/" + MODID + "/presets/template/tools.toml";
     public static final String TEMPLATE_CONFIG_STRING = """
             # Values not included for Tools will default to the Default power.
@@ -36,46 +34,50 @@ public class ToolsConfig {
                 "Shovel:A9A9A9",
                 "Hoe:32CD32",
                 "Sword:DC143C",
-                "Shears"
+                "Shears",
+                "Arcane:7F00FF"
             ]
             
             [Tools]
+            "#minecraft:swords" = {Shears = 20}
+            "@golden_tools" = {Arcane = 30}
+            
             "minecraft:wooden_pickaxe" = {Pickaxe = 20, MiningSpeed = 2}
             "minecraft:stone_pickaxe" = {Pickaxe = 40, MiningSpeed = 4}
             "minecraft:iron_pickaxe" = {Pickaxe = 60, MiningSpeed = 6}
-            "minecraft:golden_pickaxe" = {Pickaxe = 20, MiningSpeed = 12}
+            "minecraft:golden_pickaxe" = {Pickaxe = 40, MiningSpeed = 12}
             "minecraft:diamond_pickaxe" = {Pickaxe = 80, MiningSpeed = 8}
             "minecraft:netherite_pickaxe" = {Pickaxe = 100, MiningSpeed = 9}
             
             "minecraft:wooden_shovel" = {Shovel = 20, MiningSpeed = 2}
             "minecraft:stone_shovel" = {Shovel = 40, MiningSpeed = 4}
             "minecraft:iron_shovel" = {Shovel = 60, MiningSpeed = 6}
-            "minecraft:golden_shovel" = {Shovel = 20, MiningSpeed = 12}
+            "minecraft:golden_shovel" = {Shovel = 40, MiningSpeed = 12}
             "minecraft:diamond_shovel" = {Shovel = 80, MiningSpeed = 8}
             "minecraft:netherite_shovel" = {Shovel = 100, MiningSpeed = 9}
             
             "minecraft:wooden_hoe" = {Hoe = 20, MiningSpeed = 2}
             "minecraft:stone_hoe" = {Hoe = 40, MiningSpeed = 4}
             "minecraft:iron_hoe" = {Hoe = 60, MiningSpeed = 6}
-            "minecraft:golden_hoe" = {Hoe = 20, MiningSpeed = 12}
+            "minecraft:golden_hoe" = {Hoe = 40, MiningSpeed = 12}
             "minecraft:diamond_hoe" = {Hoe = 80, MiningSpeed = 8}
             "minecraft:netherite_hoe" = {Hoe = 100, MiningSpeed = 9}
             
             "minecraft:wooden_axe" = {Axe = 20, MiningSpeed = 2}
             "minecraft:stone_axe" = {Axe = 40, MiningSpeed = 4}
             "minecraft:iron_axe" = {Axe = 60, MiningSpeed = 6}
-            "minecraft:golden_axe" = {Axe = 20, MiningSpeed = 12}
+            "minecraft:golden_axe" = {Axe = 40, MiningSpeed = 12}
             "minecraft:diamond_axe" = {Axe = 80, MiningSpeed = 8}
             "minecraft:netherite_axe" = {Axe = 100, MiningSpeed = 9}
             
-            "minecraft:wooden_sword" = {Shears = 20, MiningSpeed = 2}
-            "minecraft:stone_sword" = {Shears = 40, MiningSpeed = 4}
-            "minecraft:iron_sword" = {Shears = 60, MiningSpeed = 6}
-            "minecraft:golden_sword" = {Shears = 20, MiningSpeed = 12}
-            "minecraft:diamond_sword" = {Shears = 80, MiningSpeed = 8}
-            "minecraft:netherite_sword" = {Shears = 100, MiningSpeed = 9}
+            "minecraft:wooden_sword" = {Sword = 20, MiningSpeed = 2}
+            "minecraft:stone_sword" = {Sword = 40, MiningSpeed = 4}
+            "minecraft:iron_sword" = {Sword = 60, MiningSpeed = 6}
+            "minecraft:golden_sword" = {Sword = 40, MiningSpeed = 12}
+            "minecraft:diamond_sword" = {Sword = 80, MiningSpeed = 8}
+            "minecraft:netherite_sword" = {Sword = 100, MiningSpeed = 9}
             
-            "minecraft:shears" = {Shears = 100, MiningSpeed = 12}
+            "minecraft:shears" = {Shears = 100, MiningSpeed = 10}
             """;
     public static Config CONFIG;
     public static void parse() {
@@ -104,42 +106,114 @@ public class ToolsConfig {
     public static Map<String, Properties> TOOLS = new HashMap<>();
     public static void populateTools() {
         TOOLS.clear();
-        getOrDefault("Tools", Config.class).valueMap().forEach((itemId, tool) -> {
-            if (!itemId.contains(":")) {
-                addConfigIssue(INFO, (byte) 2, "No namespace found in item id: <{}> declared in config: [{}] | Skipping...", itemId, PRESET_FOLDER_NAME + "tools.toml");
+        Map<String, Object> toolsConfig = getOrDefault("Tools", Config.class).valueMap();
+        toolsConfig.forEach((configKey, toolProperties) -> {
+            if (configKey.startsWith("#")) {
+                handleTag(configKey, (Config) toolProperties, Optional.empty());
+            } else if (configKey.startsWith("@")) {
+                handleCollection(configKey, (Config) toolProperties);
+            }
+        });
+        toolsConfig.forEach((itemId, toolProperties) -> {
+            if (itemId.contains("#") || itemId.contains("@")) return;
+            handleSingleItem(itemId, (Config) toolProperties);
+        });
+    }
+
+    @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "DataFlowIssue"})
+    private static void handleTag(String configKey, Config toolProperties, Optional<String> collectionName) {
+        String tagId = configKey.substring(1);
+        if (!ResourceLocation.isValidResourceLocation(tagId)) {
+            addConfigIssue(INFO, (byte) 2, "Not a valid Tag ResourceLocation: <{}> declared in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "tools.toml]"));
+            return;
+        }
+        if (!ForgeRegistries.ITEMS.tags().isKnownTagName(ItemTags.create(new ResourceLocation(tagId)))) {
+            addConfigIssue(INFO, (byte) 2, "Not an existing Item Tag: <{}> declared in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "tools.toml]"));
+            return;
+        }
+        ToolsConfig.Properties properties = assembleProperties(configKey, toolProperties);
+        ForgeRegistries.ITEMS.tags().getTag(ItemTags.create(new ResourceLocation(tagId))).forEach(item ->
+            addItem(getItemId(item), properties)
+        );
+    }
+
+    private static void handleCollection(String configKey, Config toolProperties) {
+        String collectionId = configKey.substring(1);
+        List<String> collection = CollectionsConfig.ITEMS_MAP.get(collectionId);
+        if (collection == null) {
+            addConfigIssue(WARN, (byte) 4, "Config [{}] declared item collection <{}> which does not exist, check for typos! | Skipping Collection...", PRESET_FOLDER_NAME + "tools.toml", configKey);
+            return;
+        }
+        collection.forEach((string) -> {
+            if (string.startsWith("#")) {
+                handleTag(string, toolProperties, Optional.of(collectionId));
+            } else {
+                if (itemIsNotValid(string, Optional.of(collectionId))) return;
+                addItem(string, assembleProperties(configKey, toolProperties));
+            }
+        });
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private static boolean itemIsNotValid(String itemId, Optional<String> collectionName) {
+        if (!ResourceLocation.isValidResourceLocation(itemId)) {
+            addConfigIssue(INFO, (byte) 2, "Not a valid Item ResourceLocation: <{}> declared in {} | Skipping Item...", itemId, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "tools.toml]"));
+            return true;
+        }
+        if (!ModList.get().isLoaded(itemId.split(":")[0])) {
+            addConfigIssue(INFO, (byte) 2, "{} declared Tool Power values for <{}> but mod '{{}}' is not loaded | Skipping Item...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() ->  "Config: [" + PRESET_FOLDER_NAME + "tools.toml]"), itemId, itemId.split(":")[0]);
+            return true;
+        }
+        if (!ForgeRegistries.ITEMS.containsKey(new ResourceLocation(itemId))) {
+            addConfigIssue(INFO, (byte) 2, "{} declared item <{}> which does not exist, check for typos! | Skipping Item...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() ->  "Config: [" + PRESET_FOLDER_NAME + "tools.toml]"), itemId);
+            return true;
+        }
+        return false;
+    }
+
+    private static void addItem(String key, Properties properties) {
+        TOOLS.merge(key, properties, Properties::merged);
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    private static String getItemId(Item item) {
+        return ForgeRegistries.ITEMS.getKey(item).toString();
+    }
+
+    private static Properties assembleProperties(String configKey, Config toolProperties) {
+        Map<Byte, Integer> powers = new HashMap<>();
+        toolProperties.valueMap().forEach((property, value) -> {
+            if (property.equals("MiningSpeed")) return;
+            if (!REGISTERED_TOOL_TYPES.contains(property)) {
+                addConfigIssue(ERROR, (byte) 6, "\"{}\" used in config file [{}] for <{}> is NOT a registered tool type!", property, PRESET_FOLDER_NAME + "blocks.toml", configKey);
                 return;
             }
-            if (ModList.get().isLoaded(itemId.substring(0, itemId.indexOf(":")))) {
-                if (ForgeRegistries.ITEMS.containsKey(new ResourceLocation(itemId))) {
-                    List<PowerData> powerDataList = new ArrayList<>();
-                    Integer miningSpeed = 1;
-                    for (Map.Entry<String, Object> property : ((Config) tool).valueMap().entrySet()) {
-                        if (property.getKey().equals("MiningSpeed")) miningSpeed = (Integer) property.getValue();
-                        else {
-                            String toolType = property.getKey();
-                            if (!REGISTERED_TOOL_TYPES.contains(toolType)) {
-                                addConfigIssue(ERROR, (byte) 6, "\"{}\" declared for <{}> in config file [{}] is NOT a registered tool type! | Skipping power type...", toolType, itemId, PRESET_FOLDER_NAME + "tools.toml");
-                                break;
-                            }
-                            Integer toolPower = tryCast(property.getValue(), Integer.class, itemId +  "." + toolType);
-                            if (toolPower == null) break;
-                            powerDataList.add(new PowerData(
-                                (byte) REGISTERED_TOOL_TYPES.indexOf(toolType),
-                                (byte) Mth.clamp(Math.floor(toolPower * 0.05), 0, TIERS_BY_ID.length),
-                                toolPower
-                            ));
+            powers.put((byte) REGISTERED_TOOL_TYPES.indexOf(property), tryCast(value, Integer.class, configKey + "." + property));
+        });
+        return new Properties(powers, getOptionalInt(toolProperties, "MiningSpeed", configKey));
+    }
 
-                        }
-                    }
+    private static Optional<Integer> getOptionalInt(Config values, String key, String parent) {
+        Object value = values.get(key);
+        if (value instanceof Number number) {
+            return Optional.of(number.intValue());
+        } else if (value != null) {
+            addConfigIssue(WARN, (byte) 4,
+                "Value: \"{}\" for \"{}.{}\" is an invalid type in config [{}] | Expected: 'Integer' but got: '{}' | Ignoring property...",
+                value, parent, key, PRESET_FOLDER_NAME + "tools.toml", value.getClass().getSimpleName());
+        }
+        return Optional.empty();
+    }
 
-                    powerDataList.sort(Comparator.comparingInt(PowerData::toolTypeId));
+    private static void handleSingleItem(String itemId, Config toolProperties) {
+        if (itemIsNotValid(itemId, Optional.empty())) return;
 
-                    TOOLS.put(itemId, new Properties(
-                        powerDataList.toArray(new PowerData[0]),
-                        miningSpeed
-                    ));
-                } else addConfigIssue(INFO, (byte) 2, "Config [{}] declared tool power values for <{}> which does not exist, check for typos! | Skipping Item...", PRESET_FOLDER_NAME + "tools.toml", itemId);
-            } else addConfigIssue(INFO, (byte) 2, "Config [{}] declared tool power values for <{}> when {{}} was not loaded or does not exist in this modpack | Skipping Item...", PRESET_FOLDER_NAME + "tools.toml", itemId, itemId.substring(0, itemId.indexOf(":")));
+        Properties singleItemProperties = assembleProperties(itemId, toolProperties);
+
+        TOOLS.merge(itemId, singleItemProperties, (existing, singleItem) -> {
+            Map<Byte, Integer> mergedMap = new HashMap<>(existing.powers());
+            mergedMap.putAll(singleItem.powers());
+            return new Properties(mergedMap, singleItem.miningSpeed().isPresent() ? singleItem.miningSpeed() : existing.miningSpeed());
         });
     }
 
@@ -147,7 +221,7 @@ public class ToolsConfig {
         try {
             return clazz.cast(value);
         } catch (Exception e) {
-            addConfigIssue(ERROR, (byte) 4, "Value: \"{}\" for '{}' is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Skipping power type...", value, key, PRESET_FOLDER_NAME + "tools.toml", clazz.getSimpleName(), value.getClass().getSimpleName());
+            addConfigIssue(ERROR, (byte) 7, "Value: \"{}\" for '{}' is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Skipping power type...", value, key, PRESET_FOLDER_NAME + "tools.toml", clazz.getSimpleName(), value.getClass().getSimpleName());
             return null;
         }
     }
@@ -165,38 +239,35 @@ public class ToolsConfig {
         }
     }
 
-    public record Properties(PowerData[] data, int miningSpeed) {
+    // powers is a map of ToolTypeID to ToolPower
+    public record Properties(Map<Byte, Integer> powers, Optional<Integer> miningSpeed) {
+
+        public static Properties merged(Properties left, Properties right) {
+            return new Properties(
+                mergeMaps(left.powers(), right.powers(), Math::max),
+                left.miningSpeed().isPresent() && right.miningSpeed().isPresent()
+                    ? Optional.of(Math.max(left.miningSpeed().get(), right.miningSpeed().get()))
+                    : left.miningSpeed().isPresent() ? left.miningSpeed()
+                    : right.miningSpeed()
+            );
+        }
+
         public void writeToBuffer(FriendlyByteBuf buf) {
-            PowerData[] dataArray = this.data();
-            buf.writeVarInt(dataArray.length);
-            for (PowerData pd : dataArray)
-                PowerData.writeToBuffer(buf, pd);
-            buf.writeInt(this.miningSpeed());
+            buf.writeInt(powers().size());
+            for (Map.Entry<Byte, Integer> entry : powers.entrySet()) {
+                buf.writeByte(entry.getKey());
+                buf.writeInt(entry.getValue());
+            }
+            buf.writeBoolean(miningSpeed.isPresent());
+            miningSpeed().ifPresent(buf::writeInt);
         }
 
         public static Properties readFromBuffer(FriendlyByteBuf buf) {
-            int length = buf.readVarInt();
-            PowerData[] dataArray = new PowerData[length];
-            for (int i = 0; i < length; i++)
-                dataArray[i] = PowerData.readFromBuffer(buf);
-            int miningSpeed = buf.readInt();
-            return new Properties(dataArray, miningSpeed);
-        }
-
-
-    }
-    public record PowerData(byte toolTypeId, byte tierId, int power) {
-        public static void writeToBuffer(FriendlyByteBuf buf, PowerData powerData) {
-            buf.writeByte(powerData.toolTypeId());
-            buf.writeByte(powerData.tierId());
-            buf.writeInt(powerData.power());
-        }
-
-        public static PowerData readFromBuffer(FriendlyByteBuf buf) {
-            byte toolTypeId = buf.readByte();
-            byte tierId = buf.readByte();
-            int power = buf.readInt();
-            return new PowerData(toolTypeId, tierId, power);
+            Map<Byte, Integer> powers = new HashMap<>();
+            int bounds = buf.readInt();
+            for (int i = 0; i < bounds; i++)
+                powers.put(buf.readByte(), buf.readInt());
+            return new Properties(powers, buf.readBoolean() ? Optional.of(buf.readInt()) : Optional.empty());
         }
     }
 }
