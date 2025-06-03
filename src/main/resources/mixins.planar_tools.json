@@ -9,7 +9,8 @@
     "BlockStateBaseMixin",
     "DiggerItemMixin",
     "ItemMixin",
-    "ShearsItemMixin"
+    "ShearsItemMixin",
+    "enchantments/AnvilMenuMixin"
   ],
   "injectors": {
     "defaultRequire": 1
