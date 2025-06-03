@@ -1,9 +1,6 @@
 package com.dreu.planartools;
 
-import com.dreu.planartools.config.BlocksConfig;
-import com.dreu.planartools.config.CollectionsConfig;
-import com.dreu.planartools.config.GeneralConfig;
-import com.dreu.planartools.config.ToolsConfig;
+import com.dreu.planartools.config.*;
 import com.dreu.planartools.network.PacketHandler;
 import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
@@ -27,7 +24,6 @@ import static com.dreu.planartools.util.Helpers.addConfigIssue;
 @Mod(PlanarTools.MODID)
 public class PlanarTools {
 
-    //Todo: Add all item group functionality to ToolsConfig
     //Todo: Make enchantments work on items that have been given tool types
     //Todo: Test CachedSuppliers with 3 instances and hotswappable
     //Todo: Add defaultCanDrop to blocks and CanDrop to each tool type of blocks
@@ -51,8 +47,10 @@ public class PlanarTools {
         GeneralConfig.populate();
         ToolsConfig.parse();
         BlocksConfig.parse();
-        resetTemplate(BlocksConfig.templateFileName, BlocksConfig.TEMPLATE_CONFIG_STRING);
-        resetTemplate(ToolsConfig.templateFileName, ToolsConfig.TEMPLATE_CONFIG_STRING);
+        EnchantsConfig.parse();
+        resetTemplate(EnchantsConfig.TEMPLATE_FILE_NAME, EnchantsConfig.TEMPLATE_CONFIG_STRING);
+        resetTemplate(BlocksConfig.TEMPLATE_FILE_NAME, BlocksConfig.TEMPLATE_CONFIG_STRING);
+        resetTemplate(ToolsConfig.TEMPLATE_FILE_NAME, ToolsConfig.TEMPLATE_CONFIG_STRING);
     }
 
     public static void populateTagKeys() {
