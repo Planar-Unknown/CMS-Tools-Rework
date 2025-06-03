@@ -9,6 +9,8 @@ import java.util.Map;
 
 import static com.dreu.planartools.PlanarTools.LOGGER;
 import static com.dreu.planartools.PlanarTools.MODID;
+import static com.dreu.planartools.util.Helpers.LogLevel.INFO;
+import static com.dreu.planartools.util.Helpers.addConfigIssue;
 
 public class CollectionsConfig {
   public static final String BLOCK_COLLECTIONS_FOLDER = "config/" + MODID + "/collections/blocks";
@@ -182,7 +184,7 @@ public class CollectionsConfig {
       try {
         List<String> contents = Files.readAllLines(currentFile.toPath()).stream().filter(s -> !(s.startsWith("/") || s.isEmpty())).toList();
         if (contents.isEmpty()) {
-          //Todo addConfigIssue found empty collection at
+          addConfigIssue(INFO, (byte) 1, "Found Collection at [{}] but it was empty", fileName);
         }
         map.put(removeExtension(fileName.substring(subStringStart)), contents);
       } catch (Exception e) {
