@@ -5,8 +5,6 @@ import com.electronwill.nightconfig.toml.TomlParser;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
-import net.minecraft.world.item.Item;
-import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.*;
@@ -18,7 +16,7 @@ import static com.dreu.planartools.util.Helpers.*;
 
 @SuppressWarnings({"SameParameterValue"})
 public class ToolsConfig {
-    public static final String templateFileName = "config/" + MODID + "/presets/template/tools.toml";
+    public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/tools.toml";
     public static final String TEMPLATE_CONFIG_STRING = """
             # Values not included for Tools will default to the Default power.
             # Power indicates the block Resistance level a tool can overcome.
@@ -79,11 +77,13 @@ public class ToolsConfig {
             
             "minecraft:shears" = {Shears = 100, MiningSpeed = 10}
             """;
+
     public static Config CONFIG;
+    private static final Config TEMPLATE_CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
+
     public static void parse() {
         CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "tools.toml", TEMPLATE_CONFIG_STRING);
     }
-    private static final Config TEMPLATE_CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
 
     public static final ArrayList<String> REGISTERED_TOOL_TYPES = new ArrayList<>();
     public static final ArrayList<Integer> REGISTERED_TOOL_COLORS = new ArrayList<>();
@@ -138,46 +138,24 @@ public class ToolsConfig {
     }
 
     private static void handleCollection(String configKey, Config toolProperties) {
-        String collectionId = configKey.substring(1);
-        List<String> collection = CollectionsConfig.ITEMS_MAP.get(collectionId);
+        String collectionName = configKey.substring(1);
+        List<String> collection = CollectionsConfig.ITEMS_MAP.get(collectionName);
         if (collection == null) {
             addConfigIssue(WARN, (byte) 4, "Config [{}] declared item collection <{}> which does not exist, check for typos! | Skipping Collection...", PRESET_FOLDER_NAME + "tools.toml", configKey);
             return;
         }
         collection.forEach((string) -> {
             if (string.startsWith("#")) {
-                handleTag(string, toolProperties, Optional.of(collectionId));
+                handleTag(string, toolProperties, Optional.of(collectionName));
             } else {
-                if (itemIsNotValid(string, Optional.of(collectionId))) return;
+                if (!isValidItem(string, Optional.of(collectionName), "tools.toml")) return;
                 addItem(string, assembleProperties(configKey, toolProperties));
             }
         });
     }
 
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private static boolean itemIsNotValid(String itemId, Optional<String> collectionName) {
-        if (!ResourceLocation.isValidResourceLocation(itemId)) {
-            addConfigIssue(INFO, (byte) 2, "Not a valid Item ResourceLocation: <{}> declared in {} | Skipping Item...", itemId, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "tools.toml]"));
-            return true;
-        }
-        if (!ModList.get().isLoaded(itemId.split(":")[0])) {
-            addConfigIssue(INFO, (byte) 2, "{} declared Tool Power values for <{}> but mod '{{}}' is not loaded | Skipping Item...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() ->  "Config: [" + PRESET_FOLDER_NAME + "tools.toml]"), itemId, itemId.split(":")[0]);
-            return true;
-        }
-        if (!ForgeRegistries.ITEMS.containsKey(new ResourceLocation(itemId))) {
-            addConfigIssue(INFO, (byte) 2, "{} declared item <{}> which does not exist, check for typos! | Skipping Item...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() ->  "Config: [" + PRESET_FOLDER_NAME + "tools.toml]"), itemId);
-            return true;
-        }
-        return false;
-    }
-
     private static void addItem(String key, Properties properties) {
         TOOLS.merge(key, properties, Properties::merged);
-    }
-
-    @SuppressWarnings("DataFlowIssue")
-    private static String getItemId(Item item) {
-        return ForgeRegistries.ITEMS.getKey(item).toString();
     }
 
     private static Properties assembleProperties(String configKey, Config toolProperties) {
@@ -188,7 +166,7 @@ public class ToolsConfig {
                 addConfigIssue(ERROR, (byte) 6, "\"{}\" used in config file [{}] for <{}> is NOT a registered tool type!", property, PRESET_FOLDER_NAME + "blocks.toml", configKey);
                 return;
             }
-            powers.put((byte) REGISTERED_TOOL_TYPES.indexOf(property), tryCast(value, Integer.class, configKey + "." + property));
+            powers.put((byte) REGISTERED_TOOL_TYPES.indexOf(property), tryCast(value, Integer.class, configKey + "." + property, "tools.toml"));
         });
         return new Properties(powers, getOptionalInt(toolProperties, "MiningSpeed", configKey));
     }
@@ -206,7 +184,7 @@ public class ToolsConfig {
     }
 
     private static void handleSingleItem(String itemId, Config toolProperties) {
-        if (itemIsNotValid(itemId, Optional.empty())) return;
+        if (!isValidItem(itemId, Optional.empty(), "tools.toml")) return;
 
         Properties singleItemProperties = assembleProperties(itemId, toolProperties);
 
@@ -215,15 +193,6 @@ public class ToolsConfig {
             mergedMap.putAll(singleItem.powers());
             return new Properties(mergedMap, singleItem.miningSpeed().isPresent() ? singleItem.miningSpeed() : existing.miningSpeed());
         });
-    }
-
-    private static <T> T tryCast(Object value, Class<T> clazz, String key) {
-        try {
-            return clazz.cast(value);
-        } catch (Exception e) {
-            addConfigIssue(ERROR, (byte) 7, "Value: \"{}\" for '{}' is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Skipping power type...", value, key, PRESET_FOLDER_NAME + "tools.toml", clazz.getSimpleName(), value.getClass().getSimpleName());
-            return null;
-        }
     }
 
     private static <T> T getOrDefault(String key, Class<T> clazz) {

@@ -1,9 +1,6 @@
 package com.dreu.planartools.util;
 
-import com.dreu.planartools.config.BlocksConfig;
-import com.dreu.planartools.config.CollectionsConfig;
-import com.dreu.planartools.config.GeneralConfig;
-import com.dreu.planartools.config.ToolsConfig;
+import com.dreu.planartools.config.*;
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.toml.TomlParser;
 import net.minecraft.ChatFormatting;
@@ -12,9 +9,13 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.Tiers;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.FileWriter;
@@ -22,15 +23,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 import static com.dreu.planartools.PlanarTools.*;
 import static com.dreu.planartools.config.BlocksConfig.populateBlocks;
+import static com.dreu.planartools.config.EnchantsConfig.populateEnchants;
 import static com.dreu.planartools.config.GeneralConfig.PRESET_FOLDER_NAME;
 import static com.dreu.planartools.config.ToolsConfig.populateToolTypes;
 import static com.dreu.planartools.config.ToolsConfig.populateTools;
@@ -71,6 +70,35 @@ public class Helpers {
         }
     }
 
+    @SuppressWarnings("DataFlowIssue")
+    public static String getItemId(Item item) {
+        return ForgeRegistries.ITEMS.getKey(item).toString();
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    public static boolean isValidItem(String itemId, Optional<String> collectionName, String fileName) {
+        if (!ResourceLocation.isValidResourceLocation(itemId)) {
+            addConfigIssue(LogLevel.INFO, (byte) 2, "Not a valid Item ResourceLocation: <{}> declared in {} | Skipping Item...", itemId, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + fileName + "]"));
+            return false;
+        }
+        if (!ModList.get().isLoaded(itemId.split(":")[0])) {
+            addConfigIssue(LogLevel.INFO, (byte) 2, "{} declared Tool Power values for <{}> but mod '{{}}' is not loaded | Skipping Item...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() ->  "Config: [" + PRESET_FOLDER_NAME + "tools.toml]"), itemId, itemId.split(":")[0]);
+            return false;
+        }
+        if (!ForgeRegistries.ITEMS.containsKey(new ResourceLocation(itemId))) {
+            addConfigIssue(LogLevel.INFO, (byte) 2, "{} declared item <{}> which does not exist, check for typos! | Skipping Item...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() ->  "Config: [" + PRESET_FOLDER_NAME + "tools.toml]"), itemId);
+            return false;
+        }
+        return true;
+    }
+    public static <T> T tryCast(Object value, Class<T> clazz, String key, String fileName) {
+        try {
+            return clazz.cast(value);
+        } catch (Exception e) {
+            addConfigIssue(LogLevel.ERROR, (byte) 7, "Value: \"{}\" for '{}' is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Skipping power type...", value, key, PRESET_FOLDER_NAME + fileName, clazz.getSimpleName(), value.getClass().getSimpleName());
+            return null;
+        }
+    }
 
     public static void parseAndProcessConfig() {
         CONFIG_ISSUES.clear();
@@ -81,10 +109,12 @@ public class Helpers {
         CollectionsConfig.parseAndPopulate();
         BlocksConfig.parse();
         ToolsConfig.parse();
+        EnchantsConfig.parse();
         populateToolTypes();
         populateTagKeys();
         populateTools();
         populateBlocks();
+        populateEnchants();
         configHasBeenParsed = true;
         writeConfigIssuesToFile();
         shouldUpdateTime = getUpdateTime();

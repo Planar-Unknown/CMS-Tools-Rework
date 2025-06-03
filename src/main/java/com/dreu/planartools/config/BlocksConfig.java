@@ -25,7 +25,7 @@ import static com.dreu.planartools.util.Helpers.*;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class BlocksConfig {
-  public static final String templateFileName = "config/" + MODID + "/presets/template/blocks.toml";
+  public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/blocks.toml";
   public static final String TEMPLATE_CONFIG_STRING = """
     # Modded Items that override the getDestroySpeed method will not be valid.
     # To request compatibility with a specific mod, let us know in our Discord | https://discord.gg/RrY3rXuAH5
