@@ -17,6 +17,7 @@ import static com.dreu.planartools.util.Helpers.LogLevel.INFO;
 import static com.dreu.planartools.util.Helpers.LogLevel.WARN;
 
 public class EnchantsConfig {
+  //Todo: make tool type enchantments have power predicates
   //Todo: all the mixins
   public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/enchants.toml";
   public static final String TEMPLATE_CONFIG_STRING = """
@@ -82,6 +83,8 @@ public class EnchantsConfig {
   public static void populateEnchants() {
     ENCHANTS_BY_TOOL_TYPE.clear();
     ENCHANTS_BY_ITEM_ID.clear();
+    Map<String, OpposingSets<String>> singleItems = new HashMap<>();
+
     CONFIG.valueMap().forEach((configKey, configEnchants) -> {
       //noinspection unchecked
       List<String> enchants = tryCast(configEnchants, List.class, configKey, "enchants.toml");
@@ -98,10 +101,14 @@ public class EnchantsConfig {
       } else if (REGISTERED_TOOL_TYPES.contains(configKey)) {
         ENCHANTS_BY_TOOL_TYPE.put((byte) REGISTERED_TOOL_TYPES.indexOf(configKey), enchantments);
       } else if (configKey.contains(":")) {
-        if (isValidItem(configKey, Optional.empty(), "enchants.toml"))
-          ENCHANTS_BY_ITEM_ID.merge(configKey, enchantments, OpposingSets::mergeLeftWins);
+        singleItems.put(configKey, enchantments);
       } else
         addConfigIssue(LogLevel.INFO, (byte) 2, "\"{}\" used in config: {{}} is NOT a registered tool type, collection, or existing item, check for typos!", configKey, PRESET_FOLDER_NAME + "enchants.toml");
+    });
+
+    singleItems.forEach((configKey, enchantments) -> {
+      if (isValidItem(configKey, Optional.empty(), "enchants.toml"))
+        ENCHANTS_BY_ITEM_ID.merge(configKey, enchantments, OpposingSets::mergeLeftWins);
     });
     System.out.println("------------");
     System.out.println("Enchants by Item ID: ");

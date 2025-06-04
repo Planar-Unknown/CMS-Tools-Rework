@@ -25,6 +25,7 @@ import static com.dreu.planartools.util.Helpers.addConfigIssue;
 public class PlanarTools {
 
     //Todo: Make enchantments work on items that have been given tool types
+    //Todo: Make isCorrectToolForDrops() and getDestroySpeed() mixins more global
     //Todo: Test CachedSuppliers with 3 instances and hotswappable
     //Todo: Add defaultCanDrop to blocks and CanDrop to each tool type of blocks
 

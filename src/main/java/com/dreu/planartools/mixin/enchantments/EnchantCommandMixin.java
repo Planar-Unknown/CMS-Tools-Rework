@@ -1,8 +1,8 @@
 package com.dreu.planartools.mixin.enchantments;
 
-import com.dreu.planartools.config.EnchantsConfig.OpposingSets;
+import com.dreu.planartools.config.EnchantsConfig;
 import com.dreu.planartools.config.ToolsConfig;
-import net.minecraft.world.inventory.AnvilMenu;
+import net.minecraft.server.commands.EnchantCommand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -14,13 +14,13 @@ import static com.dreu.planartools.config.EnchantsConfig.ENCHANTS_BY_ITEM_ID;
 import static com.dreu.planartools.config.EnchantsConfig.ENCHANTS_BY_TOOL_TYPE;
 import static com.dreu.planartools.config.ToolsConfig.TOOLS;
 
-@SuppressWarnings({"DataFlowIssue", "unused"})
-@Mixin(AnvilMenu.class)
-public class AnvilMenuMixin {
-  private final OpposingSets<String> ENCHANTMENT_SETS = new OpposingSets<>();
+@SuppressWarnings({"unused", "DataFlowIssue"})
+@Mixin(EnchantCommand.class)
+public class EnchantCommandMixin {
+  private final EnchantsConfig.OpposingSets<String> ENCHANTMENT_SETS = new EnchantsConfig.OpposingSets<>();
 
   @Redirect(
-      method = "createResult",
+      method = "enchant",
       at = @At(
           value = "INVOKE",
           target = "Lnet/minecraft/world/item/enchantment/Enchantment;canEnchant(Lnet/minecraft/world/item/ItemStack;)Z"
@@ -32,7 +32,7 @@ public class AnvilMenuMixin {
 
     ENCHANTMENT_SETS.clear();
 
-    OpposingSets<String> byItem = ENCHANTS_BY_ITEM_ID.get(itemId);
+    EnchantsConfig.OpposingSets<String> byItem = ENCHANTS_BY_ITEM_ID.get(itemId);
     if (byItem != null && !byItem.isEmpty()) {
       ENCHANTMENT_SETS.positive().addAll(byItem.positive());
       ENCHANTMENT_SETS.negative().addAll(byItem.negative());
@@ -40,7 +40,7 @@ public class AnvilMenuMixin {
 
     if (toolProperties != null) {
       for (Byte toolTypeId : toolProperties.powers().keySet()) {
-        OpposingSets<String> byTool = ENCHANTS_BY_TOOL_TYPE.get(toolTypeId);
+        EnchantsConfig.OpposingSets<String> byTool = ENCHANTS_BY_TOOL_TYPE.get(toolTypeId);
         if (byTool != null && !byTool.isEmpty())
           ENCHANTMENT_SETS.mergeDominantly(byTool);
       }
