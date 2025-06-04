@@ -23,6 +23,11 @@ public class ToolsConfig {
             # MiningSpeed indicates the rate at which a tool will mine blocks that it can mine.
             # Each block can be configured to choose whether a tools MiningSpeed will be applied.
             
+            # Collections in this file (denoted by "@") are custom groups of Items
+            # Create your own item collections at: [config/planar_tools/collections/items]
+            # For example, the "@golden_tools" collection can be found at [config/planar_tools/collections/items/golden_tools.txt]
+            # Item Collections may contain Tags of items or individual items, but may not contain other collections
+            
             # Register tool types to use for Tool Power and Block Resistances
             # The order of this list will be the display order of Tooltips
             # You may specify Tooltip Color using 6 digit RGB Hex colors following the Tool Type

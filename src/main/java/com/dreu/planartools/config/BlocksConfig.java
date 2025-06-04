@@ -31,6 +31,11 @@ public class BlocksConfig {
     # To request compatibility with a specific mod, let us know in our Discord | https://discord.gg/RrY3rXuAH5
     # Specifically declared blocks will override any values it inherited from specified tags
     
+    # Collections in this file (denoted by "@") are custom groups of Blocks
+    # Create your own collections at: [config/planar_tools/collections/blocks]
+    # For example, the "@example/deepslate" collection can be found at [config/planar_tools/collections/blocks/example/deepslate.txt]
+    # Block Collections may contain Tags of blocks or individual blocks, but may not contain other collections
+    
     # This table shows the default power level of each tier of tool.
     ########################################################################
     # Tier  -> | Wooden |  Stone  |  Iron  |  Gold  | Diamond  | Netherite #
