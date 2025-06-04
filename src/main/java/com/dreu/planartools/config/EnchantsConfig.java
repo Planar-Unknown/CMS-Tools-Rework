@@ -1,5 +1,6 @@
 package com.dreu.planartools.config;
 
+import com.dreu.planartools.util.OpposingSets;
 import com.electronwill.nightconfig.core.Config;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
@@ -21,28 +22,47 @@ public class EnchantsConfig {
   //Todo: all the mixins
   public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/enchants.toml";
   public static final String TEMPLATE_CONFIG_STRING = """
-      # Here, you can declare which enchantments can be applied to each of your registered tool types.
+      # Here, you can declare which enchantments can be applied to Tools, specified by Items, Tags, Collections, or Registered Tool Types.
       # Keep in mind that Unbreaking, Mending, and Sweeping edge all have explicit handling, so allowing them on an item may not do anything
       
-      Arcane = [
+      # Items are explicit, meaning declared items will always behave as declared, overriding any conflicts
+      # Tags and Collections will merge, negative values will win.
+      # Tool Types will lose any conflicts, but can be declared with explicit Power Requirements.
+      # Power predicates can stack, and a tool will adhere to the highest Power that it can, deferring to lower declared powers as needed
+      
+      # Collections in this config (denoted by "@") are custom groups of either enchantments or items
+      # Create your own collections at: [config/planar_tools/collections/]
+      # For example the "@combat" enchant collection can be found at [config/planar_tools/collections/enchants/combat.txt]
+      # Enchant Collections may only contain individual enchants
+      
+      "minecraft:stick" = [ # example of allowing a single item to be enchanted
+          "minecraft:looting"
+      ]
+      
+      Arcane = [ # All items with Arcane power can now have these enchants
           "minecraft:looting",
-          "minecraft:fortune",
           "minecraft:fire_aspect"
       ]
       
-      Pickaxe = [
+      "Arcane.50" = [ # All items with 50 or more Arcane Power can now have Fortune, but can't have Fire Aspect
+          "minecraft:fortune",
+          "-minecraft:fire_aspect"
+      ]
+      
+      "@golden_tools" = [ # Golden Tools (which have Arcane power in our example config) can not have Looting even though specified in Arcane Power Types above
+          "-minecraft:looting"
+      ]
+      
+      Pickaxe = [ # Any item with Pickaxe Power can be more like a pickaxe now
           "minecraft:efficiency",
           "minecraft:fortune",
           "minecraft:silk_touch"
       ]
       
-      Axe = [
+      Axe = [ # This makes items declared with Axe power behave like an Axe as a tool, but we don't explicitly allow any of the combat enchants
           "minecraft:efficiency",
           "minecraft:fortune",
-          "minecraft:silk_touch",
-          "minecraft:sharpness",
-          "minecraft:bane_of_arthropods",
-          "minecraft:smite"
+          "minecraft:silk_touch"
       ]
       
       Shovel = [
@@ -61,13 +81,8 @@ public class EnchantsConfig {
           "minecraft:efficiency"
       ]
       
-      Sword = [
-          "minecraft:sharpness",
-          "minecraft:smite",
-          "minecraft:bane_of_arthropods",
-          "minecraft:knockback",
-          "minecraft:fire_aspect",
-          "minecraft:looting"
+      Sword = [ # Any item with Sword power can now have combat enchants
+          "@combat"
       ]
       """;
 
@@ -77,7 +92,7 @@ public class EnchantsConfig {
     CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "enchants.toml", TEMPLATE_CONFIG_STRING);
   }
 
-  public static final Map<Byte, OpposingSets<String>> ENCHANTS_BY_TOOL_TYPE = new HashMap<>();
+  public static final Map<Byte, TreeMap<Integer, OpposingSets<String>>> ENCHANTS_BY_TOOL_TYPE = new TreeMap<>();
   public static final Map<String, OpposingSets<String>> ENCHANTS_BY_ITEM_ID = new HashMap<>();
 
   public static void populateEnchants() {
@@ -98,41 +113,48 @@ public class EnchantsConfig {
         handleItemCollection(configKey, enchantments);
       } else if (configKey.startsWith("#")) {
         handleItemTag(configKey, enchantments, Optional.empty());
-      } else if (REGISTERED_TOOL_TYPES.contains(configKey)) {
-        ENCHANTS_BY_TOOL_TYPE.put((byte) REGISTERED_TOOL_TYPES.indexOf(configKey), enchantments);
       } else if (configKey.contains(":")) {
         singleItems.put(configKey, enchantments);
-      } else
-        addConfigIssue(LogLevel.INFO, (byte) 2, "\"{}\" used in config: {{}} is NOT a registered tool type, collection, or existing item, check for typos!", configKey, PRESET_FOLDER_NAME + "enchants.toml");
+      } else if (configKey.contains(".")) {
+        handleToolTypeWithPower(configKey, enchantments);
+      } else if (REGISTERED_TOOL_TYPES.contains(configKey)) {
+        handleToolTypeWithPower(configKey + ".0", enchantments);
+      } else addConfigIssue(LogLevel.INFO, (byte) 2, "\"{}\" used in config: {{}} is NOT a registered tool type, collection, or existing item, check for typos!", configKey, PRESET_FOLDER_NAME + "enchants.toml");
     });
 
     singleItems.forEach((configKey, enchantments) -> {
       if (isValidItem(configKey, Optional.empty(), "enchants.toml"))
         ENCHANTS_BY_ITEM_ID.merge(configKey, enchantments, OpposingSets::mergeLeftWins);
     });
-    System.out.println("------------");
-    System.out.println("Enchants by Item ID: ");
-    System.out.println();
-    ENCHANTS_BY_ITEM_ID.forEach((key, value) -> {
-      System.out.println("Item is: " + key);
-      System.out.println("Negative values:");
-      value.negative().forEach(System.out::println);
-      System.out.println("Positive values:");
-      value.positive().forEach(System.out::println);
-      System.out.println("------------");
-    });
+  }
 
-    System.out.println("------------");
-    System.out.println("Enchants by Tool Type: ");
-    System.out.println();
-    ENCHANTS_BY_TOOL_TYPE.forEach((key, value) -> {
-      System.out.println("Tool type is: " + REGISTERED_TOOL_TYPES.get(key));
-      System.out.println("Negative values:");
-      value.negative().forEach(System.out::println);
-      System.out.println("Positive values:");
-      value.positive().forEach(System.out::println);
-      System.out.println("------------");
-    });
+  private static void handleToolTypeWithPower(String configKey, OpposingSets<String> enchantments) {
+    String[] strings = configKey.split("\\.");
+    if (strings.length > 2) {
+      addConfigIssue(WARN, (byte) 4, "Key: \"{}\" in Config: [{}] was invalid. There were too many dots! Proper example: \"Pickaxe.20\"", configKey, PRESET_FOLDER_NAME + "enchants.toml");
+      return;
+    }
+    if (!REGISTERED_TOOL_TYPES.contains(strings[0])) {
+      addConfigIssue(WARN, (byte) 4, "\"{}\" used in config file [{}] is NOT a registered tool type!", strings[0], PRESET_FOLDER_NAME + "enchants.toml");
+      return;
+    }
+    int power;
+    try {
+      power = Integer.parseInt(strings[1]);
+    } catch (Exception e) {
+      addConfigIssue(WARN, (byte) 4, "Key: \"{}\" in Config: [{}] was invalid. Power must be an Integer! Proper example: \"Pickaxe.20\"", strings[0], PRESET_FOLDER_NAME + "enchants.toml");
+      return;
+    }
+    if (power < 0) {
+      addConfigIssue(WARN, (byte) 4, "Key: \"{}\" in Config: [{}] was invalid. Power cannot be negative! Proper example: \"Pickaxe.20\"", strings[0], PRESET_FOLDER_NAME + "enchants.toml");
+      return;
+    }
+    byte toolTypeId = (byte) REGISTERED_TOOL_TYPES.indexOf(strings[0]);
+    TreeMap<Integer, OpposingSets<String>> treeMap = ENCHANTS_BY_TOOL_TYPE.get(toolTypeId);
+    if (treeMap == null)
+      ENCHANTS_BY_TOOL_TYPE.put(toolTypeId, new TreeMap<>(Map.of(power, enchantments)));
+    else
+      treeMap.put(power, enchantments);
   }
 
   private static void handleItemCollection(String configKey, OpposingSets<String> enchantments) {
@@ -214,83 +236,5 @@ public class EnchantsConfig {
       return false;
     }
     return true;
-  }
-
-
-  public record OpposingSets<T>(Set<T> positive, Set<T> negative) {
-
-    public OpposingSets() {
-      this(new HashSet<>(), new HashSet<>());
-    }
-
-    @SuppressWarnings("unused")
-    public OpposingSets(OpposingSets<T> sets) {
-      this(sets.positive, sets.negative);
-    }
-
-    public void addPositive(T t) {
-      if (!negative.contains(t))
-        positive.add(t);
-    }
-
-    public void addNegative(T t) {
-      negative.add(t);
-      positive.remove(t);
-    }
-
-    public void clear() {
-      positive.clear();
-      negative.clear();
-    }
-
-    @SuppressWarnings("unused")
-    public void addAll(OpposingSets<T> sets) {
-      for (T neg : sets.negative()) addNegative(neg);
-      for (T pos : sets.positive()) addPositive(pos);
-    }
-
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    public boolean isEmpty() {
-      return negative.isEmpty() && positive.isEmpty();
-    }
-
-    public void mergeDominantly(OpposingSets<T> incoming) {
-      incoming.negative.forEach(t -> {
-        if (!this.positive.contains(t))
-          this.negative.add(t);
-      });
-      incoming.positive.forEach(t -> {
-        if (!this.negative.contains(t))
-          this.positive.add(t);
-      });
-    }
-
-    public static <T> OpposingSets<T> mergeLeftWins(OpposingSets<T> left, OpposingSets<T> right) {
-      OpposingSets<T> merged = new OpposingSets<>();
-      merged.negative.addAll(left.negative);
-      merged.positive.addAll(left.positive);
-      right.negative.forEach(t -> {
-        if (!merged.positive.contains(t))
-          merged.negative.add(t);
-      });
-      right.positive.forEach(t -> {
-        if (!merged.negative.contains(t))
-          merged.positive.add(t);
-      });
-      return merged;
-    }
-
-    public static <T> OpposingSets<T> merge(OpposingSets<T> left, OpposingSets<T> right) {
-      if (left == null && right == null) return new OpposingSets<>();
-      if (left == null) return right;
-      if (right == null) return left;
-
-      OpposingSets<T> merged = new OpposingSets<>();
-      merged.negative.addAll(left.negative);
-      merged.negative.addAll(right.negative);
-      left.positive.forEach(merged::addPositive);
-      right.positive.forEach(merged::addPositive);
-      return merged;
-    }
   }
 }

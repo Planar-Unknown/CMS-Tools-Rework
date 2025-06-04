@@ -1,7 +1,7 @@
 package com.dreu.planartools.mixin.enchantments;
 
-import com.dreu.planartools.config.EnchantsConfig;
 import com.dreu.planartools.config.ToolsConfig;
+import com.dreu.planartools.util.OpposingSets;
 import net.minecraft.server.commands.EnchantCommand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -10,6 +10,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
+import java.util.Map;
+import java.util.TreeMap;
+
 import static com.dreu.planartools.config.EnchantsConfig.ENCHANTS_BY_ITEM_ID;
 import static com.dreu.planartools.config.EnchantsConfig.ENCHANTS_BY_TOOL_TYPE;
 import static com.dreu.planartools.config.ToolsConfig.TOOLS;
@@ -17,7 +20,6 @@ import static com.dreu.planartools.config.ToolsConfig.TOOLS;
 @SuppressWarnings({"unused", "DataFlowIssue"})
 @Mixin(EnchantCommand.class)
 public class EnchantCommandMixin {
-  private final EnchantsConfig.OpposingSets<String> ENCHANTMENT_SETS = new EnchantsConfig.OpposingSets<>();
 
   @Redirect(
       method = "enchant",
@@ -26,35 +28,47 @@ public class EnchantCommandMixin {
           target = "Lnet/minecraft/world/item/enchantment/Enchantment;canEnchant(Lnet/minecraft/world/item/ItemStack;)Z"
       )
   )
-  private boolean overrideCanEnchant(Enchantment enchantment, ItemStack itemStack) {
+  private static boolean overrideCanEnchant(Enchantment enchantment, ItemStack itemStack) {
     String itemId = ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString();
+    String enchantId = ForgeRegistries.ENCHANTMENTS.getKey(enchantment).toString();
     ToolsConfig.Properties toolProperties = TOOLS.get(itemId);
 
-    ENCHANTMENT_SETS.clear();
-
-    EnchantsConfig.OpposingSets<String> byItem = ENCHANTS_BY_ITEM_ID.get(itemId);
+    OpposingSets<String> byItem = ENCHANTS_BY_ITEM_ID.getOrDefault(itemId, new OpposingSets<>());
     if (byItem != null && !byItem.isEmpty()) {
-      ENCHANTMENT_SETS.positive().addAll(byItem.positive());
-      ENCHANTMENT_SETS.negative().addAll(byItem.negative());
-    }
-
-    if (toolProperties != null) {
-      for (Byte toolTypeId : toolProperties.powers().keySet()) {
-        EnchantsConfig.OpposingSets<String> byTool = ENCHANTS_BY_TOOL_TYPE.get(toolTypeId);
-        if (byTool != null && !byTool.isEmpty())
-          ENCHANTMENT_SETS.mergeDominantly(byTool);
+      if (toolProperties != null) {
+        for (Map.Entry<Byte, Integer> toolTypeData : toolProperties.powers().entrySet()) {
+          TreeMap<Integer, OpposingSets<String>> treeMap = ENCHANTS_BY_TOOL_TYPE.get(toolTypeData.getKey());
+          if (treeMap != null && !treeMap.isEmpty()) {
+            for (OpposingSets<String> opposingSets : treeMap.descendingMap().tailMap(toolTypeData.getValue()).values()) {
+              if (opposingSets.negative().contains(enchantId)) {
+                if (!byItem.positive().contains(enchantId))
+                  return false;
+              }
+              if (opposingSets.positive().contains(enchantId)) {
+                if (!byItem.negative().contains(enchantId))
+                  return true;
+              }
+            }
+          }
+        }
+      }
+      if (byItem.negative().contains(enchantId)) return false;
+      if (byItem.positive().contains(enchantId)) return true;
+    } else if (toolProperties != null) {
+      for (Map.Entry<Byte, Integer> toolTypeData : toolProperties.powers().entrySet()) {
+        TreeMap<Integer, OpposingSets<String>> treeMap = ENCHANTS_BY_TOOL_TYPE.get(toolTypeData.getKey());
+        if (treeMap != null && !treeMap.isEmpty()) {
+          for (OpposingSets<String> opposingSets : treeMap.descendingMap().tailMap(toolTypeData.getValue()).values()) {
+            if (opposingSets.negative().contains(enchantId))
+              return false;
+            if (opposingSets.positive().contains(enchantId))
+              return true;
+          }
+        }
       }
     }
 
-    if (!ENCHANTMENT_SETS.isEmpty()) {
-      String enchantmentName = ForgeRegistries.ENCHANTMENTS.getKey(enchantment).toString();
-      if (ENCHANTMENT_SETS.negative().contains(enchantmentName)) {
-        ENCHANTMENT_SETS.clear(); return false;}
-      if (ENCHANTMENT_SETS.positive().contains(enchantmentName)) {
-        ENCHANTMENT_SETS.clear(); return true;}
-    }
 
-    ENCHANTMENT_SETS.clear();
     return enchantment.canEnchant(itemStack);
   }
 }

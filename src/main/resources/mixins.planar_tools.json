@@ -10,7 +10,9 @@
     "DiggerItemMixin",
     "ItemMixin",
     "ShearsItemMixin",
-    "enchantments/AnvilMenuMixin"
+    "enchantments/AnvilMenuMixin",
+    "enchantments/EnchantCommandMixin",
+    "enchantments/EnchantRandomlyFunctionMixin"
   ],
   "injectors": {
     "defaultRequire": 1
