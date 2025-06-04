@@ -325,7 +325,7 @@ public class Helpers {
                 Path.of("config/" + MODID + "/").toFile().mkdirs();
                 writer.write(contents.toString());
             } catch (IOException io) {
-                addConfigIssue(LogLevel.WARN, (byte) 10, "Unexpected Exception occurred while writing [config/planar_tools/issues.log]| Exception: {}", io.getMessage());
+                addConfigIssue(LogLevel.ERROR, (byte) 10, "Unexpected Exception occurred while writing [config/planar_tools/issues.log]| Exception: {}", io.getMessage());
             }
         }
     }

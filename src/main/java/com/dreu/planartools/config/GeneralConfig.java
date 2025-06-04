@@ -46,7 +46,7 @@ public class GeneralConfig {
             DefaultWailaPosition = "middle"
             
             # To use a custom preset, create a folder in: config/planar_tools/presets/[your-preset-name]
-            # Add both blocks.toml and tools.toml to your preset folder.
+            # Add blocks.toml, tools.toml, and enchants.toml to your preset folder.
             # Use the "template" preset in config/planar_tools/presets/template as an example.
             Preset = "custom"
             

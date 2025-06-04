@@ -111,7 +111,6 @@ public class BlocksConfig {
     });
 
     singleBlocks.forEach(BlocksConfig::handleSingleBlock);
-    BLOCKS.keySet().forEach(System.out::println);
   }
 
   private static void handleCollection(String configKey, Config blockProperties) {
