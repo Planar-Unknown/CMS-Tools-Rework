@@ -24,11 +24,10 @@ import static com.dreu.planartools.util.Helpers.addConfigIssue;
 @Mod(PlanarTools.MODID)
 public class PlanarTools {
 
-    //Todo: Make enchantments work on items that have been given tool types
     //Todo: Make isCorrectToolForDrops() and getDestroySpeed() mixins more global
-    //Todo: Test CachedSuppliers with 3 instances and hotswappable
     //Todo: Add defaultCanDrop to blocks and CanDrop to each tool type of blocks
 
+    //Todo: Ensure interactions with Block Explosions or other block destruction methods are correct
     //Todo: Make option for all registered resistances on a block must be exceeded
     //Todo: Nbt system for upgrading tools
     //Todo: modpack creator configurable enchants that interact with the Nbt system

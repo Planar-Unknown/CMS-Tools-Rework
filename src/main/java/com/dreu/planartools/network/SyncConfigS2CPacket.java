@@ -50,7 +50,6 @@ public class SyncConfigS2CPacket {
       REGISTERED_TOOL_TYPES.add(buf.readCharSequence(buf.readInt(), StandardCharsets.UTF_8).toString());
       REGISTERED_TOOL_COLORS.add(buf.readInt());
     }
-    shouldUpdateTime = getUpdateTime();
   }
 
   public SyncConfigS2CPacket() {

@@ -5,6 +5,7 @@ import com.electronwill.nightconfig.toml.TomlParser;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.world.item.Item;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.*;
@@ -211,6 +212,10 @@ public class ToolsConfig {
             addConfigIssue(ERROR, (byte) 4, "Value: \"{}\" for '{}' is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Using basic Template instead...", CONFIG.get(key), key, PRESET_FOLDER_NAME + "tools.toml", clazz.getSimpleName(), CONFIG.get(key).getClass().getSimpleName());
             return clazz.cast(TEMPLATE_CONFIG.get(key));
         }
+    }
+
+    public static Properties getToolProperties(Item item) {
+        return TOOLS.get(getItemId(item));
     }
 
     // powers is a map of ToolTypeID to ToolPower

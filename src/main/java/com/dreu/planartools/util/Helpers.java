@@ -14,6 +14,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.Tiers;
+import net.minecraft.world.level.block.Block;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
@@ -43,7 +44,6 @@ public class Helpers {
     public static boolean configHasBeenParsed = false;
     public static boolean wereIssuesWrittenToFile = false;
     public static final byte MAX_DISPLAYED_ISSUES = 3;
-    public static int shouldUpdateTime = getUpdateTime();
 
     public enum WailaPosition {
         INVISIBLE,
@@ -73,6 +73,11 @@ public class Helpers {
     @SuppressWarnings("DataFlowIssue")
     public static String getItemId(Item item) {
         return ForgeRegistries.ITEMS.getKey(item).toString();
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    public static String getBlockId(Block block) {
+        return ForgeRegistries.BLOCKS.getKey(block).toString();
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -117,11 +122,6 @@ public class Helpers {
         populateEnchants();
         configHasBeenParsed = true;
         writeConfigIssuesToFile();
-        shouldUpdateTime = getUpdateTime();
-    }
-
-    public static int getUpdateTime() {
-        return (int) (System.currentTimeMillis() / 1000);
     }
 
     @SuppressWarnings("unused")

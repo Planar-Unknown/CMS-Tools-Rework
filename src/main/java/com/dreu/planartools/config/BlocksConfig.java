@@ -278,12 +278,6 @@ public class BlocksConfig {
     return Optional.empty();
   }
 
-
-  @SuppressWarnings("DataFlowIssue")
-  private static String getBlockId(Block block) {
-    return ForgeRegistries.BLOCKS.getKey(block).toString();
-  }
-
   public static Properties getBlockProperties(Block block) {
     return BLOCKS.get(getBlockId(block));
   }
