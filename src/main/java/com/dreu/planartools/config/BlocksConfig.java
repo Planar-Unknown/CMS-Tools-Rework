@@ -27,14 +27,14 @@ import static com.dreu.planartools.util.Helpers.*;
 public class BlocksConfig {
   public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/blocks.toml";
   public static final String TEMPLATE_CONFIG_STRING = """
-    # Modded Items that override the getDestroySpeed method will not be valid.
-    # To request compatibility with a specific mod, let us know in our Discord | https://discord.gg/RrY3rXuAH5
-    # Specifically declared blocks will override any values it inherited from specified tags
-    
     # Collections in this file (denoted by "@") are custom groups of Blocks
     # Create your own collections at: [config/planar_tools/collections/blocks]
     # For example, the "@example/deepslate" collection can be found at [config/planar_tools/collections/blocks/example/deepslate.txt]
     # Block Collections may contain Tags of blocks or individual blocks, but may not contain other collections
+    # Specifically declared blocks will override any values it inherited from specified tags or collections
+    
+    # DefaultResistance = -1 will make a block not destroyed by explosions
+    # Unless ExplosionResistance is also specified. ExplosionResistance = -1 makes it indestructible by explosions
     
     # This table shows the default power level of each tier of tool.
     ########################################################################

@@ -5,7 +5,7 @@
   "minVersion": "0.8",
   "refmap": "planar_tools.refmap.json",
   "mixins": [
-    "BlockMixin",
+    "ExplosionDamageCalculatorMixin",
     "BlockStateBaseMixin",
     "ItemStackMixin",
     "enchantments/AnvilMenuMixin",
