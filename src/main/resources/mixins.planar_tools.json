@@ -7,14 +7,11 @@
   "mixins": [
     "BlockMixin",
     "BlockStateBaseMixin",
-    "DiggerItemMixin",
-    "ItemMixin",
-    "ShearsItemMixin",
+    "ItemStackMixin",
     "enchantments/AnvilMenuMixin",
     "enchantments/EnchantCommandMixin",
     "enchantments/EnchantRandomlyFunctionMixin",
-    "enchantments/EnchantmentHelperMixin",
-    "enchantments/ItemStackMixin"
+    "enchantments/EnchantmentHelperMixin"
   ],
   "injectors": {
     "defaultRequire": 1
