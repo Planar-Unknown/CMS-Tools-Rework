@@ -12,7 +12,9 @@
     "ShearsItemMixin",
     "enchantments/AnvilMenuMixin",
     "enchantments/EnchantCommandMixin",
-    "enchantments/EnchantRandomlyFunctionMixin"
+    "enchantments/EnchantRandomlyFunctionMixin",
+    "enchantments/EnchantmentHelperMixin",
+    "enchantments/ItemStackMixin"
   ],
   "injectors": {
     "defaultRequire": 1

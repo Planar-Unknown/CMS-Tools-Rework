@@ -18,8 +18,6 @@ import static com.dreu.planartools.util.Helpers.LogLevel.INFO;
 import static com.dreu.planartools.util.Helpers.LogLevel.WARN;
 
 public class EnchantsConfig {
-  //Todo: make tool type enchantments have power predicates
-  //Todo: all the mixins
   public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/enchants.toml";
   public static final String TEMPLATE_CONFIG_STRING = """
       # Here, you can declare which enchantments can be applied to Tools, specified by Items, Tags, Collections, or Registered Tool Types.
@@ -124,7 +122,7 @@ public class EnchantsConfig {
 
     singleItems.forEach((configKey, enchantments) -> {
       if (isValidItem(configKey, Optional.empty(), "enchants.toml"))
-        ENCHANTS_BY_ITEM_ID.merge(configKey, enchantments, OpposingSets::mergeLeftWins);
+        ENCHANTS_BY_ITEM_ID.merge(configKey, enchantments, OpposingSets::mergeRightWins);
     });
   }
 
