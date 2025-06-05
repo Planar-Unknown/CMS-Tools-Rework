@@ -51,15 +51,15 @@ public record OpposingSets<T>(Set<T> positive, Set<T> negative) {
     });
   }
 
-  public static <T> OpposingSets<T> mergeLeftWins(OpposingSets<T> left, OpposingSets<T> right) {
+  public static <T> OpposingSets<T> mergeRightWins(OpposingSets<T> left, OpposingSets<T> right) {
     OpposingSets<T> merged = new OpposingSets<>();
-    merged.negative.addAll(left.negative);
-    merged.positive.addAll(left.positive);
-    right.negative.forEach(t -> {
+    merged.negative.addAll(right.negative);
+    merged.positive.addAll(right.positive);
+    left.negative.forEach(t -> {
       if (!merged.positive.contains(t))
         merged.negative.add(t);
     });
-    right.positive.forEach(t -> {
+    left.positive.forEach(t -> {
       if (!merged.negative.contains(t))
         merged.positive.add(t);
     });
