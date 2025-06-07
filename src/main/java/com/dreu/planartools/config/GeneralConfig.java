@@ -29,7 +29,8 @@ public class GeneralConfig {
                     "# When true, the config will be parsed every time you join a world. This is so modpack\n" +
                     "# developers can test changes without needing to constantly restart the whole game.\n" +
                     "# If a server has this enabled it will parse every time any player joins.\n" +
-                    "Hotswappable = " + HOTSWAPPABLE + " # This should be false for regular gameplay."
+                    "# This should be false for regular gameplay.\n" +
+                    "Hotswappable = " + HOTSWAPPABLE
             );
         } catch (Exception e) {
             addConfigIssue(ERROR, (byte) 5, "Encountered exception while writing repaired config file [{}] | Exception: {}", fileName, e.getMessage());
@@ -53,7 +54,8 @@ public class GeneralConfig {
             # When true, the config will be parsed every time you join a world. This is so modpack
             # developers can test changes without needing to constantly restart the whole game.
             # If a server has this enabled it will parse every time any player joins.
-            Hotswappable = false # This should be false for regular gameplay.
+            # This should be false for regular gameplay.
+            Hotswappable = false
             """;
 
     public static final Config DEFAULT_CONFIG = new TomlParser().parse(DEFAULT_CONFIG_STRING);

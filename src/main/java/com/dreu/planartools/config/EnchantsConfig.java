@@ -33,31 +33,31 @@ public class EnchantsConfig {
       # For example the "@combat" enchant collection can be found at [config/planar_tools/collections/enchants/combat.txt]
       # Enchant Collections may only contain individual enchants
       
-      "minecraft:stick" = [ # example of allowing a single item to be enchanted
+      "minecraft:stick" = [           # example of allowing a single item to be enchanted
           "minecraft:looting"
       ]
       
-      Arcane = [ # All items with Arcane power can now have these enchants
+      Arcane = [                      # All items with Arcane power can now have these enchants
           "minecraft:looting",
           "minecraft:fire_aspect"
       ]
       
-      "Arcane.50" = [ # All items with 50 or more Arcane Power can now have Fortune, but can't have Fire Aspect
+      "Arcane.50" = [                 # All items with 50 or more Arcane Power can now have Fortune, but can't have Fire Aspect
           "minecraft:fortune",
           "-minecraft:fire_aspect"
       ]
       
-      "@golden_tools" = [ # Golden Tools (which have Arcane power in our example config) can not have Looting even though specified in Arcane Power Types above
+      "@golden_tools" = [             # Golden Tools (which have Arcane power in our example config) can not have Looting even though specified in Arcane Power Types above
           "-minecraft:looting"
       ]
       
-      Pickaxe = [ # Any item with Pickaxe Power can be more like a pickaxe now
+      Pickaxe = [                     # Any item with Pickaxe Power can be more like a pickaxe now
           "minecraft:efficiency",
           "minecraft:fortune",
           "minecraft:silk_touch"
       ]
       
-      Axe = [ # This makes items declared with Axe power behave like an Axe as a tool, but we don't explicitly allow any of the combat enchants
+      Axe = [                         # This makes items declared with Axe power behave like an Axe as a tool, but we don't explicitly allow any of the combat enchants
           "minecraft:efficiency",
           "minecraft:fortune",
           "minecraft:silk_touch"
@@ -79,7 +79,7 @@ public class EnchantsConfig {
           "minecraft:efficiency"
       ]
       
-      Sword = [ # Any item with Sword power can now have combat enchants
+      Sword = [                       # Any item with Sword power can now have combat enchants
           "@combat"
       ]
       """;
