@@ -40,7 +40,7 @@ import static com.dreu.planartools.util.Helpers.displayTooltips;
 import static com.dreu.planartools.util.Helpers.toggleTooltipDisplay;
 import static net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.FORGE;
 
-@SuppressWarnings({"unused", "DataFlowIssue"})
+@SuppressWarnings("unused")
 @Mod.EventBusSubscriber(modid = MODID, bus = FORGE, value = Dist.CLIENT)
 public class ClientForgeBusEvents {
   @SubscribeEvent
