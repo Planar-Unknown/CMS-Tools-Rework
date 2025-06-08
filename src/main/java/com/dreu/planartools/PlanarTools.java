@@ -25,12 +25,12 @@ import static com.dreu.planartools.util.Helpers.addConfigIssue;
 public class PlanarTools {
 
     //Todo: Add defaultCanDrop to blocks and CanDrop to each tool type of blocks
-    //Todo: Ensure interactions with Block Explosions or other block destruction methods are correct
     //Todo: Make option for all registered resistances on a block must be exceeded
     //Todo: Nbt system for upgrading tools
-    //Todo: modpack creator configurable enchants that interact with the Nbt system
     //Todo: optimize SyncConfigPacket by creating Map<Properties, List<String>> first,
     //      then reversing it to reduce instances of Properties
+    //Todo: JEI compat
+    //Todo: Jade compat
     //Eventually make blocks store their destroy progress on config option
 
     public static final String MODID = "planar_tools";

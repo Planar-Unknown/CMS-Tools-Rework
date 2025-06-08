@@ -43,45 +43,45 @@ public class BlocksConfig {
     # Power -> |   20   |    40   |   60   |   40   |    80    |    100    #
     ########################################################################
     
-    ["minecraft:packed_mud"]                                # Here is an example of a block that can only be mined with a Power 40+ Shovel OR a Power 20+ Pickaxe:
-    Hardness = 1.0                                          # Affects mining time (e.g., dirt = 0.5, stone = 1.5, bedrock = -1). Only include this if you want to change a block's existing hardness.
-    DefaultResistance = -1                                  # Resistance to unlisted tool types (-1 = unbreakable)
-    Shovel = {Resistance = 40, ApplyMiningSpeed = false}    # Tools with ShovelPower ≥ 40 can mine this block but their MiningSpeed is NOT applied.
-    Pickaxe = {Resistance = 20, ApplyMiningSpeed = true}    # Tools with PickaxePower ≥ 20 can mine this block and their MiningSpeed IS applied.
+    ["minecraft:packed_mud"]                                  # Here is an example of a block that can only be mined with a Power 40+ Shovel OR a Power 20+ Pickaxe:
+      Hardness = 1.0                                          # Affects mining time (e.g., dirt = 0.5, stone = 1.5, bedrock = -1). Only include this if you want to change a block's existing hardness.
+      DefaultResistance = -1                                  # Resistance to unlisted tool types (-1 = unbreakable)
+      Shovel = {Resistance = 40, ApplyMiningSpeed = false}    # Tools with ShovelPower ≥ 40 can mine this block but their MiningSpeed is NOT applied.
+      Pickaxe = {Resistance = 20, ApplyMiningSpeed = true}    # Tools with PickaxePower ≥ 20 can mine this block and their MiningSpeed IS applied.
     
-    ["minecraft:amethyst_block"]                            # A simple example of making Amethyst only mineable with Golden Tools
-    DefaultResistance = -1                                  # Not mineable by default
-    Arcane = {Resistance = 30, ApplyMiningSpeed = true}     # Tools with Arcane power 30 or above can mine it
-                                                            # Note that in the tools.toml, we have given all @golden_tools Arcane power of 30
+    ["minecraft:amethyst_block"]                              # A simple example of making Amethyst only mineable with Golden Tools
+      DefaultResistance = -1                                  # Not mineable by default
+      Arcane = {Resistance = 30, ApplyMiningSpeed = true}     # Tools with Arcane power 30 or above can mine it
+                                                              # Note that in the tools.toml, we have given all @golden_tools Arcane power of 30
     
-                                                            # You can specify a tag (denoted by the "#"), and all blocks in that tag will receive the values declared
+                                                              # You can specify a tag (denoted by the "#"), and all blocks in that tag will receive the values declared
     ["#minecraft:dirt"]
-    DefaultResistance = 0                                   # Zero indicates no resistance, meaning no power is required to mine it. So any tool, item (or fist) works!
-    Shovel = {ApplyMiningSpeed = true}                      # Even though ANYTHING can mine it, only tools/items that have ShovelPower apply their MiningSpeed.
+      DefaultResistance = 0                                   # Zero indicates no resistance, meaning no power is required to mine it. So any tool, item (or fist) works!
+      Shovel = {ApplyMiningSpeed = true}                      # Even though ANYTHING can mine it, only tools/items that have ShovelPower apply their MiningSpeed.
     
-    ["minecraft:moss_block"]                                # Moss exists in the tag #minecraft:dirt, but you can override any of the values declared for the tag
-    Shovel = {ApplyMiningSpeed = false}                     # Now moss will no longer grant mining speed to shovels but keeps any other values declared for tags
-    Hoe = {ApplyMiningSpeed = true}
+    ["minecraft:moss_block"]                                  # Moss exists in the tag #minecraft:dirt, but you can override any of the values declared for the tag
+      Shovel = {ApplyMiningSpeed = false}                     # Now moss will no longer grant mining speed to shovels but keeps any other values declared for tags
+      Hoe = {ApplyMiningSpeed = true}
     
-                                                            # You can specify a Block Family (denoted by the "$"), and all blocks in that family will receive the values declared
-    ["$minecraft:nether_bricks"]                            # A Block Family contains all variants of the base block, (e.g., stairs, slabs, walls)
-    Hardness = 3.0                                          # All we've done is made nether brick blocks a little tougher
-    ExplosionResistance = 7.0                               # Note that not all mod creators implement block families for blocks with variants.
+                                                              # You can specify a Block Family (denoted by the "$"), and all blocks in that family will receive the values declared
+    ["$minecraft:nether_bricks"]                              # A Block Family contains all variants of the base block, (e.g., stairs, slabs, walls)
+      Hardness = 3.0                                          # All we've done is made nether brick blocks a little tougher
+      ExplosionResistance = 7.0                               # Note that not all mod creators implement block families for blocks with variants.
     
-                                                            # You may reference custom collections that can include blocks, block families, and tags
-    ["@example/deepslate"]                                  # This collection would be found at [config/planar_tools/collections/blocks/example/deepslate.txt]
-    DefaultResistance = -1                                  # We've made all deepslate, its variants, and ores only mineable with stone pickaxes or better.
-    Pickaxe = {Resistance = 40, ApplyMiningSpeed = true}
+                                                              # You may reference custom collections that can include blocks, block families, and tags
+    ["@example/deepslate"]                                    # This collection would be found at [config/planar_tools/collections/blocks/example/deepslate.txt]
+      DefaultResistance = -1                                  # We've made all deepslate, its variants, and ores only mineable with stone pickaxes or better.
+      Pickaxe = {Resistance = 40, ApplyMiningSpeed = true}
     
-    ["@wood"]                                               # You may create your own collections in the collections folder and reference them here just like this.
-    DefaultResistance = 0                                   # Here is another example collection. This time located at [config/planar_tools/collections/wood.txt]
-    Axe = {ApplyMiningSpeed = true}                         # We've changed nothing about wood stuff. This is just a nice example of a custom collection
+    ["@wood"]                                                 # You may create your own collections in the collections folder and reference them here just like this.
+      DefaultResistance = 0                                   # Here is another example collection. This time located at [config/planar_tools/collections/wood.txt]
+      Axe = {ApplyMiningSpeed = true}                         # We've changed nothing about wood stuff. This is just a nice example of a custom collection
     
-    ["#minecraft:wool"]                                     # Swords in tools.toml example were declared with 20 Shears power, so they will not mine Wool quickly
-    Shears = {Resistance = 100, ApplyMiningSpeed = true}
+    ["#minecraft:wool"]                                       # Swords in tools.toml example were declared with 20 Shears power, so they will not mine Wool quickly
+      Shears = {Resistance = 100, ApplyMiningSpeed = true}
     
-    ["minecraft:cobweb"]                                    # Swords will however mine Cobwebs quickly
-    Shears = {Resistance = 20, ApplyMiningSpeed = true}
+      ["minecraft:cobweb"]                                    # Swords will however mine Cobwebs quickly
+      Shears = {Resistance = 20, ApplyMiningSpeed = true}
     """;
 
   public static Config CONFIG;

@@ -18,6 +18,7 @@ import static com.dreu.planartools.util.Helpers.LogLevel.INFO;
 import static com.dreu.planartools.util.Helpers.LogLevel.WARN;
 
 public class EnchantsConfig {
+  //Todo: allow users to declare enchantability of items
   public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/enchants.toml";
   public static final String TEMPLATE_CONFIG_STRING = """
       # Here, you can declare which enchantments can be applied to Tools, specified by Items, Tags, Collections, or Registered Tool Types.
@@ -33,53 +34,60 @@ public class EnchantsConfig {
       # For example the "@combat" enchant collection can be found at [config/planar_tools/collections/enchants/combat.txt]
       # Enchant Collections may only contain individual enchants
       
-      "minecraft:stick" = [           # example of allowing a single item to be enchanted
+      # example of allowing a single item to be enchanted
+      "minecraft:stick" = [
           "minecraft:looting"
       ]
       
-      Arcane = [                      # All items with Arcane power can now have these enchants
+      # All items with Arcane power can now have these enchants
+      Arcane = [
           "minecraft:looting",
           "minecraft:fire_aspect"
       ]
       
-      "Arcane.50" = [                 # All items with 50 or more Arcane Power can now have Fortune, but can't have Fire Aspect
+      # All items with 50 or more Arcane Power can now have Fortune, but can't have Fire Aspect
+      "Arcane.50" = [
           "minecraft:fortune",
           "-minecraft:fire_aspect"
       ]
       
-      "@golden_tools" = [             # Golden Tools (which have Arcane power in our example config) can not have Looting even though specified in Arcane Power Types above
+      # Golden Tools (which have Arcane power in our example config) can not have Looting even though specified in Arcane Power Types above
+      "@golden_tools" = [
           "-minecraft:looting"
       ]
       
-      Pickaxe = [                     # Any item with Pickaxe Power can be more like a pickaxe now
+      # Any item with Pickaxe Power can be more like a pickaxe now
+      "Pickaxe" = [
           "minecraft:efficiency",
           "minecraft:fortune",
           "minecraft:silk_touch"
       ]
       
-      Axe = [                         # This makes items declared with Axe power behave like an Axe as a tool, but we don't explicitly allow any of the combat enchants
+      # This makes items declared with Axe power behave like an Axe as a tool, but we don't explicitly allow any of the combat enchants
+      "Axe" = [
           "minecraft:efficiency",
           "minecraft:fortune",
           "minecraft:silk_touch"
       ]
       
-      Shovel = [
+      "Shovel" = [
           "minecraft:efficiency",
           "minecraft:fortune",
           "minecraft:silk_touch"
       ]
       
-      Hoe = [
+      "Hoe" = [
           "minecraft:efficiency",
           "minecraft:fortune",
           "minecraft:silk_touch"
       ]
       
-      Shears = [
+      "Shears" = [
           "minecraft:efficiency"
       ]
       
-      Sword = [                       # Any item with Sword power can now have combat enchants
+      # Any item with Sword power can now have combat enchants
+      "Sword" = [
           "@combat"
       ]
       """;
