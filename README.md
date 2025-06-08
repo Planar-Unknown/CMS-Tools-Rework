@@ -8,10 +8,13 @@
     <a href="https://www.youtube.com/@silentstranger49" target="_blank" style="text-decoration:none">
         <img src="https://img.shields.io/badge/Youtube-F02222?logo=youtube&logoColor=white&style=for-the-badge" alt="Silent Stranger's Youtube">
     </a>
+    <a href="https://www.curseforge.com/members/planarunknown/projects">
+        <img src="https://img.shields.io/badge/CurseForge-F46537?logo=curseforge&logoColor=white&style=for-the-badge" alt="Planar Unknown CurseForge">
+    </a>
 </p>
 
 ## This mod is in **beta**!
-Please report any bugs by leaving a comment here or visiting our Discord or GitHub
+Please report any bugs by creating an issue here or visiting our Discord
 
 ## What is Configurable Mining System?
 CMS is a utility mod that lets you fine-tune mining progression by customizing tools, blocks, and enchantments through simple TOML config files
@@ -45,12 +48,12 @@ With this, Packed Mud would take twice as long to mine as Dirt, and it can only 
 You may also configure what enchantments can or cannot go on any item.
 ```yaml
 "Arcane.50" = [
-    "minecraft:fortune",
-    "-minecraft:fire_aspect"
+  "minecraft:fortune",
+  "-minecraft:fire_aspect"
 ]
-  
-"minecraft:stick" = [
-    "minecraft:looting"
+
+  "minecraft:stick" = [
+  "minecraft:looting"
 ]
 ```
 With this, items with Arcane power 50 or higher can have Fortune but cannot have Fire Aspect, even if they normally could. And sticks can have looting!
