@@ -67,8 +67,8 @@ dependencies {
 }
 
 mixin {
-    add sourceSets.main, 'planar_tools.refmap.json'
-    config 'mixins.planar_tools.json'
+    add sourceSets.main, 'planar_cms.refmap.json'
+    config 'mixins.planar_cms.json'
 }
 
 tasks.named('processResources', ProcessResources).configure {

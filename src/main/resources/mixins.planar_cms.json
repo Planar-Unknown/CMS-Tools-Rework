@@ -1,0 +1,19 @@
+{
+  "required": false,
+  "package": "com.dreu.planartools.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "refmap": "planar_cms.refmap.json",
+  "mixins": [
+    "ExplosionDamageCalculatorMixin",
+    "BlockStateBaseMixin",
+    "ItemStackMixin",
+    "enchantments/AnvilMenuMixin",
+    "enchantments/EnchantCommandMixin",
+    "enchantments/EnchantRandomlyFunctionMixin",
+    "enchantments/EnchantmentHelperMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
