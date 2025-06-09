@@ -1,6 +1,6 @@
 {
   "required": false,
-  "package": "com.dreu.planartools.mixin",
+  "package": "com.dreu.planarcms.mixin",
   "compatibilityLevel": "JAVA_17",
   "minVersion": "0.8",
   "refmap": "planar_cms.refmap.json",

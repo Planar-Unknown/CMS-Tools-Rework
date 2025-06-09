@@ -27,6 +27,7 @@ public class PlanarCMS {
     //Todo: Add defaultCanDrop to blocks and CanDrop to each tool type of blocks
     //Todo: Make option for all registered resistances on a block must be exceeded
     //Todo: Nbt system for upgrading tools
+    //Todo: Nbt for players too
     //Todo: optimize SyncConfigPacket by creating Map<Properties, List<String>> first,
     //      then reversing it to reduce instances of Properties
     //Todo: JEI compat
