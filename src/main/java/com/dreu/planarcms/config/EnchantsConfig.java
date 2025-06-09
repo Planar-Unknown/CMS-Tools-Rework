@@ -40,7 +40,7 @@ public class EnchantsConfig {
       ]
       
       # All items with Arcane power can now have these enchants
-      Arcane = [
+      "Arcane" = [
           "minecraft:looting",
           "minecraft:fire_aspect"
       ]
