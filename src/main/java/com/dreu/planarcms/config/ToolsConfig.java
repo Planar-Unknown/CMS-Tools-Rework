@@ -120,7 +120,8 @@ public class ToolsConfig {
             } else if (configKey.startsWith("@")) {
                 handleCollection(configKey, (Config) toolProperties);
             } else {
-                singleTools.put(configKey, (Config) toolProperties);
+                if (isValidItem(configKey, Optional.empty(), PRESET_FOLDER_NAME + "tools.toml"))
+                    singleTools.put(configKey, (Config) toolProperties);
             }
         });
         singleTools.forEach(ToolsConfig::handleSingleItem);

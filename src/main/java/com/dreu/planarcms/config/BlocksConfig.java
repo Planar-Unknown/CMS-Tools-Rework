@@ -103,7 +103,8 @@ public class BlocksConfig {
       } else if (configKey.startsWith("@")) {
         handleCollection(configKey, (Config) blockProperties);
       } else {
-        singleBlocks.put(configKey, (Config) blockProperties);
+        if (isValidBlock(configKey, Optional.empty()))
+          singleBlocks.put(configKey, (Config) blockProperties);
       }
     });
 
@@ -123,7 +124,7 @@ public class BlocksConfig {
       } else if (string.startsWith("$")) {
         handleBlockFamily(string, blockProperties, Optional.of(collectionId));
       } else {
-        if (blockIsNotValid(string, Optional.of(collectionId))) return;
+        if (!isValidBlock(string, Optional.of(collectionId))) return;
         addBlock(string, assembleProperties(configKey, blockProperties));
       }
     });
@@ -166,7 +167,7 @@ public class BlocksConfig {
   }
 
   private static void handleSingleBlock(String blockId, Config blockPropertiesConfig) {
-    if (blockIsNotValid(blockId, Optional.empty())) return;
+    if (!isValidBlock(blockId, Optional.empty())) return;
 
     Properties singleBlockProperties = assembleProperties(blockId, blockPropertiesConfig);
     BLOCKS.merge(blockId, singleBlockProperties, (existing, singleBlock) -> {
@@ -183,20 +184,20 @@ public class BlocksConfig {
     });
   }
 
-  private static boolean blockIsNotValid(String blockId, Optional<String> collectionName) {
+  private static boolean isValidBlock(String blockId, Optional<String> collectionName) {
     if (!ResourceLocation.isValidResourceLocation(blockId)) {
       addConfigIssue(INFO, (byte) 2, "Not a valid Block ResourceLocation: <{}> declared in {} | Skipping Block...", blockId, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "blocks.toml]"));
-      return true;
+      return false;
     }
     if (!ModList.get().isLoaded(blockId.split(":")[0])) {
       addConfigIssue(INFO, (byte) 2, "{} declared Block Resistance values for <{}> but mod '{{}}' is not loaded | Skipping...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() ->  "Config: [" + PRESET_FOLDER_NAME + "blocks.toml]"), blockId, blockId.split(":")[0]);
-      return true;
+      return false;
     }
     if (!ForgeRegistries.BLOCKS.containsKey(new ResourceLocation(blockId))) {
       addConfigIssue(INFO, (byte) 2, "{} declared block <{}> which does not exist, check for typos! | Skipping Block...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() ->  "Config: [" + PRESET_FOLDER_NAME + "blocks.toml]"), blockId);
-      return true;
+      return false;
     }
-    return false;
+    return true;
   }
 
   private static Map<Byte, ResistanceData> getResistanceDataMapOverride(Config block, int defaultResistance, Map<Byte, ResistanceData> right, String parent) {
