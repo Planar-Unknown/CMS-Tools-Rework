@@ -2,6 +2,8 @@ package com.dreu.planarcms.network;
 
 import com.dreu.planarcms.config.BlocksConfig;
 import com.dreu.planarcms.config.ToolsConfig;
+import com.dreu.planarcms.events.ForgeEvents;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 
@@ -94,7 +96,10 @@ public class SyncConfigS2CPacket {
 
 
   public void handle(Supplier<NetworkEvent.Context> context) {
-    context.get().enqueueWork(() -> PacketHandler.CHANNEL.sendToServer(new SendConfigIssuesInChatC2SPacket()));
+    context.get().enqueueWork(() -> {
+      PacketHandler.CHANNEL.sendToServer(new SendConfigIssuesInChatC2SPacket());
+      ForgeEvents.lastServerWasLocal = Minecraft.getInstance().isLocalServer();
+    });
     context.get().setPacketHandled(true);
   }
 }
