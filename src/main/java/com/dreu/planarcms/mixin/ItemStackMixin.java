@@ -46,12 +46,10 @@ public class ItemStackMixin {
     if (toolProperties != null) {
       for (Byte toolType : toolProperties.powers().keySet()) {
         TreeMap<Integer, OpposingSets<String>> treeMap = ENCHANTS_BY_TOOL_TYPE.get(toolType);
-        if (treeMap != null && !treeMap.isEmpty()) {
-          for (OpposingSets<String> enchantments : treeMap.descendingMap().values()) {
+        if (treeMap != null) {
+          for (OpposingSets<String> enchantments : treeMap.values()) {
             if (!enchantments.positive().isEmpty()) {
-              for (String enchant : enchantments.positive()) {
-                if (!byItem.negative().contains(enchant)) return true;
-              }
+              return true;
             }
           }
         }
