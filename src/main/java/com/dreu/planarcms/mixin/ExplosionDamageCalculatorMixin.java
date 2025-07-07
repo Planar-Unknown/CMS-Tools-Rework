@@ -25,7 +25,6 @@ public class ExplosionDamageCalculatorMixin {
       cancellable = true
   )
   private void getBlockExplosionResistanceInject(Explosion explosion, BlockGetter level, BlockPos blockPos, BlockState blockState, FluidState fluidState, CallbackInfoReturnable<Optional<Float>> cir) {
-    System.out.println("We are " + blockState.getBlock().getName());
     BlocksConfig.Properties blockProperties = getBlockProperties(blockState.getBlock());
     if (blockProperties != null) {
       Optional<Float> explosionResistance = blockProperties.explosionResistance();

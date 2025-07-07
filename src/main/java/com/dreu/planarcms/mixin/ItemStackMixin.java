@@ -38,7 +38,6 @@ public class ItemStackMixin {
       )
   )
   private boolean redirectItemIsEnchantable(Item item, ItemStack itemStack) {
-    System.out.println("We are at: ItemStickyMixin yay!");
     String itemId = ForgeRegistries.ITEMS.getKey(itemStack.getItem()).toString();
     OpposingSets<String> byItem = ENCHANTS_BY_ITEM_ID.getOrDefault(itemId, new OpposingSets<>());
     if (!byItem.positive().isEmpty()) return true;
