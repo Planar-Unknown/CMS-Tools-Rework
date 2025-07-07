@@ -19,6 +19,7 @@
   "planar_cms.reviewAt": "Review all issues here: ",
   "planar_cms.powerNames.Custom": "Custom",
   "key.categories.planar_cms": "Planar Tools",
-  "key.planar_cms.toggleWaila": "Toggle WAILA overlay",
+  "key.planar_cms.toggleWaila": "Toggle CMS WAILA overlay",
+  "key.planar_cms.toggleTooltips": "Toggle CMS Tooltips",
   "planar_cms.displayTooltips": "Display Tooltips"
 }
