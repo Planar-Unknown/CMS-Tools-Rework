@@ -47,9 +47,9 @@ public class PlanarCMS {
         ToolsConfig.parse();
         BlocksConfig.parse();
         EnchantsConfig.parse();
-        resetTemplate(EnchantsConfig.TEMPLATE_FILE_NAME, EnchantsConfig.TEMPLATE_CONFIG_STRING);
-        resetTemplate(BlocksConfig.TEMPLATE_FILE_NAME, BlocksConfig.TEMPLATE_CONFIG_STRING);
-        resetTemplate(ToolsConfig.TEMPLATE_FILE_NAME, ToolsConfig.TEMPLATE_CONFIG_STRING);
+        resetTemplate(EnchantsConfig.TEMPLATE_FILE_NAME, EnchantsConfig.COMMENTED_TEMPLATE_CONFIG_STRING);
+        resetTemplate(BlocksConfig.TEMPLATE_FILE_NAME, BlocksConfig.COMMENTED_TEMPLATE_CONFIG_STRING);
+        resetTemplate(ToolsConfig.TEMPLATE_FILE_NAME, ToolsConfig.COMMENTED_TEMPLATE_CONFIG_STRING);
     }
 
     public static void populateTagKeys() {
@@ -64,7 +64,7 @@ public class PlanarCMS {
         try {
             Files.createDirectories(Path.of(fileName).getParent());
             FileWriter writer = new FileWriter(new File(fileName).getAbsolutePath());
-            writer.write("# DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!\n" + contents);
+            writer.write(contents);
             writer.close();
         } catch (IOException e) {
             addConfigIssue(WARN, (byte) 5, "Exception during template replacement: {}", e.getMessage());

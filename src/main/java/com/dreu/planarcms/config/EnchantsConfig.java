@@ -21,6 +21,61 @@ public class EnchantsConfig {
   //Todo: allow users to declare enchantability of items
   public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/enchants.toml";
   public static final String TEMPLATE_CONFIG_STRING = """
+      # See Template for more information
+      
+      "minecraft:stick" = [
+      "minecraft:looting"
+      ]
+      
+      "Arcane" = [
+      "minecraft:looting",
+      "minecraft:fire_aspect"
+      ]
+      
+      "Arcane.50" = [
+      "minecraft:fortune",
+      "-minecraft:fire_aspect"
+      ]
+      
+      "@golden_tools" = [
+      "-minecraft:looting"
+      ]
+      
+      "Pickaxe" = [
+      "minecraft:efficiency",
+      "minecraft:fortune",
+      "minecraft:silk_touch"
+      ]
+      
+      "Axe" = [
+      "minecraft:efficiency",
+      "minecraft:fortune",
+      "minecraft:silk_touch"
+      ]
+      
+      "Shovel" = [
+      "minecraft:efficiency",
+      "minecraft:fortune",
+      "minecraft:silk_touch"
+      ]
+      
+      "Hoe" = [
+      "minecraft:efficiency",
+      "minecraft:fortune",
+      "minecraft:silk_touch"
+      ]
+      
+      "Shears" = [
+      "minecraft:efficiency"
+      ]
+      
+      "Sword" = [
+      "@combat"
+      ]
+      """;
+
+  public static final String COMMENTED_TEMPLATE_CONFIG_STRING = """
+      # DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!
       # Here, you can declare which enchantments can be applied to Tools, specified by Items, Tags, Collections, or Registered Tool Types.
       # Keep in mind that Unbreaking, Mending, and Sweeping edge all have explicit handling, so allowing them on an item may not do anything
       

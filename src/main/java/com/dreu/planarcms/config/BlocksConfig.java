@@ -12,10 +12,7 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static com.dreu.planarcms.PlanarCMS.MODID;
 import static com.dreu.planarcms.config.GeneralConfig.PRESET_FOLDER_NAME;
@@ -25,8 +22,49 @@ import static com.dreu.planarcms.util.Helpers.*;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class BlocksConfig {
+  //Todo: add comment to template for Forced tool types
   public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/blocks.toml";
   public static final String TEMPLATE_CONFIG_STRING = """
+    # See Template for more information
+    
+    ["minecraft:packed_mud"]
+    Hardness = 1.0
+    DefaultResistance = -1
+    Shovel = {Resistance = 40, ApplyMiningSpeed = false}
+    Pickaxe = {Resistance = 20, ApplyMiningSpeed = true}
+    
+    ["minecraft:amethyst_block"]
+    DefaultResistance = -1
+    Arcane = {Resistance = 30, ApplyMiningSpeed = true}
+    
+    ["#minecraft:dirt"]
+    DefaultResistance = 0
+    Shovel = {ApplyMiningSpeed = true}
+    
+    ["minecraft:moss_block"]
+    Shovel = {ApplyMiningSpeed = false}
+    Hoe = {ApplyMiningSpeed = true}
+    
+    ["$minecraft:nether_bricks"]
+    Hardness = 3.0
+    ExplosionResistance = 7.0
+    
+    ["@example/deepslate"]
+    DefaultResistance = -1
+    Pickaxe = {Resistance = 40, ApplyMiningSpeed = true}
+    
+    ["@wood"]
+    DefaultResistance = 0
+    Axe = {ApplyMiningSpeed = true}
+    
+    ["#minecraft:wool"]
+    Shears = {Resistance = 100, ApplyMiningSpeed = true}
+    
+    ["minecraft:cobweb"]
+    Shears = {Resistance = 20, ApplyMiningSpeed = true}
+    """;
+  public static final String COMMENTED_TEMPLATE_CONFIG_STRING = """
+    # DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!
     # Collections in this file (denoted by "@") are custom groups of Blocks
     # Create your own collections at: [config/planar_cms/collections/blocks]
     # For example, the "@example/deepslate" collection can be found at [config/planar_cms/collections/blocks/example/deepslate.txt]

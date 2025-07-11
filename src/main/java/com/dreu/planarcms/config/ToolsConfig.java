@@ -15,117 +15,203 @@ import static com.dreu.planarcms.config.GeneralConfig.PRESET_FOLDER_NAME;
 import static com.dreu.planarcms.util.Helpers.LogLevel.*;
 import static com.dreu.planarcms.util.Helpers.*;
 
-@SuppressWarnings({"SameParameterValue"})
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class ToolsConfig {
-    public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/tools.toml";
-    public static final String TEMPLATE_CONFIG_STRING = """
-            # Values not included for Tools will default to the Default power.
-            # Power indicates the block Resistance level a tool can overcome.
-            # MiningSpeed indicates the rate at which a tool will mine blocks that it can mine.
-            # Each block can be configured to choose whether a tools MiningSpeed will be applied.
-            
-            # Collections in this file (denoted by "@") are custom groups of Items
-            # Create your own item collections at: [config/planar_cms/collections/items]
-            # For example, the "@golden_tools" collection can be found at [config/planar_cms/collections/items/golden_tools.txt]
-            # Item Collections may contain Tags of items or individual items, but may not contain other collections
-            
-            # Register tool types to use for Tool Power and Block Resistances
-            # The order of this list will be the display order of Tooltips
-            # You may specify Tooltip Color using 6 digit RGB Hex colors following the Tool Type
-            ToolTypes = [
-                "Pickaxe:FFD700",
-                "Axe:8B4513",
-                "Shovel:A9A9A9",
-                "Hoe:32CD32",
-                "Sword:DC143C",
-                "Shears",
-                "Arcane:7F00FF"
-            ]
-            
-            [Tools]
-            "#minecraft:swords" = {Shears = 20}
-            "@golden_tools" = {Arcane = 30}
-            
-            "minecraft:wooden_pickaxe" = {Pickaxe = 20, MiningSpeed = 2}
-            "minecraft:stone_pickaxe" = {Pickaxe = 40, MiningSpeed = 4}
-            "minecraft:iron_pickaxe" = {Pickaxe = 60, MiningSpeed = 6}
-            "minecraft:golden_pickaxe" = {Pickaxe = 40, MiningSpeed = 12}
-            "minecraft:diamond_pickaxe" = {Pickaxe = 80, MiningSpeed = 8}
-            "minecraft:netherite_pickaxe" = {Pickaxe = 100, MiningSpeed = 9}
-            
-            "minecraft:wooden_shovel" = {Shovel = 20, MiningSpeed = 2}
-            "minecraft:stone_shovel" = {Shovel = 40, MiningSpeed = 4}
-            "minecraft:iron_shovel" = {Shovel = 60, MiningSpeed = 6}
-            "minecraft:golden_shovel" = {Shovel = 40, MiningSpeed = 12}
-            "minecraft:diamond_shovel" = {Shovel = 80, MiningSpeed = 8}
-            "minecraft:netherite_shovel" = {Shovel = 100, MiningSpeed = 9}
-            
-            "minecraft:wooden_hoe" = {Hoe = 20, MiningSpeed = 2}
-            "minecraft:stone_hoe" = {Hoe = 40, MiningSpeed = 4}
-            "minecraft:iron_hoe" = {Hoe = 60, MiningSpeed = 6}
-            "minecraft:golden_hoe" = {Hoe = 40, MiningSpeed = 12}
-            "minecraft:diamond_hoe" = {Hoe = 80, MiningSpeed = 8}
-            "minecraft:netherite_hoe" = {Hoe = 100, MiningSpeed = 9}
-            
-            "minecraft:wooden_axe" = {Axe = 20, MiningSpeed = 2}
-            "minecraft:stone_axe" = {Axe = 40, MiningSpeed = 4}
-            "minecraft:iron_axe" = {Axe = 60, MiningSpeed = 6}
-            "minecraft:golden_axe" = {Axe = 40, MiningSpeed = 12}
-            "minecraft:diamond_axe" = {Axe = 80, MiningSpeed = 8}
-            "minecraft:netherite_axe" = {Axe = 100, MiningSpeed = 9}
-            
-            "minecraft:wooden_sword" = {Sword = 20, MiningSpeed = 2}
-            "minecraft:stone_sword" = {Sword = 40, MiningSpeed = 4}
-            "minecraft:iron_sword" = {Sword = 60, MiningSpeed = 6}
-            "minecraft:golden_sword" = {Sword = 40, MiningSpeed = 12}
-            "minecraft:diamond_sword" = {Sword = 80, MiningSpeed = 8}
-            "minecraft:netherite_sword" = {Sword = 100, MiningSpeed = 9}
-            
-            "minecraft:shears" = {Shears = 100, MiningSpeed = 10}
-            """;
+  public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/tools.toml";
+  public static final String TEMPLATE_CONFIG_STRING = """
+    # See Template for more information
+    
+    ToolTypes = [
+        "Pickaxe:FFD700",
+        "Axe:8B4513",
+        "Shovel:A9A9A9",
+        "Hoe:32CD32",
+        "Sword:DC143C",
+        "Shears",
+        "Arcane:7F00FF"
+    ]
+    
+    [Tools]
+    "#minecraft:swords" = {Shears = 20}
+    "@golden_tools" = {Arcane = 30}
+    
+    "minecraft:wooden_pickaxe" = {Pickaxe = 20, MiningSpeed = 2}
+    "minecraft:stone_pickaxe" = {Pickaxe = 40, MiningSpeed = 4}
+    "minecraft:iron_pickaxe" = {Pickaxe = 60, MiningSpeed = 6}
+    "minecraft:golden_pickaxe" = {Pickaxe = 40, MiningSpeed = 12}
+    "minecraft:diamond_pickaxe" = {Pickaxe = 80, MiningSpeed = 8}
+    "minecraft:netherite_pickaxe" = {Pickaxe = 100, MiningSpeed = 9}
+    
+    "minecraft:wooden_shovel" = {Shovel = 20, MiningSpeed = 2}
+    "minecraft:stone_shovel" = {Shovel = 40, MiningSpeed = 4}
+    "minecraft:iron_shovel" = {Shovel = 60, MiningSpeed = 6}
+    "minecraft:golden_shovel" = {Shovel = 40, MiningSpeed = 12}
+    "minecraft:diamond_shovel" = {Shovel = 80, MiningSpeed = 8}
+    "minecraft:netherite_shovel" = {Shovel = 100, MiningSpeed = 9}
+    
+    "minecraft:wooden_hoe" = {Hoe = 20, MiningSpeed = 2}
+    "minecraft:stone_hoe" = {Hoe = 40, MiningSpeed = 4}
+    "minecraft:iron_hoe" = {Hoe = 60, MiningSpeed = 6}
+    "minecraft:golden_hoe" = {Hoe = 40, MiningSpeed = 12}
+    "minecraft:diamond_hoe" = {Hoe = 80, MiningSpeed = 8}
+    "minecraft:netherite_hoe" = {Hoe = 100, MiningSpeed = 9}
+    
+    "minecraft:wooden_axe" = {Axe = 20, MiningSpeed = 2}
+    "minecraft:stone_axe" = {Axe = 40, MiningSpeed = 4}
+    "minecraft:iron_axe" = {Axe = 60, MiningSpeed = 6}
+    "minecraft:golden_axe" = {Axe = 40, MiningSpeed = 12}
+    "minecraft:diamond_axe" = {Axe = 80, MiningSpeed = 8}
+    "minecraft:netherite_axe" = {Axe = 100, MiningSpeed = 9}
+    
+    "minecraft:wooden_sword" = {Sword = 20, MiningSpeed = 2}
+    "minecraft:stone_sword" = {Sword = 40, MiningSpeed = 4}
+    "minecraft:iron_sword" = {Sword = 60, MiningSpeed = 6}
+    "minecraft:golden_sword" = {Sword = 40, MiningSpeed = 12}
+    "minecraft:diamond_sword" = {Sword = 80, MiningSpeed = 8}
+    "minecraft:netherite_sword" = {Sword = 100, MiningSpeed = 9}
+    
+    "minecraft:shears" = {Shears = 100, MiningSpeed = 10}
+    """;
+  public static final String COMMENTED_TEMPLATE_CONFIG_STRING = """
+    # DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!
+    # Values not included for Tools will default to the Default power.
+    # Power indicates the block Resistance level a tool can overcome.
+    # MiningSpeed indicates the rate at which a tool will mine blocks that it can mine.
+    # Each block can be configured to choose whether a tools MiningSpeed will be applied.
+    
+    # Collections in this file (denoted by "@") are custom groups of Items
+    # Create your own item collections at: [config/planar_cms/collections/items]
+    # For example, the "@golden_tools" collection can be found at [config/planar_cms/collections/items/golden_tools.txt]
+    # Item Collections may contain Tags of items or individual items, but may not contain other collections
+    
+    # Register tool types to use for Tool Power and Block Resistances
+    # The order of this list will be the display order of Tooltips
+    # You may specify Tooltip Color using 6 digit RGB Hex colors following the Tool Type
+    ToolTypes = [
+        "Pickaxe:FFD700",
+        "Axe:8B4513",
+        "Shovel:A9A9A9",
+        "Hoe:32CD32",
+        "Sword:DC143C",
+        "Shears",
+        "Arcane:7F00FF"
+    ]
+    
+    [Tools]
+    "#minecraft:swords" = {Shears = 20}
+    "@golden_tools" = {Arcane = 30}
+    
+    "minecraft:wooden_pickaxe" = {Pickaxe = 20, MiningSpeed = 2}
+    "minecraft:stone_pickaxe" = {Pickaxe = 40, MiningSpeed = 4}
+    "minecraft:iron_pickaxe" = {Pickaxe = 60, MiningSpeed = 6}
+    "minecraft:golden_pickaxe" = {Pickaxe = 40, MiningSpeed = 12}
+    "minecraft:diamond_pickaxe" = {Pickaxe = 80, MiningSpeed = 8}
+    "minecraft:netherite_pickaxe" = {Pickaxe = 100, MiningSpeed = 9}
+    
+    "minecraft:wooden_shovel" = {Shovel = 20, MiningSpeed = 2}
+    "minecraft:stone_shovel" = {Shovel = 40, MiningSpeed = 4}
+    "minecraft:iron_shovel" = {Shovel = 60, MiningSpeed = 6}
+    "minecraft:golden_shovel" = {Shovel = 40, MiningSpeed = 12}
+    "minecraft:diamond_shovel" = {Shovel = 80, MiningSpeed = 8}
+    "minecraft:netherite_shovel" = {Shovel = 100, MiningSpeed = 9}
+    
+    "minecraft:wooden_hoe" = {Hoe = 20, MiningSpeed = 2}
+    "minecraft:stone_hoe" = {Hoe = 40, MiningSpeed = 4}
+    "minecraft:iron_hoe" = {Hoe = 60, MiningSpeed = 6}
+    "minecraft:golden_hoe" = {Hoe = 40, MiningSpeed = 12}
+    "minecraft:diamond_hoe" = {Hoe = 80, MiningSpeed = 8}
+    "minecraft:netherite_hoe" = {Hoe = 100, MiningSpeed = 9}
+    
+    "minecraft:wooden_axe" = {Axe = 20, MiningSpeed = 2}
+    "minecraft:stone_axe" = {Axe = 40, MiningSpeed = 4}
+    "minecraft:iron_axe" = {Axe = 60, MiningSpeed = 6}
+    "minecraft:golden_axe" = {Axe = 40, MiningSpeed = 12}
+    "minecraft:diamond_axe" = {Axe = 80, MiningSpeed = 8}
+    "minecraft:netherite_axe" = {Axe = 100, MiningSpeed = 9}
+    
+    "minecraft:wooden_sword" = {Sword = 20, MiningSpeed = 2}
+    "minecraft:stone_sword" = {Sword = 40, MiningSpeed = 4}
+    "minecraft:iron_sword" = {Sword = 60, MiningSpeed = 6}
+    "minecraft:golden_sword" = {Sword = 40, MiningSpeed = 12}
+    "minecraft:diamond_sword" = {Sword = 80, MiningSpeed = 8}
+    "minecraft:netherite_sword" = {Sword = 100, MiningSpeed = 9}
+    
+    "minecraft:shears" = {Shears = 100, MiningSpeed = 10}
+    """;
 
-    public static Config CONFIG;
-    private static final Config TEMPLATE_CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
+  public static Config CONFIG;
 
-    public static void parse() {
-        CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "tools.toml", TEMPLATE_CONFIG_STRING);
+  public static final Map<String, ArrayList<String>> FILTERED_REGISTRY = new HashMap<>();
+  private static boolean registryHasBeenFilteredByModId;
+
+  @SuppressWarnings("RedundantClassCall")
+  public static void parse() {
+    CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "tools.toml", TEMPLATE_CONFIG_STRING);
+    Object toolTypes = CONFIG.get("ToolTypes");
+    if (toolTypes == null) {
+      addConfigIssue(ERROR, (byte) 4, "Key \"ToolTypes\" is missing from config [{}] | Using basic Template instead...", PRESET_FOLDER_NAME + "tools.toml");
+      CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
+      return;
+    } else {
+      try {
+        ArrayList.class.cast(toolTypes);
+      } catch (Exception e) {
+        addConfigIssue(ERROR, (byte) 4, "Value: \"{}\" for \"ToolTypes\" is an invalid type in config [{}] | Expected: 'ArrayList' but got: '{}' | Using basic Template instead...", toolTypes, PRESET_FOLDER_NAME + "tools.toml", toolTypes.getClass().getSimpleName());
+        CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
+        return;
+      }
     }
+    Object tools = CONFIG.get("Tools");
+    if (tools == null) {
+      addConfigIssue(ERROR, (byte) 4, "Key \"Tools\" is missing from config [{}] | Using basic Template instead...", PRESET_FOLDER_NAME + "tools.toml");
+      CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
+    } else {
+      try {
+        Config.class.cast(tools);
+      } catch (Exception e) {
+        addConfigIssue(ERROR, (byte) 4, "Value: \"{}\" for \"Tools\" is an invalid type in config [{}] | Expected: 'Table' but got: '{}' | Using basic Template instead...", tools, PRESET_FOLDER_NAME + "tools.toml", tools.getClass().getSimpleName());
+        CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
+      }
+    }
+  }
 
     public static final ArrayList<String> REGISTERED_TOOL_TYPES = new ArrayList<>();
     public static final ArrayList<Integer> REGISTERED_TOOL_COLORS = new ArrayList<>();
 
-    public static void populateToolTypes() {
-        REGISTERED_TOOL_TYPES.clear();
-        //noinspection unchecked
-        getOrDefault("ToolTypes", ArrayList.class).forEach(toolType -> {
-            String entry = toolType.toString();
-            String[] parts = entry.split(":");
-            REGISTERED_TOOL_TYPES.add(parts[0]);
-            if (parts.length == 2){
-                REGISTERED_TOOL_COLORS.add(Integer.parseUnsignedInt(parts[1], 16));
-            } else {
-                REGISTERED_TOOL_COLORS.add(0xFFFFFF);
-            }
-        });
-    }
+  public static void populateToolTypes() {
+    REGISTERED_TOOL_TYPES.clear();
+    ((ArrayList<?>) CONFIG.get("ToolTypes")).forEach(toolType -> {
+      String entry = toolType.toString();
+      String[] parts = entry.split(":");
+      REGISTERED_TOOL_TYPES.add(parts[0]);
+      if (parts.length == 2) {
+        REGISTERED_TOOL_COLORS.add(Integer.parseUnsignedInt(parts[1], 16));
+      } else {
+        REGISTERED_TOOL_COLORS.add(0xFFFFFF);
+      }
+    });
+  }
 
-    public static Map<String, Properties> TOOLS = new HashMap<>();
-    public static void populateTools() {
-        TOOLS.clear();
-        Map<String, Object> toolsConfig = getOrDefault("Tools", Config.class).valueMap();
-        Map<String, Config> singleTools = new HashMap<>();
-        toolsConfig.forEach((configKey, toolProperties) -> {
-            if (configKey.startsWith("#")) {
-                handleTag(configKey, (Config) toolProperties, Optional.empty());
-            } else if (configKey.startsWith("@")) {
-                handleCollection(configKey, (Config) toolProperties);
-            } else {
-                if (isValidItem(configKey, Optional.empty(), PRESET_FOLDER_NAME + "tools.toml"))
-                    singleTools.put(configKey, (Config) toolProperties);
-            }
-        });
-        singleTools.forEach(ToolsConfig::handleSingleItem);
-    }
+  public static Map<String, Properties> TOOLS = new HashMap<>();
+
+  public static void populateTools() {
+    TOOLS.clear();
+    Map<String, Object> toolsConfig = ((Config) CONFIG.get("Tools")).valueMap();
+    Map<String, Config> singleTools = new HashMap<>();
+    toolsConfig.forEach((configKey, propertiesConfig) -> {
+      Properties properties = assembleProperties(configKey, (Config) propertiesConfig);
+      if (configKey.startsWith("#")) {
+        handleTag(configKey, properties);
+      } else if (configKey.endsWith(":*")) {
+        handleMod(configKey, properties);
+      } else if (configKey.startsWith("@")) {
+        handleCollection(configKey, properties);
+      } else if (isValidItem(configKey, Optional.empty(), "tools.toml")) {
+          singleTools.put(configKey, (Config) propertiesConfig);
+      }
+    });
+    singleTools.forEach(ToolsConfig::handleSingleItem);
+  }
 
     @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "DataFlowIssue"})
     private static void handleTag(String configKey, Config toolProperties, Optional<String> collectionName) {
@@ -202,22 +288,9 @@ public class ToolsConfig {
         });
     }
 
-    private static <T> T getOrDefault(String key, Class<T> clazz) {
-        try {
-            if ((CONFIG.get(key) == null)) {
-                addConfigIssue(ERROR, (byte) 4, "Key \"{}\" is missing from config [{}] | Using basic Template instead...", key, PRESET_FOLDER_NAME + "tools.toml");
-                return clazz.cast(TEMPLATE_CONFIG.get(key));
-            }
-            return clazz.cast(CONFIG.get(key));
-        } catch (Exception e) {
-            addConfigIssue(ERROR, (byte) 4, "Value: \"{}\" for '{}' is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Using basic Template instead...", CONFIG.get(key), key, PRESET_FOLDER_NAME + "tools.toml", clazz.getSimpleName(), CONFIG.get(key).getClass().getSimpleName());
-            return clazz.cast(TEMPLATE_CONFIG.get(key));
-        }
-    }
-
-    public static Properties getToolProperties(Item item) {
-        return TOOLS.get(getItemId(item));
-    }
+  public static Properties getToolProperties(Item item) {
+    return TOOLS.get(getItemId(item));
+  }
 
     // powers is a map of ToolTypeID to ToolPower
     public record Properties(Map<Byte, Integer> powers, Optional<Integer> miningSpeed) {
