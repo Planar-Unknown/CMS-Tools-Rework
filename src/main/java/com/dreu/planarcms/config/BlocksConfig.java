@@ -136,20 +136,22 @@ public class BlocksConfig {
     BLOCKS.clear();
     Map<String, Config> singleBlocks = new HashMap<>();
 
-    CONFIG.valueMap().forEach((configKey, blockProperties) -> {
+    for (Map.Entry<String, Object> entry : CONFIG.valueMap().entrySet()) {
+      String configKey = entry.getKey();
+      Config propertiesConfig = (Config) entry.getValue();
+      Properties properties = assembleProperties(configKey, propertiesConfig);
       if (configKey.startsWith("#")) {
-        handleTag(configKey, (Config) blockProperties, Optional.empty());
+        handleTag(configKey, properties);
       } else if (configKey.startsWith("$")) {
-        handleBlockFamily(configKey, (Config) blockProperties, Optional.empty());
+        handleBlockFamily(configKey, properties);
       } else if (configKey.startsWith("@")) {
-        handleCollection(configKey, (Config) blockProperties);
-      } else {
-        if (isValidBlock(configKey, Optional.empty()))
-          singleBlocks.put(configKey, (Config) blockProperties);
+        handleCollection(configKey, properties);
       } else if (configKey.endsWith(":*")) {
         handleMod(configKey, properties);
+      } else if (isValidBlock(configKey, Optional.empty())) {
+        singleBlocks.put(configKey, propertiesConfig);
       }
-    });
+    }
 
     singleBlocks.forEach(BlocksConfig::handleSingleBlock);
 
@@ -157,9 +159,6 @@ public class BlocksConfig {
     registryHasBeenFilteredByModId = false;
   }
 
-  private static void handleCollection(String configKey, Config blockProperties) {
-    String collectionId = configKey.substring(1);
-    List<String> collection = CollectionsConfig.BLOCKS_MAP.get(collectionId);
   private static void handleMod(String configKey, Properties properties) {
     String modId = configKey.substring(0, configKey.length() - 2);
     if (isValidMod(modId, Optional.empty(), "blocks.toml")) {
@@ -173,6 +172,9 @@ public class BlocksConfig {
     }
   }
 
+  private static void handleCollection(String configKey, Properties properties) {
+    String collectionName = configKey.substring(1);
+    List<String> collection = CollectionsConfig.BLOCKS_MAP.get(collectionName);
     if (collection == null) {
       addConfigIssue(WARN, (byte) 4, "Config [{}] declared block collection <{}> which does not exist, check for typos! | Skipping Collection...", PRESET_FOLDER_NAME + "blocks.toml", configKey);
       return;
@@ -226,27 +228,7 @@ public class BlocksConfig {
     }
   }
 
-    });
-  }
-
-  @SuppressWarnings({"DataFlowIssue", "OptionalUsedAsFieldOrParameterType"})
-  private static void handleTag(String configKey, Config blockProperties, Optional<String> collectionName) {
-    String tagId = configKey.substring(1);
-    if (!ResourceLocation.isValidResourceLocation(tagId)) {
-      addConfigIssue(INFO, (byte) 2, "Not a valid Tag ResourceLocation: <{}> declared in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "blocks.toml]"));
-      return;
-    }
-    if (!ForgeRegistries.BLOCKS.tags().isKnownTagName(BlockTags.create(new ResourceLocation(tagId)))) {
-      addConfigIssue(INFO, (byte) 2, "Not an existing Block Tag: <{}> declared in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "blocks.toml]"));
-      return;
-    }
-    Properties properties = assembleProperties(configKey, blockProperties);
-    ForgeRegistries.BLOCKS.tags().getTag(BlockTags.create(new ResourceLocation(tagId))).forEach(block ->
-        addBlock(getBlockId(block), properties)
-    );
-  }
-
-  private static void handleBlockFamily(String configKey, Config blockProperties, Optional<String> collectionName) {
+  private static void addBlocksFromFamily(String configKey, Optional<String> collectionName, Collection<String> list) {
     String baseBlockId = configKey.substring(1);
     if (!ResourceLocation.isValidResourceLocation(baseBlockId)) {
       addConfigIssue(INFO, (byte) 2, "Not a valid Block ResourceLocation: <{}> declared as a block family base block in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "blocks.toml]"));
@@ -259,8 +241,57 @@ public class BlocksConfig {
       }
 
       BlockFamily family = BlockFamilies.MAP.get(delegate.get());
-      Properties properties = assembleProperties(configKey, blockProperties);
-      family.getVariants().values().forEach(block -> addBlock(getBlockId(block), properties));
+      for (Block block : family.getVariants().values())
+        list.add(getBlockId(block));
+      list.add(getBlockId(family.getBaseBlock()));
+    });
+  }
+
+  @SuppressWarnings("DataFlowIssue")
+  private static void addBlocksFromTag(String configKey, Optional<String> collectionName, Collection<String> list) {
+    if (!isValidTag(configKey, collectionName)) return;
+    for (Block block : ForgeRegistries.BLOCKS.tags().getTag(BlockTags.create(new ResourceLocation(configKey.substring(1))))) {
+      list.add(getBlockId(block));
+    }
+  }
+
+  @SuppressWarnings({"BooleanMethodIsAlwaysInverted", "DataFlowIssue"})
+  private static boolean isValidTag(String configKey, Optional<String> collectionName) {
+    String tagId = configKey.substring(1);
+    if (!ResourceLocation.isValidResourceLocation(tagId)) {
+      addConfigIssue(INFO, (byte) 2, "Not a valid Tag ResourceLocation: <{}> declared in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "blocks.toml]"));
+      return false;
+    }
+    if (!ForgeRegistries.BLOCKS.tags().isKnownTagName(BlockTags.create(new ResourceLocation(tagId)))) {
+      addConfigIssue(INFO, (byte) 2, "Not an existing Block Tag: <{}> declared in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "blocks.toml]"));
+      return false;
+    }
+    return true;
+  }
+
+  @SuppressWarnings("DataFlowIssue")
+  private static void handleTag(String configKey, Properties properties) {
+    if (!isValidTag(configKey, Optional.empty())) return;
+    for (Block block : ForgeRegistries.BLOCKS.tags().getTag(BlockTags.create(new ResourceLocation(configKey.substring(1)))))
+      addBlock(getBlockId(block), properties);
+  }
+
+  private static void handleBlockFamily(String configKey, Properties properties) {
+    String baseBlockId = configKey.substring(1);
+    if (!ResourceLocation.isValidResourceLocation(baseBlockId)) {
+      addConfigIssue(INFO, (byte) 2, "Not a valid Block ResourceLocation: <{}> declared as a block family base block in {} | Skipping...", configKey,"config: [" + PRESET_FOLDER_NAME + "blocks.toml]");
+      return;
+    }
+    ForgeRegistries.BLOCKS.getDelegate(new ResourceLocation(baseBlockId)).ifPresent(delegate -> {
+      if (!BlockFamilies.MAP.containsKey(delegate.get())) {
+        addConfigIssue(INFO, (byte) 2, "Not an existing Block Family: <{}> declared in {} | Skipping...", configKey,"config: [" + PRESET_FOLDER_NAME + "blocks.toml]");
+        return;
+      }
+
+      BlockFamily family = BlockFamilies.MAP.get(delegate.get());
+      for (Block block : family.getVariants().values()) {
+        addBlock(getBlockId(block), properties);
+      }
       addBlock(getBlockId(family.getBaseBlock()), properties);
     });
   }
@@ -272,6 +303,7 @@ public class BlocksConfig {
     BLOCKS.merge(blockId, singleBlockProperties, (existing, singleBlock) -> {
       Integer defaultResistance = getOrElse(blockPropertiesConfig, blockId, "DefaultResistance", existing.defaultResistance(), Integer.class, "blocks.toml");
       Map<Byte, ResistanceData> resistanceDataMap = getResistanceDataMapOverride(blockPropertiesConfig, defaultResistance, existing.data(), blockId);
+
       existing.data().forEach(resistanceDataMap::putIfAbsent);
 
       return new Properties(
@@ -324,15 +356,15 @@ public class BlocksConfig {
     return resistanceDataMap;
   }
 
-  private static void addBlock(String key, Properties properties) {
-    BLOCKS.merge(key, properties, Properties::merged);
+  private static void addBlock(String blockId, Properties properties) {
+    BLOCKS.merge(blockId, properties, Properties::merged);
   }
 
-  private static @NotNull Properties assembleProperties(String blockId, Config config) {
-    int defaultResistance = getOrElse(config, blockId, "DefaultResistance", 0, Integer.class, "blocks.toml");
+  private static @NotNull Properties assembleProperties(String configKey, Config config) {
+    int defaultResistance = getOrElse(config, configKey, "DefaultResistance", 0, Integer.class, "blocks.toml");
     return new Properties(
-        getOptionalFloat(config, "Hardness", blockId),
-        getOptionalFloat(config, "ExplosionResistance", blockId),
+        getOptionalFloat(config, "Hardness", configKey),
+        getOptionalFloat(config, "ExplosionResistance", configKey),
         defaultResistance,
         getResistanceDataMap(config, defaultResistance)
     );
@@ -378,12 +410,12 @@ public class BlocksConfig {
   public static Properties getBlockProperties(Block block) {
     return BLOCKS.get(getBlockId(block));
   }
-
   //Todo: Make Resistance an optional
-  public record ResistanceData(int resistance, boolean applyMiningSpeed) {}
 
+  public record ResistanceData(int resistance, boolean applyMiningSpeed) {}
   // powers is a map of ToolTypeID to ResistanceData(resistance, applyMiningSpeed)
   public record Properties(Optional<Float> hardness, Optional<Float> explosionResistance, int defaultResistance, Map<Byte, ResistanceData> data) {
+
     public static Properties merged(Properties left, Properties right) {
       return new Properties(
           mergeOptionalNumbers(left.hardness, right.hardness),
@@ -420,11 +452,11 @@ public class BlocksConfig {
       buf.writeInt(defaultResistance);
       buf.writeInt(data.size());
 
-      data.forEach((key, value) -> {
-        buf.writeByte(key);
-        buf.writeInt(value.resistance());
-        buf.writeBoolean(value.applyMiningSpeed());
-      });
+      for (Map.Entry<Byte, ResistanceData> entry : data.entrySet()) {
+        buf.writeByte(entry.getKey());
+        buf.writeInt(entry.getValue().resistance());
+        buf.writeBoolean(entry.getValue().applyMiningSpeed());
+      }
     }
 
     public static Properties read(FriendlyByteBuf buf) {

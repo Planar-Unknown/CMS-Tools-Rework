@@ -4,6 +4,7 @@ import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.toml.TomlParser;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -175,8 +176,8 @@ public class ToolsConfig {
     }
   }
 
-    public static final ArrayList<String> REGISTERED_TOOL_TYPES = new ArrayList<>();
-    public static final ArrayList<Integer> REGISTERED_TOOL_COLORS = new ArrayList<>();
+  public static final ArrayList<String> REGISTERED_TOOL_TYPES = new ArrayList<>();
+  public static final ArrayList<Integer> REGISTERED_TOOL_COLORS = new ArrayList<>();
 
   public static void populateToolTypes() {
     REGISTERED_TOOL_TYPES.clear();
@@ -213,42 +214,35 @@ public class ToolsConfig {
     singleTools.forEach(ToolsConfig::handleSingleItem);
   }
 
-    @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "DataFlowIssue"})
-    private static void handleTag(String configKey, Config toolProperties, Optional<String> collectionName) {
-        String tagId = configKey.substring(1);
-        if (!ResourceLocation.isValidResourceLocation(tagId)) {
-            addConfigIssue(INFO, (byte) 2, "Not a valid Tag ResourceLocation: <{}> declared in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "tools.toml]"));
-            return;
-        }
-        if (!ForgeRegistries.ITEMS.tags().isKnownTagName(ItemTags.create(new ResourceLocation(tagId)))) {
-            addConfigIssue(INFO, (byte) 2, "Not an existing Item Tag: <{}> declared in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "tools.toml]"));
-            return;
-        }
-        ToolsConfig.Properties properties = assembleProperties(configKey, toolProperties);
-        ForgeRegistries.ITEMS.tags().getTag(ItemTags.create(new ResourceLocation(tagId))).forEach(item ->
-            addItem(getItemId(item), properties)
-        );
+  @SuppressWarnings({"DataFlowIssue"})
+  private static void handleTag(String configKey, Properties properties) {
+    String tagId = configKey.substring(1);
+    if (!ResourceLocation.isValidResourceLocation(tagId)) {
+      addConfigIssue(INFO, (byte) 2, "Not a valid Tag ResourceLocation: <{}> declared in {} | Skipping...", configKey, "config: [" + PRESET_FOLDER_NAME + "tools.toml]");
+      return;
+    }
+    if (!ForgeRegistries.ITEMS.tags().isKnownTagName(ItemTags.create(new ResourceLocation(tagId)))) {
+      addConfigIssue(INFO, (byte) 2, "Not an existing Item Tag: <{}> declared in {} | Skipping...", configKey,"config: [" + PRESET_FOLDER_NAME + "tools.toml]");
+      return;
+    }
+    ForgeRegistries.ITEMS.tags().getTag(ItemTags.create(new ResourceLocation(tagId))).forEach(item ->
+      addItem(getItemId(item), properties)
+    );
+  }
+
+  private static void handleCollection(String configKey, Properties properties) {
+    String collectionName = configKey.substring(1);
+    List<String> collection = CollectionsConfig.ITEMS_MAP.get(collectionName);
+    if (collection == null) {
+      addConfigIssue(WARN, (byte) 4, "Config [{}] declared item collection <{}> which does not exist, check for typos! | Skipping Collection...", PRESET_FOLDER_NAME + "tools.toml", configKey);
+      return;
     }
 
-    private static void handleCollection(String configKey, Config toolProperties) {
-        String collectionName = configKey.substring(1);
-        List<String> collection = CollectionsConfig.ITEMS_MAP.get(collectionName);
-        if (collection == null) {
-            addConfigIssue(WARN, (byte) 4, "Config [{}] declared item collection <{}> which does not exist, check for typos! | Skipping Collection...", PRESET_FOLDER_NAME + "tools.toml", configKey);
-            return;
-        }
-        collection.forEach((string) -> {
-            if (string.startsWith("#")) {
-                handleTag(string, toolProperties, Optional.of(collectionName));
-            } else {
-                if (!isValidItem(string, Optional.of(collectionName), "tools.toml")) return;
-                addItem(string, assembleProperties(configKey, toolProperties));
-            }
-        });
-    }
     List<String> positives = new ArrayList<>();
     Set<String> negatives = new HashSet<>();
     List<String> explicit_positives = new ArrayList<>();
+
+    for (String member : collection) {
       if (member.startsWith("-")) {
         String sub = member.substring(1);
         if (sub.startsWith("#")) {
@@ -301,81 +295,105 @@ public class ToolsConfig {
     }
   }
 
-
-    private static void addItem(String key, Properties properties) {
-        TOOLS.merge(key, properties, Properties::merged);
+  @SuppressWarnings("DataFlowIssue")
+  private static void addItemsFromTag(String configKey, Optional<String> collectionName, Collection<String> list) {
+    if (!isValidTag(configKey, collectionName)) return;
+    for (Item item : ForgeRegistries.ITEMS.tags().getTag(ItemTags.create(new ResourceLocation(configKey.substring(1))))) {
+      list.add(getItemId(item));
     }
+  }
 
-    private static Properties assembleProperties(String configKey, Config toolProperties) {
-        Map<Byte, Integer> powers = new HashMap<>();
-        toolProperties.valueMap().forEach((property, value) -> {
-            if (property.equals("MiningSpeed")) return;
-            if (!REGISTERED_TOOL_TYPES.contains(property)) {
-                addConfigIssue(ERROR, (byte) 6, "\"{}\" used in config file [{}] for <{}> is NOT a registered tool type!", property, PRESET_FOLDER_NAME + "blocks.toml", configKey);
-                return;
-            }
-            powers.put((byte) REGISTERED_TOOL_TYPES.indexOf(property), tryCast(value, Integer.class, configKey + "." + property, "tools.toml"));
-        });
-        return new Properties(powers, getOptionalInt(toolProperties, "MiningSpeed", configKey));
+  @SuppressWarnings({"BooleanMethodIsAlwaysInverted", "DataFlowIssue"})
+  private static boolean isValidTag(String configKey, Optional<String> collectionName) {
+    String tagId = configKey.substring(1);
+    if (!ResourceLocation.isValidResourceLocation(tagId)) {
+      addConfigIssue(INFO, (byte) 2, "Not a valid Tag ResourceLocation: <{}> declared in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "blocks.toml]"));
+      return false;
     }
-
-    private static Optional<Integer> getOptionalInt(Config values, String key, String parent) {
-        Object value = values.get(key);
-        if (value instanceof Number number) {
-            return Optional.of(number.intValue());
-        } else if (value != null) {
-            addConfigIssue(WARN, (byte) 4,
-                "Value: \"{}\" for \"{}.{}\" is an invalid type in config [{}] | Expected: 'Integer' but got: '{}' | Ignoring property...",
-                value, parent, key, PRESET_FOLDER_NAME + "tools.toml", value.getClass().getSimpleName());
-        }
-        return Optional.empty();
+    if (!ForgeRegistries.BLOCKS.tags().isKnownTagName(BlockTags.create(new ResourceLocation(tagId)))) {
+      addConfigIssue(INFO, (byte) 2, "Not an existing Block Tag: <{}> declared in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "blocks.toml]"));
+      return false;
     }
+    return true;
+  }
 
-    private static void handleSingleItem(String itemId, Config toolProperties) {
-        if (!isValidItem(itemId, Optional.empty(), "tools.toml")) return;
+  private static void addItem(String key, Properties properties) {
+    TOOLS.merge(key, properties, Properties::merged);
+  }
 
-        Properties singleItemProperties = assembleProperties(itemId, toolProperties);
+  private static Properties assembleProperties(String configKey, Config toolProperties) {
+    Map<Byte, Integer> powers = new HashMap<>();
+    toolProperties.valueMap().forEach((property, value) -> {
+      if (property.equals("MiningSpeed")) return;
+      if (!REGISTERED_TOOL_TYPES.contains(property)) {
+        addConfigIssue(ERROR, (byte) 6, "\"{}\" used in config file [{}] for <{}> is NOT a registered tool type!", property, PRESET_FOLDER_NAME + "blocks.toml", configKey);
+        return;
+      }
+      Integer power = tryCast(value, Integer.class, configKey + "." + property, "tools.toml");
+      if (power != null)
+        powers.put((byte) REGISTERED_TOOL_TYPES.indexOf(property), power);
+    });
+    return new Properties(powers, getOptionalInt(toolProperties, "MiningSpeed", configKey));
+  }
 
-        TOOLS.merge(itemId, singleItemProperties, (existing, singleItem) -> {
-            Map<Byte, Integer> mergedMap = new HashMap<>(existing.powers());
-            mergedMap.putAll(singleItem.powers());
-            return new Properties(mergedMap, singleItem.miningSpeed().isPresent() ? singleItem.miningSpeed() : existing.miningSpeed());
-        });
+  @SuppressWarnings("SameParameterValue")
+  private static Optional<Integer> getOptionalInt(Config values, String key, String parent) {
+    Object value = values.get(key);
+    if (value instanceof Number number) {
+      return Optional.of(number.intValue());
+    } else if (value != null) {
+      addConfigIssue(WARN, (byte) 4,
+        "Value: \"{}\" for \"{}.{}\" is an invalid type in config [{}] | Expected: 'Integer' but got: '{}' | Ignoring property...",
+        value, parent, key, PRESET_FOLDER_NAME + "tools.toml", value.getClass().getSimpleName());
     }
+    return Optional.empty();
+  }
+
+  private static void handleSingleItem(String itemId, Config toolProperties) {
+    if (!isValidItem(itemId, Optional.empty(), "tools.toml")) return;
+
+    Properties singleItemProperties = assembleProperties(itemId, toolProperties);
+
+    TOOLS.merge(itemId, singleItemProperties, (existing, singleItem) -> {
+      Map<Byte, Integer> mergedMap = new HashMap<>(existing.powers());
+      mergedMap.putAll(singleItem.powers());
+      return new Properties(mergedMap, singleItem.miningSpeed().isPresent() ? singleItem.miningSpeed() : existing.miningSpeed());
+    });
+  }
 
   public static Properties getToolProperties(Item item) {
     return TOOLS.get(getItemId(item));
   }
 
-    // powers is a map of ToolTypeID to ToolPower
-    public record Properties(Map<Byte, Integer> powers, Optional<Integer> miningSpeed) {
+  // powers is a map of ToolTypeID to ToolPower
+  public record Properties(Map<Byte, Integer> powers, Optional<Integer> miningSpeed) {
 
-        public static Properties merged(Properties left, Properties right) {
-            return new Properties(
-                mergeMaps(left.powers(), right.powers(), Math::max),
-                left.miningSpeed().isPresent() && right.miningSpeed().isPresent()
-                    ? Optional.of(Math.max(left.miningSpeed().get(), right.miningSpeed().get()))
-                    : left.miningSpeed().isPresent() ? left.miningSpeed()
-                    : right.miningSpeed()
-            );
-        }
-
-        public void writeToBuffer(FriendlyByteBuf buf) {
-            buf.writeInt(powers().size());
-            for (Map.Entry<Byte, Integer> entry : powers.entrySet()) {
-                buf.writeByte(entry.getKey());
-                buf.writeInt(entry.getValue());
-            }
-            buf.writeBoolean(miningSpeed.isPresent());
-            miningSpeed().ifPresent(buf::writeInt);
-        }
-
-        public static Properties readFromBuffer(FriendlyByteBuf buf) {
-            Map<Byte, Integer> powers = new HashMap<>();
-            int bounds = buf.readInt();
-            for (int i = 0; i < bounds; i++)
-                powers.put(buf.readByte(), buf.readInt());
-            return new Properties(powers, buf.readBoolean() ? Optional.of(buf.readInt()) : Optional.empty());
-        }
+    public static Properties merged(Properties left, Properties right) {
+      return new Properties(
+        mergeMaps(left.powers(), right.powers(), Math::max),
+        left.miningSpeed().isPresent() && right.miningSpeed().isPresent()
+          ? Optional.of(Math.max(left.miningSpeed().get(), right.miningSpeed().get()))
+          : left.miningSpeed().isPresent() ? left.miningSpeed()
+          : right.miningSpeed()
+      );
     }
+
+    public void writeToBuffer(FriendlyByteBuf buf) {
+      buf.writeInt(powers().size());
+      for (Map.Entry<Byte, Integer> entry : powers.entrySet()) {
+        buf.writeByte(entry.getKey());
+        buf.writeInt(entry.getValue());
+      }
+      buf.writeBoolean(miningSpeed.isPresent());
+      miningSpeed().ifPresent(buf::writeInt);
+    }
+
+    public static Properties readFromBuffer(FriendlyByteBuf buf) {
+      Map<Byte, Integer> powers = new HashMap<>();
+      int bounds = buf.readInt();
+      for (int i = 0; i < bounds; i++)
+        powers.put(buf.readByte(), buf.readInt());
+      return new Properties(powers, buf.readBoolean() ? Optional.of(buf.readInt()) : Optional.empty());
+    }
+  }
 }
