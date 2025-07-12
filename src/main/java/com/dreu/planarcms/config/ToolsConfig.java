@@ -246,6 +246,61 @@ public class ToolsConfig {
             }
         });
     }
+    List<String> positives = new ArrayList<>();
+    Set<String> negatives = new HashSet<>();
+    List<String> explicit_positives = new ArrayList<>();
+      if (member.startsWith("-")) {
+        String sub = member.substring(1);
+        if (sub.startsWith("#")) {
+          addItemsFromTag(configKey, Optional.of(collectionName), negatives);
+        } else if (sub.endsWith(":*")) {
+          addItemsFromMod(configKey, Optional.of(collectionName), negatives);
+        } else if (isValidItem(sub, Optional.of(collectionName), "tools.toml")) {
+          negatives.add(sub);
+        }
+      } else if (member.startsWith("#")) {
+        addItemsFromTag(configKey, Optional.of(collectionName), positives);
+      } else if (member.endsWith(":*")) {
+        addItemsFromMod(configKey, Optional.of(collectionName), positives);
+      } else if (isValidItem(member, Optional.of(collectionName), "tools.toml")) {
+        explicit_positives.add(member);
+      }
+    }
+
+    for (String block : positives) {
+      if (!negatives.contains(block))
+        addItem(block, properties);
+    }
+    for (String block : explicit_positives) {
+      addItem(block, properties);
+    }
+  }
+
+  private static void handleMod(String configKey, Properties properties) {
+    String modId = configKey.substring(0, configKey.length() - 2);
+    if (isValidMod(modId, Optional.empty(), "tools.toml")) {
+      if (!registryHasBeenFilteredByModId) {
+        for (ResourceLocation item : ForgeRegistries.ITEMS.getKeys())
+          FILTERED_REGISTRY.computeIfAbsent(item.getNamespace(), b -> new ArrayList<>()).add(item.toString());
+        registryHasBeenFilteredByModId = true;
+      }
+      for (String itemId : FILTERED_REGISTRY.get(modId))
+        addItem(itemId, properties);
+    }
+  }
+
+  private static void addItemsFromMod(String configKey, Optional<String> collectionName, Collection<String> list) {
+    String modId = configKey.substring(0, configKey.length() - 2);
+    if (isValidMod(modId, collectionName, "tools.toml")) {
+      if (!registryHasBeenFilteredByModId) {
+        for (ResourceLocation item : ForgeRegistries.ITEMS.getKeys())
+          FILTERED_REGISTRY.computeIfAbsent(item.getNamespace(), b -> new ArrayList<>()).add(item.toString());
+        registryHasBeenFilteredByModId = true;
+      }
+      list.addAll(FILTERED_REGISTRY.get(modId));
+    }
+  }
+
 
     private static void addItem(String key, Properties properties) {
         TOOLS.merge(key, properties, Properties::merged);

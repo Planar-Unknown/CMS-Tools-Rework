@@ -125,6 +125,9 @@ public class BlocksConfig {
   public static Config CONFIG;
   public static Map<String, Properties> BLOCKS = new HashMap<>();
 
+  public static final Map<String, ArrayList<String>> FILTERED_REGISTRY = new HashMap<>();
+  private static boolean registryHasBeenFilteredByModId;
+
   public static void parse() {
     CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "blocks.toml", TEMPLATE_CONFIG_STRING);
   }
@@ -143,28 +146,86 @@ public class BlocksConfig {
       } else {
         if (isValidBlock(configKey, Optional.empty()))
           singleBlocks.put(configKey, (Config) blockProperties);
+      } else if (configKey.endsWith(":*")) {
+        handleMod(configKey, properties);
       }
     });
 
     singleBlocks.forEach(BlocksConfig::handleSingleBlock);
+
+    FILTERED_REGISTRY.clear();
+    registryHasBeenFilteredByModId = false;
   }
 
   private static void handleCollection(String configKey, Config blockProperties) {
     String collectionId = configKey.substring(1);
     List<String> collection = CollectionsConfig.BLOCKS_MAP.get(collectionId);
+  private static void handleMod(String configKey, Properties properties) {
+    String modId = configKey.substring(0, configKey.length() - 2);
+    if (isValidMod(modId, Optional.empty(), "blocks.toml")) {
+      if (!registryHasBeenFilteredByModId) {
+        for (ResourceLocation block : ForgeRegistries.BLOCKS.getKeys())
+          FILTERED_REGISTRY.computeIfAbsent(block.getNamespace(), b -> new ArrayList<>()).add(block.toString());
+        registryHasBeenFilteredByModId = true;
+      }
+      for (String blockId : FILTERED_REGISTRY.get(modId))
+        addBlock(blockId, properties);
+    }
+  }
+
     if (collection == null) {
       addConfigIssue(WARN, (byte) 4, "Config [{}] declared block collection <{}> which does not exist, check for typos! | Skipping Collection...", PRESET_FOLDER_NAME + "blocks.toml", configKey);
       return;
     }
-    collection.forEach((string) -> {
-      if (string.startsWith("#")) {
-        handleTag(string, blockProperties, Optional.of(collectionId));
-      } else if (string.startsWith("$")) {
-        handleBlockFamily(string, blockProperties, Optional.of(collectionId));
-      } else {
-        if (!isValidBlock(string, Optional.of(collectionId))) return;
-        addBlock(string, assembleProperties(configKey, blockProperties));
+
+    List<String> positives = new ArrayList<>();
+    Set<String> negatives = new HashSet<>();
+    List<String> explicit_positives = new ArrayList<>();
+
+    for (String member : collection) {
+      if (member.startsWith("-")) {
+        String sub = member.substring(1);
+        if (sub.startsWith("#")) {
+          addBlocksFromTag(sub, Optional.of(collectionName), negatives);
+        } else if (sub.startsWith("$")) {
+          addBlocksFromFamily(sub, Optional.of(collectionName), negatives);
+        } else if (sub.endsWith(":*")) {
+          addBlocksFromMod(member, negatives);
+        } else if (isValidBlock(sub, Optional.of(collectionName))) {
+          negatives.add(sub);
+        }
+      } else if (member.startsWith("#")) {
+        addBlocksFromTag(member, Optional.of(collectionName), positives);
+      } else if (member.startsWith("$")) {
+        addBlocksFromFamily(member, Optional.of(collectionName), positives);
+      } else if (member.endsWith(":*")) {
+        addBlocksFromMod(member, positives);
+      } else if (isValidBlock(member, Optional.of(collectionName))) {
+        explicit_positives.add(configKey);
       }
+    }
+
+    for (String block : positives) {
+      if (!negatives.contains(block))
+        addBlock(block, properties);
+    }
+    for (String block : explicit_positives) {
+      addBlock(block, properties);
+    }
+  }
+
+  private static void addBlocksFromMod(String string, Collection<String> list) {
+    String modId = string.substring(0, string.length() - 2);
+    if (isValidMod(modId, Optional.empty(), "blocks.toml")) {
+      if (!registryHasBeenFilteredByModId) {
+        for (ResourceLocation block : ForgeRegistries.BLOCKS.getKeys())
+          FILTERED_REGISTRY.computeIfAbsent(block.getNamespace(), b -> new ArrayList<>()).add(block.toString());
+        registryHasBeenFilteredByModId = true;
+      }
+      list.addAll(FILTERED_REGISTRY.get(modId));
+    }
+  }
+
     });
   }
 
