@@ -33,7 +33,6 @@ import static com.dreu.planarcms.PlanarCMS.MODID;
 import static com.dreu.planarcms.config.BlocksConfig.BLOCKS;
 import static com.dreu.planarcms.config.BlocksConfig.getBlockProperties;
 import static com.dreu.planarcms.config.ToolsConfig.*;
-import static com.dreu.planarcms.config.ToolsConfig.REGISTERED_TOOL_COLORS;
 import static com.dreu.planarcms.events.ClientModBusEvents.TOGGLE_TOOLTIPS_KEY_MAPPING;
 import static com.dreu.planarcms.events.ClientModBusEvents.TOGGLE_WAILA_KEY_MAPPING;
 import static com.dreu.planarcms.util.Helpers.displayTooltips;
@@ -151,7 +150,7 @@ public class ClientForgeBusEvents {
       for (Map.Entry<Byte, BlocksConfig.ResistanceData> data : BLOCKS.get(item).data().entrySet()) {
         event.getTooltipElements().add(Either.left(
             Component.literal(" ")
-                .append(Component.translatable(MODID + ".powerNames." + REGISTERED_TOOL_TYPES.get(data.getKey())))
+                .append(Component.literal(REGISTERED_TOOL_TYPES.get(data.getKey())))
                 .withStyle(style -> style.withColor(REGISTERED_TOOL_COLORS.get(data.getKey())))
                 .append(Component.literal(": " + data.getValue().resistance()))
         ));
@@ -162,7 +161,7 @@ public class ClientForgeBusEvents {
       for (Map.Entry<Byte, Integer> powerData : TOOLS.get(item).powers().entrySet()) {
         event.getTooltipElements().add(Either.left(
             Component.literal(" ")
-                .append(Component.translatable(MODID + ".powerNames." + REGISTERED_TOOL_TYPES.get(powerData.getKey()))
+                .append(Component.literal(REGISTERED_TOOL_TYPES.get(powerData.getKey()))
                     .withStyle(style -> style.withColor(REGISTERED_TOOL_COLORS.get(powerData.getKey())))
                     .append(": " + powerData.getValue()))
         ));
