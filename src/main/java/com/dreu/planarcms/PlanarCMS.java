@@ -23,7 +23,8 @@ import static com.dreu.planarcms.util.Helpers.addConfigIssue;
 
 @Mod(PlanarCMS.MODID)
 public class PlanarCMS {
-
+    //Todo: Rigorously test new collection handling (with -'s) and "modid:*" support
+    //Todo: Scrub for forEach() calls that could be replaced with enhanced for's
     //Todo: Implement ability to force certain tools to be required
     //Todo: Add defaultCanDrop to blocks and CanDrop to each tool type of blocks
     //Todo: Nbt system for upgrading tools

@@ -10,7 +10,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.dreu.planarcms.PlanarCMS.MODID;
 import static com.dreu.planarcms.config.GeneralConfig.HOTSWAPPABLE;
