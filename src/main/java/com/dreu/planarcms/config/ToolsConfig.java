@@ -19,7 +19,8 @@ import static com.dreu.planarcms.util.Helpers.*;
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class ToolsConfig {
   public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/tools.toml";
-  public static final String TEMPLATE_CONFIG_STRING = """
+  public static String getTemplateConfigString() {
+    return """
     # See Template for more information
     
     ToolTypes = [
@@ -73,7 +74,9 @@ public class ToolsConfig {
     
     "minecraft:shears" = {Shears = 100, MiningSpeed = 10}
     """;
-  public static final String COMMENTED_TEMPLATE_CONFIG_STRING = """
+  }
+  public static String getCommentedTemplateConfigString() {
+    return """
     # DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!
     # Values not included for Tools will default to the Default power.
     # Power indicates the block Resistance level a tool can overcome.
@@ -139,6 +142,7 @@ public class ToolsConfig {
     
     "minecraft:shears" = {Shears = 100, MiningSpeed = 10}
     """;
+  }
 
   public static Config CONFIG;
 
@@ -147,31 +151,31 @@ public class ToolsConfig {
 
   @SuppressWarnings("RedundantClassCall")
   public static void parse() {
-    CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "tools.toml", TEMPLATE_CONFIG_STRING);
+    CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "tools.toml", getTemplateConfigString());
     Object toolTypes = CONFIG.get("ToolTypes");
     if (toolTypes == null) {
       addConfigIssue(ERROR, (byte) 4, "Key \"ToolTypes\" is missing from config [{}] | Using basic Template instead...", PRESET_FOLDER_NAME + "tools.toml");
-      CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
+      CONFIG = new TomlParser().parse(getTemplateConfigString());
       return;
     } else {
       try {
         ArrayList.class.cast(toolTypes);
       } catch (Exception e) {
         addConfigIssue(ERROR, (byte) 4, "Value: \"{}\" for \"ToolTypes\" is an invalid type in config [{}] | Expected: 'ArrayList' but got: '{}' | Using basic Template instead...", toolTypes, PRESET_FOLDER_NAME + "tools.toml", toolTypes.getClass().getSimpleName());
-        CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
+        CONFIG = new TomlParser().parse(getTemplateConfigString());
         return;
       }
     }
     Object tools = CONFIG.get("Tools");
     if (tools == null) {
       addConfigIssue(ERROR, (byte) 4, "Key \"Tools\" is missing from config [{}] | Using basic Template instead...", PRESET_FOLDER_NAME + "tools.toml");
-      CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
+      CONFIG = new TomlParser().parse(getTemplateConfigString());
     } else {
       try {
         Config.class.cast(tools);
       } catch (Exception e) {
         addConfigIssue(ERROR, (byte) 4, "Value: \"{}\" for \"Tools\" is an invalid type in config [{}] | Expected: 'Table' but got: '{}' | Using basic Template instead...", tools, PRESET_FOLDER_NAME + "tools.toml", tools.getClass().getSimpleName());
-        CONFIG = new TomlParser().parse(TEMPLATE_CONFIG_STRING);
+        CONFIG = new TomlParser().parse(getTemplateConfigString());
       }
     }
   }

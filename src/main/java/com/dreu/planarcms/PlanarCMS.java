@@ -48,9 +48,9 @@ public class PlanarCMS {
         ToolsConfig.parse();
         BlocksConfig.parse();
         EnchantsConfig.parse();
-        resetTemplate(EnchantsConfig.TEMPLATE_FILE_NAME, EnchantsConfig.COMMENTED_TEMPLATE_CONFIG_STRING);
-        resetTemplate(BlocksConfig.TEMPLATE_FILE_NAME, BlocksConfig.COMMENTED_TEMPLATE_CONFIG_STRING);
-        resetTemplate(ToolsConfig.TEMPLATE_FILE_NAME, ToolsConfig.COMMENTED_TEMPLATE_CONFIG_STRING);
+        resetTemplate(EnchantsConfig.TEMPLATE_FILE_NAME, EnchantsConfig.getCommentedTemplateConfigString());
+        resetTemplate(BlocksConfig.TEMPLATE_FILE_NAME, BlocksConfig.getCommentedTemplateConfig());
+        resetTemplate(ToolsConfig.TEMPLATE_FILE_NAME, ToolsConfig.getCommentedTemplateConfigString());
     }
 
     public static void populateTagKeys() {

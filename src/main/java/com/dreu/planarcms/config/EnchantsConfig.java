@@ -20,7 +20,8 @@ import static com.dreu.planarcms.util.Helpers.LogLevel.WARN;
 public class EnchantsConfig {
   //Todo: allow users to declare enchantability of items
   public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/enchants.toml";
-  public static final String TEMPLATE_CONFIG_STRING = """
+  public static String getTemplateConfigString() {
+    return """
       # See Template for more information
       
       "minecraft:stick" = [
@@ -73,8 +74,10 @@ public class EnchantsConfig {
       "@combat"
       ]
       """;
+  }
 
-  public static final String COMMENTED_TEMPLATE_CONFIG_STRING = """
+  public static String getCommentedTemplateConfigString() {
+    return """
       # DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!
       # Here, you can declare which enchantments can be applied to Tools, specified by Items, Tags, Collections, or Registered Tool Types.
       # Keep in mind that Unbreaking, Mending, and Sweeping edge all have explicit handling, so allowing them on an item may not do anything
@@ -146,11 +149,12 @@ public class EnchantsConfig {
           "@combat"
       ]
       """;
+  }
 
   public static Config CONFIG;
 
   public static void parse() {
-    CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "enchants.toml", TEMPLATE_CONFIG_STRING);
+    CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "enchants.toml", getTemplateConfigString());
   }
 
   public static final Map<Byte, TreeMap<Integer, OpposingSets<String>>> ENCHANTS_BY_TOOL_TYPE = new TreeMap<>();
