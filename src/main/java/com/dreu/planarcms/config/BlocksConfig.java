@@ -213,7 +213,7 @@ public class BlocksConfig {
       } else if (member.endsWith(":*")) {
         addBlocksFromMod(member, positives);
       } else if (isValidBlock(member, Optional.of(collectionName))) {
-        explicit_positives.add(configKey);
+        explicit_positives.add(member);
       }
     }
 
