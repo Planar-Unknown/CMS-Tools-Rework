@@ -55,8 +55,8 @@ public class SyncConfigS2CPacket {
   }
 
   public SyncConfigS2CPacket() {
-    if (!configHasBeenParsed || HOTSWAPPABLE)
-      parseAndProcessConfig();
+    if (!configHasBeenPopulated || HOTSWAPPABLE)
+      parseAndPopulateConfig();
   }
 
   public void toBytes(FriendlyByteBuf buf) {
@@ -99,6 +99,7 @@ public class SyncConfigS2CPacket {
     context.get().enqueueWork(() -> {
       PacketHandler.CHANNEL.sendToServer(new SendConfigIssuesInChatC2SPacket());
       ForgeEvents.lastServerWasLocal = Minecraft.getInstance().isLocalServer();
+      PacketHandler.CHANNEL.sendToServer(new RequestConfigIssuesC2SPacket());
     });
     context.get().setPacketHandled(true);
   }

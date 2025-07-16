@@ -42,7 +42,7 @@ import static java.lang.String.format;
 public class Helpers {
   public static boolean displayTooltips = true;
   public static WailaPosition WAILA_POSITION = WailaPosition.INVISIBLE;
-  public static boolean configHasBeenParsed = false;
+  public static boolean configHasBeenPopulated = false;
   public static boolean wereIssuesWrittenToFile = false;
   public static final byte MAX_DISPLAYED_ISSUES = 3;
 
@@ -119,7 +119,7 @@ public class Helpers {
     }
   }
 
-  public static void parseAndProcessConfig() {
+  public static void parseAndPopulateConfig() {
     CONFIG_ISSUES.clear();
     wereIssuesWrittenToFile = false;
     GeneralConfig.parse();
@@ -134,7 +134,7 @@ public class Helpers {
     populateTools();
     populateBlocks();
     populateEnchants();
-    configHasBeenParsed = true;
+    configHasBeenPopulated = true;
     writeConfigIssuesToFile();
   }
 

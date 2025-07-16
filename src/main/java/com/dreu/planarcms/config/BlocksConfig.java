@@ -168,13 +168,17 @@ public class BlocksConfig {
   private static void handleMod(String configKey, Properties properties) {
     String modId = configKey.substring(0, configKey.length() - 2);
     if (isValidMod(modId, Optional.empty(), "blocks.toml")) {
-      if (!registryHasBeenFilteredByModId) {
-        for (ResourceLocation block : ForgeRegistries.BLOCKS.getKeys())
-          FILTERED_REGISTRY.computeIfAbsent(block.getNamespace(), b -> new ArrayList<>()).add(block.toString());
-        registryHasBeenFilteredByModId = true;
-      }
+      filterRegistry();
       for (String blockId : FILTERED_REGISTRY.get(modId))
         addBlock(blockId, properties);
+    }
+  }
+
+  private static void filterRegistry() {
+    if (!registryHasBeenFilteredByModId) {
+      for (ResourceLocation block : ForgeRegistries.BLOCKS.getKeys())
+        FILTERED_REGISTRY.computeIfAbsent(block.getNamespace(), b -> new ArrayList<>()).add(block.toString());
+      registryHasBeenFilteredByModId = true;
     }
   }
 
@@ -225,11 +229,7 @@ public class BlocksConfig {
   private static void addBlocksFromMod(String string, Collection<String> list) {
     String modId = string.substring(0, string.length() - 2);
     if (isValidMod(modId, Optional.empty(), "blocks.toml")) {
-      if (!registryHasBeenFilteredByModId) {
-        for (ResourceLocation block : ForgeRegistries.BLOCKS.getKeys())
-          FILTERED_REGISTRY.computeIfAbsent(block.getNamespace(), b -> new ArrayList<>()).add(block.toString());
-        registryHasBeenFilteredByModId = true;
-      }
+      filterRegistry();
       list.addAll(FILTERED_REGISTRY.get(modId));
     }
   }

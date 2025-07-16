@@ -222,11 +222,11 @@ public class ToolsConfig {
   private static void handleTag(String configKey, Properties properties) {
     String tagId = configKey.substring(1);
     if (!ResourceLocation.isValidResourceLocation(tagId)) {
-      addConfigIssue(INFO, (byte) 2, "Not a valid Tag ResourceLocation: <{}> declared in {} | Skipping...", configKey, "config: [" + PRESET_FOLDER_NAME + "tools.toml]");
+      addConfigIssue(INFO, (byte) 2, "Not a valid Tag ResourceLocation: <{}> declared in config: [{}] | Skipping...", configKey, PRESET_FOLDER_NAME + "tools.toml");
       return;
     }
     if (!ForgeRegistries.ITEMS.tags().isKnownTagName(ItemTags.create(new ResourceLocation(tagId)))) {
-      addConfigIssue(INFO, (byte) 2, "Not an existing Item Tag: <{}> declared in {} | Skipping...", configKey,"config: [" + PRESET_FOLDER_NAME + "tools.toml]");
+      addConfigIssue(INFO, (byte) 2, "Not an existing Item Tag: <{}> declared in config: [{}] | Skipping...", configKey, PRESET_FOLDER_NAME + "tools.toml");
       return;
     }
     ForgeRegistries.ITEMS.tags().getTag(ItemTags.create(new ResourceLocation(tagId))).forEach(item ->

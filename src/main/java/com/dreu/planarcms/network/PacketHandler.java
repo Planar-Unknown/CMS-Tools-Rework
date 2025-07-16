@@ -20,6 +20,6 @@ public class PacketHandler {
 
     public static void register() {
         CHANNEL.registerMessage(0, SyncConfigS2CPacket.class, SyncConfigS2CPacket::toBytes, SyncConfigS2CPacket::new, SyncConfigS2CPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
-        CHANNEL.registerMessage(1, SendConfigIssuesInChatC2SPacket.class, (c2SPacket, buf) -> {}, buf -> new SendConfigIssuesInChatC2SPacket(), SendConfigIssuesInChatC2SPacket::handle);
+        CHANNEL.registerMessage(1, RequestConfigIssuesC2SPacket.class, (c2SPacket, buf) -> {}, buf -> new RequestConfigIssuesC2SPacket(), RequestConfigIssuesC2SPacket::handle);
     }
 }
