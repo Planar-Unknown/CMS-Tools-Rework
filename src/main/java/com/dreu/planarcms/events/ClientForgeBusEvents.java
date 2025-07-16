@@ -20,6 +20,7 @@ import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.client.event.RenderTooltipEvent;
 import net.minecraftforge.client.event.ScreenEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
@@ -35,13 +36,21 @@ import static com.dreu.planarcms.config.BlocksConfig.getBlockProperties;
 import static com.dreu.planarcms.config.ToolsConfig.*;
 import static com.dreu.planarcms.events.ClientModBusEvents.TOGGLE_TOOLTIPS_KEY_MAPPING;
 import static com.dreu.planarcms.events.ClientModBusEvents.TOGGLE_WAILA_KEY_MAPPING;
-import static com.dreu.planarcms.util.Helpers.displayTooltips;
-import static com.dreu.planarcms.util.Helpers.toggleTooltipDisplay;
+import static com.dreu.planarcms.util.Helpers.*;
 import static net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.FORGE;
 
 @SuppressWarnings({"unused", "DataFlowIssue"})
 @Mod.EventBusSubscriber(modid = MODID, bus = FORGE, value = Dist.CLIENT)
 public class ClientForgeBusEvents {
+
+  @SubscribeEvent
+  public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
+    if (Minecraft.getInstance().isLocalServer() && !configHasBeenPopulated) {
+      parseAndPopulateConfig();
+      configHasBeenPopulated = true;
+    }
+  }
+
   @SubscribeEvent
   public static void onKeyPressed(ScreenEvent.KeyPressed.Pre event) {
     if (TOGGLE_TOOLTIPS_KEY_MAPPING.isActiveAndMatches(InputConstants.getKey(event.getKeyCode(), event.getScanCode())))
