@@ -367,16 +367,18 @@ public class Helpers {
     }
   }
 
-  public static <T> T getOrElse(Config config, String parentKey, String key, T fallback, Class<T> clazz, String fileName) {
+  public static <T> T getOrElse(Config config, String parentKey, String key, T fallback, Class<T> clazz, String fileName, boolean suppressErrors) {
     try {
       Object value = config.get(key);
       if (value == null) return fallback;
       return clazz.cast(value);
     } catch (ClassCastException e) {
-      addConfigIssue(WARN, (byte) 4,
-        "Value: \"{}\" for \"{}.{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Ignoring property...",
-        config.get(key), parentKey, key, PRESET_FOLDER_NAME + fileName,
-        clazz.getSimpleName(), config.get(key).getClass().getSimpleName());
+      if (!suppressErrors) {
+        addConfigIssue(WARN, (byte) 4,
+          "Value: \"{}\" for \"{}.{}\" is an invalid type in config [{}] | Expected: '{}' but got: '{}' | Ignoring property...",
+          config.get(key), parentKey, key, PRESET_FOLDER_NAME + fileName,
+          clazz.getSimpleName(), config.get(key).getClass().getSimpleName());
+      }
       return fallback;
     }
   }

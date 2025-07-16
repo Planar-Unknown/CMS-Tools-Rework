@@ -202,7 +202,7 @@ public class ToolsConfig {
   public static void populateTools() {
     TOOLS.clear();
     Map<String, Object> toolsConfig = ((Config) CONFIG.get("Tools")).valueMap();
-    Map<String, Config> singleTools = new HashMap<>();
+    Map<String, Properties> singleTools = new HashMap<>();
     toolsConfig.forEach((configKey, propertiesConfig) -> {
       Properties properties = assembleProperties(configKey, (Config) propertiesConfig);
       if (configKey.startsWith("#")) {
@@ -212,7 +212,7 @@ public class ToolsConfig {
       } else if (configKey.startsWith("@")) {
         handleCollection(configKey, properties);
       } else if (isValidItem(configKey, Optional.empty(), "tools.toml")) {
-          singleTools.put(configKey, (Config) propertiesConfig);
+          singleTools.put(configKey, properties);
       }
     });
     singleTools.forEach(ToolsConfig::handleSingleItem);
@@ -353,12 +353,10 @@ public class ToolsConfig {
     return Optional.empty();
   }
 
-  private static void handleSingleItem(String itemId, Config toolProperties) {
+  private static void handleSingleItem(String itemId, Properties toolProperties) {
     if (!isValidItem(itemId, Optional.empty(), "tools.toml")) return;
 
-    Properties singleItemProperties = assembleProperties(itemId, toolProperties);
-
-    TOOLS.merge(itemId, singleItemProperties, (existing, singleItem) -> {
+    TOOLS.merge(itemId, toolProperties, (existing, singleItem) -> {
       Map<Byte, Integer> mergedMap = new HashMap<>(existing.powers());
       mergedMap.putAll(singleItem.powers());
       return new Properties(mergedMap, singleItem.miningSpeed().isPresent() ? singleItem.miningSpeed() : existing.miningSpeed());

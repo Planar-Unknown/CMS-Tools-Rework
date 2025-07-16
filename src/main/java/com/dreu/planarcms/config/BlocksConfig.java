@@ -138,7 +138,7 @@ public class BlocksConfig {
 
   public static void populateBlocks() {
     BLOCKS.clear();
-    Map<String, Config> singleBlocks = new HashMap<>();
+    Map<String, Map.Entry<Config, Properties>> singleBlocks = new HashMap<>();
 
     for (Map.Entry<String, Object> entry : CONFIG.valueMap().entrySet()) {
       String configKey = entry.getKey();
@@ -153,11 +153,13 @@ public class BlocksConfig {
       } else if (configKey.endsWith(":*")) {
         handleMod(configKey, properties);
       } else if (isValidBlock(configKey, Optional.empty())) {
-        singleBlocks.put(configKey, propertiesConfig);
+        singleBlocks.put(configKey, Map.entry(propertiesConfig, properties));
       }
     }
 
-    singleBlocks.forEach(BlocksConfig::handleSingleBlock);
+    for (Map.Entry<String, Map.Entry<Config, Properties>> entry : singleBlocks.entrySet()) {
+      handleSingleBlock(entry.getKey(), entry.getValue().getKey(), entry.getValue().getValue());
+    }
 
     FILTERED_REGISTRY.clear();
     registryHasBeenFilteredByModId = false;
@@ -300,12 +302,11 @@ public class BlocksConfig {
     });
   }
 
-  private static void handleSingleBlock(String blockId, Config blockPropertiesConfig) {
+  private static void handleSingleBlock(String blockId, Config blockPropertiesConfig, Properties properties) {
     if (!isValidBlock(blockId, Optional.empty())) return;
 
-    Properties singleBlockProperties = assembleProperties(blockId, blockPropertiesConfig);
-    BLOCKS.merge(blockId, singleBlockProperties, (existing, singleBlock) -> {
-      Integer defaultResistance = getOrElse(blockPropertiesConfig, blockId, "DefaultResistance", existing.defaultResistance(), Integer.class, "blocks.toml");
+    BLOCKS.merge(blockId, properties, (existing, singleBlock) -> {
+      Integer defaultResistance = getOrElse(blockPropertiesConfig, blockId, "DefaultResistance", existing.defaultResistance(), Integer.class, "blocks.toml", true);
       Map<Byte, ResistanceData> resistanceDataMap = getResistanceDataMapOverride(blockPropertiesConfig, defaultResistance, existing.data(), blockId);
 
       existing.data().forEach(resistanceDataMap::putIfAbsent);
