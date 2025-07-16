@@ -336,27 +336,46 @@ public class BlocksConfig {
     return true;
   }
 
+  private static Map<Byte, ResistanceData> getResistanceDataMap(Config config, int defaultResistance) {
+    Map<Byte, ResistanceData> map = new HashMap<>();
+    for (Map.Entry<String, Object> entry : config.valueMap().entrySet()) {
+      String key = entry.getKey();
+      if (isStandardKey(key)) continue;
+
+      byte type = (byte) REGISTERED_TOOL_TYPES.indexOf(key);
+      if (type == -1) {
+        addConfigIssue(ERROR, (byte) 6, "\"{}\" in config file [{}] is NOT a registered tool type!", key, PRESET_FOLDER_NAME + "blocks.toml");
+        continue;
+      }
+
+      Config toolConfig = (Config) entry.getValue();
+      map.put(type, new ResistanceData(
+        getOrElse(toolConfig, key, "Resistance", defaultResistance, Integer.class, "blocks.toml", false),
+        getOrElse(toolConfig, key, "ApplyMiningSpeed", false, Boolean.class, "blocks.toml", false)
+      ));
+    }
+    return map;
+  }
+
   private static Map<Byte, ResistanceData> getResistanceDataMapOverride(Config block, int defaultResistance, Map<Byte, ResistanceData> right, String parent) {
     Map<Byte, ResistanceData> resistanceDataMap = new HashMap<>();
     for (Map.Entry<String, Object> property : block.valueMap().entrySet()) {
-      switch (property.getKey()) {
-        case "DefaultResistance", "ExplosionResistance", "Hardness" -> {
-          continue;
-        }
-        default -> {
-          byte toolType = (byte) REGISTERED_TOOL_TYPES.indexOf(property.getKey());
-          resistanceDataMap.put(
-              toolType,
-              new ResistanceData(
-                  getOrElse(((Config) property.getValue()), property.getKey(), "Resistance", right.containsKey(toolType) ? right.get(toolType).resistance() : defaultResistance, Integer.class, "blocks.toml"),
-                  getOrElse(((Config) property.getValue()), property.getKey(), "ApplyMiningSpeed", right.containsKey(toolType) && right.get(toolType).applyMiningSpeed(), Boolean.class, "blocks.toml")
-              )
-          );
-        }
+      String key = property.getKey();
+      if (isStandardKey(key)) continue;
+
+      byte toolType = (byte) REGISTERED_TOOL_TYPES.indexOf(key);
+      if (toolType == -1) {
+        addConfigIssue(ERROR, (byte) 6, "\"{}\" used in config file [{}] for <{}> is NOT a registered tool type!", key, PRESET_FOLDER_NAME + "blocks.toml", parent);
+        continue;
       }
-      if (!REGISTERED_TOOL_TYPES.contains(property.getKey())) {
-        addConfigIssue(ERROR, (byte) 6, "\"{}\" used in config file [{}] for <{}> is NOT a registered tool type!", property.getKey(), PRESET_FOLDER_NAME + "blocks.toml", parent);
-      }
+
+      resistanceDataMap.put(
+        toolType,
+        new ResistanceData(
+          getOrElse(((Config) property.getValue()), key, "Resistance", right.containsKey(toolType) ? right.get(toolType).resistance() : defaultResistance, Integer.class, "blocks.toml", false),
+          getOrElse(((Config) property.getValue()), key, "ApplyMiningSpeed", right.containsKey(toolType) && right.get(toolType).applyMiningSpeed(), Boolean.class, "blocks.toml", false)
+        )
+      );
     }
     return resistanceDataMap;
   }
@@ -366,34 +385,13 @@ public class BlocksConfig {
   }
 
   private static @NotNull Properties assembleProperties(String configKey, Config config) {
-    int defaultResistance = getOrElse(config, configKey, "DefaultResistance", 0, Integer.class, "blocks.toml");
+    int defaultResistance = getOrElse(config, configKey, "DefaultResistance", 0, Integer.class, "blocks.toml", false);
     return new Properties(
         getOptionalFloat(config, "Hardness", configKey),
         getOptionalFloat(config, "ExplosionResistance", configKey),
         defaultResistance,
         getResistanceDataMap(config, defaultResistance)
     );
-  }
-
-  private static Map<Byte, ResistanceData> getResistanceDataMap(Config config, int defaultResistance) {
-    Map<Byte, ResistanceData> map = new HashMap<>();
-    for (Map.Entry<String, Object> entry : config.valueMap().entrySet()) {
-      String key = entry.getKey();
-      if (isStandardKey(key)) continue;
-
-      if (!REGISTERED_TOOL_TYPES.contains(key)) {
-        addConfigIssue(ERROR, (byte) 6, "\"{}\" in config file [{}] is NOT a registered tool type!", key, PRESET_FOLDER_NAME + "blocks.toml");
-        continue;
-      }
-
-      byte type = (byte) REGISTERED_TOOL_TYPES.indexOf(key);
-      Config toolConfig = (Config) entry.getValue();
-      map.put(type, new ResistanceData(
-          getOrElse(toolConfig, key, "Resistance", defaultResistance, Integer.class, "blocks.toml"),
-          getOrElse(toolConfig, key, "ApplyMiningSpeed", false, Boolean.class, "blocks.toml")
-      ));
-    }
-    return map;
   }
 
   private static boolean isStandardKey(String key) {
