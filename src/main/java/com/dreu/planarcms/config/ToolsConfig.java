@@ -185,14 +185,28 @@ public class ToolsConfig {
 
   public static void populateToolTypes() {
     REGISTERED_TOOL_TYPES.clear();
+    HashSet<String> set = new HashSet<>();
     ((ArrayList<?>) CONFIG.get("ToolTypes")).forEach(toolType -> {
       String entry = toolType.toString();
       String[] parts = entry.split(":");
-      REGISTERED_TOOL_TYPES.add(parts[0]);
-      if (parts.length == 2) {
-        REGISTERED_TOOL_COLORS.add(Integer.parseUnsignedInt(parts[1], 16));
+
+      if (set.add(parts[0])) {
+        REGISTERED_TOOL_TYPES.add(parts[0]);
+        if (parts.length == 2) {
+          try {
+            REGISTERED_TOOL_COLORS.add(Integer.parseUnsignedInt(parts[1], 16));
+          } catch (Exception e) {
+            addConfigIssue(WARN, (byte) 3, "Color value \"{}\" for ToolType: \"{}\" declared in config [{}] was not valid | Defaulting to white", parts[1], toolType, PRESET_FOLDER_NAME + "tools.toml");
+            REGISTERED_TOOL_COLORS.add(0xFFFFFF);
+          }
+        } else if (parts.length == 1) {
+          REGISTERED_TOOL_COLORS.add(0xFFFFFF);
+        } else {
+          addConfigIssue(WARN, (byte) 2, "Too many colons in ToolType: \"{}\" declared in config [{}] | Color defaulting to white", toolType, PRESET_FOLDER_NAME + "tools.toml");
+          REGISTERED_TOOL_COLORS.add(0xFFFFFF);
+        }
       } else {
-        REGISTERED_TOOL_COLORS.add(0xFFFFFF);
+        addConfigIssue(INFO, (byte) 1, "ToolType: \"{}\" was declared twice in config [{}] | Only the first will be used", toolType, PRESET_FOLDER_NAME + "tools.toml");
       }
     });
   }
