@@ -89,7 +89,7 @@ public class ClientForgeBusEvents {
       MutableComponent builder = Component.literal("");
       boolean first = true;
 
-      for (Map.Entry<Byte, BlocksConfig.ResistanceData> entry : blockProperties.data().entrySet()) {
+      for (Map.Entry<Byte, BlocksConfig.ToolProfile> entry : blockProperties.data().entrySet()) {
         if (!first) builder.append("   ");
         first = false;
         ChatFormatting color;
@@ -156,7 +156,7 @@ public class ClientForgeBusEvents {
     String item = ForgeRegistries.ITEMS.getKey(event.getItemStack().getItem()).toString();
     if (BLOCKS.containsKey(item) && !BLOCKS.get(item).data().isEmpty()) {
       event.getTooltipElements().add(Either.left(Component.translatable(MODID + ".tooltip.resistanceTitle")));
-      for (Map.Entry<Byte, BlocksConfig.ResistanceData> data : BLOCKS.get(item).data().entrySet()) {
+      for (Map.Entry<Byte, BlocksConfig.ToolProfile> data : BLOCKS.get(item).data().entrySet()) {
         event.getTooltipElements().add(Either.left(
             Component.literal(" ")
                 .append(Component.literal(REGISTERED_TOOL_TYPES.get(data.getKey())))

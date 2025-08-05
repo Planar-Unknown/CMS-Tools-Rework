@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import static com.dreu.planarcms.PlanarCMS.populateTagKeys;
 import static com.dreu.planarcms.config.BlocksConfig.BLOCKS;
 import static com.dreu.planarcms.config.GeneralConfig.*;
 import static com.dreu.planarcms.config.ToolsConfig.*;
@@ -50,6 +51,7 @@ public class SyncConfigS2CPacket {
       REGISTERED_TOOL_TYPES.add(buf.readCharSequence(buf.readInt(), StandardCharsets.UTF_8).toString());
       REGISTERED_TOOL_COLORS.add(buf.readInt());
     }
+    populateTagKeys();
   }
 
   public SyncConfigS2CPacket() {

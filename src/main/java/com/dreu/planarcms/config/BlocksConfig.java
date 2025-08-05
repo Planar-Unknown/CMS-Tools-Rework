@@ -306,8 +306,9 @@ public class BlocksConfig {
     if (!isValidBlock(blockId, Optional.empty())) return;
 
     BLOCKS.merge(blockId, properties, (existing, singleBlock) -> {
-      Integer defaultResistance = getOrElse(blockPropertiesConfig, blockId, "DefaultResistance", existing.defaultResistance(), Integer.class, "blocks.toml", true);
-      Map<Byte, ResistanceData> resistanceDataMap = getResistanceDataMapOverride(blockPropertiesConfig, defaultResistance, existing.data(), blockId);
+      int defaultResistance = getOrElse(blockPropertiesConfig, blockId, "DefaultResistance", existing.defaultResistance(), int.class, "blocks.toml", true);
+      boolean defaultCanDrop = getOrElse(blockPropertiesConfig, blockId, "DefaultCanDrop", existing.defaultCanDrop(), boolean.class, "blocks.toml", true);
+      Map<Byte, ToolProfile> resistanceDataMap = getResistanceDataMapOverride(blockPropertiesConfig, defaultResistance, existing.data(), blockId);
 
       existing.data().forEach(resistanceDataMap::putIfAbsent);
 
@@ -315,6 +316,7 @@ public class BlocksConfig {
           singleBlock.hardness().isPresent() ? singleBlock.hardness() : existing.hardness(),
           singleBlock.explosionResistance().isPresent() ? singleBlock.explosionResistance() : existing.explosionResistance(),
           defaultResistance,
+          defaultCanDrop,
           resistanceDataMap
       );
     });
@@ -336,8 +338,8 @@ public class BlocksConfig {
     return true;
   }
 
-  private static Map<Byte, ResistanceData> getResistanceDataMap(Config config, int defaultResistance) {
-    Map<Byte, ResistanceData> map = new HashMap<>();
+  private static Map<Byte, ToolProfile> getResistanceDataMap(Config config, int defaultResistance) {
+    Map<Byte, ToolProfile> map = new HashMap<>();
     for (Map.Entry<String, Object> entry : config.valueMap().entrySet()) {
       String key = entry.getKey();
       if (isStandardKey(key)) continue;
@@ -349,16 +351,17 @@ public class BlocksConfig {
       }
 
       Config toolConfig = (Config) entry.getValue();
-      map.put(type, new ResistanceData(
+      map.put(type, new ToolProfile(
         getOrElse(toolConfig, key, "Resistance", defaultResistance, Integer.class, "blocks.toml", false),
-        getOrElse(toolConfig, key, "ApplyMiningSpeed", false, Boolean.class, "blocks.toml", false)
+        getOrElse(toolConfig, key, "ApplyMiningSpeed", true, Boolean.class, "blocks.toml", false),
+        getOrElse(toolConfig, key, "CanDrop", true, Boolean.class, "blocks.toml", false)
       ));
     }
     return map;
   }
 
-  private static Map<Byte, ResistanceData> getResistanceDataMapOverride(Config block, int defaultResistance, Map<Byte, ResistanceData> right, String parent) {
-    Map<Byte, ResistanceData> resistanceDataMap = new HashMap<>();
+  private static Map<Byte, ToolProfile> getResistanceDataMapOverride(Config block, int defaultResistance, Map<Byte, ToolProfile> right, String parent) {
+    Map<Byte, ToolProfile> resistanceDataMap = new HashMap<>();
     for (Map.Entry<String, Object> property : block.valueMap().entrySet()) {
       String key = property.getKey();
       if (isStandardKey(key)) continue;
@@ -371,9 +374,10 @@ public class BlocksConfig {
 
       resistanceDataMap.put(
         toolType,
-        new ResistanceData(
+        new ToolProfile(
           getOrElse(((Config) property.getValue()), key, "Resistance", right.containsKey(toolType) ? right.get(toolType).resistance() : defaultResistance, Integer.class, "blocks.toml", false),
-          getOrElse(((Config) property.getValue()), key, "ApplyMiningSpeed", right.containsKey(toolType) && right.get(toolType).applyMiningSpeed(), Boolean.class, "blocks.toml", false)
+          getOrElse(((Config) property.getValue()), key, "ApplyMiningSpeed", right.containsKey(toolType) && right.get(toolType).applyMiningSpeed(), Boolean.class, "blocks.toml", false),
+          getOrElse(((Config) property.getValue()), key, "CanDrop", right.containsKey(toolType) && right.get(toolType).canDrop(), Boolean.class, "blocks.toml", false)
         )
       );
     }
@@ -385,11 +389,13 @@ public class BlocksConfig {
   }
 
   private static @NotNull Properties assembleProperties(String configKey, Config config) {
-    int defaultResistance = getOrElse(config, configKey, "DefaultResistance", 0, Integer.class, "blocks.toml", false);
+    int defaultResistance = getOrElse(config, configKey, "DefaultResistance", 0, int.class, "blocks.toml", false);
+    boolean defaultCanDrop = getOrElse(config, configKey, "DefaultCanDrop", true, boolean.class, "blocks.toml", false);
     return new Properties(
         getOptionalFloat(config, "Hardness", configKey),
         getOptionalFloat(config, "ExplosionResistance", configKey),
         defaultResistance,
+        defaultCanDrop,
         getResistanceDataMap(config, defaultResistance)
     );
   }
@@ -415,9 +421,9 @@ public class BlocksConfig {
   }
   //Todo: Make Resistance an optional
 
-  public record ResistanceData(int resistance, boolean applyMiningSpeed) {}
-  // powers is a map of ToolTypeID to ResistanceData(resistance, applyMiningSpeed)
-  public record Properties(Optional<Float> hardness, Optional<Float> explosionResistance, int defaultResistance, Map<Byte, ResistanceData> data) {
+  public record ToolProfile(int resistance, boolean applyMiningSpeed, boolean canDrop) {}
+  // powers is a map of ToolTypeID to ToolProfile(resistance, applyMiningSpeed, canDrop)
+  public record Properties(Optional<Float> hardness, Optional<Float> explosionResistance, int defaultResistance, boolean defaultCanDrop, Map<Byte, ToolProfile> data) {
 
     public static Properties merged(Properties left, Properties right) {
       return new Properties(
@@ -426,10 +432,12 @@ public class BlocksConfig {
           left.defaultResistance() == -1 || right.defaultResistance() == -1
               ? Math.max(left.defaultResistance, right.defaultResistance)
               : Math.min(left.defaultResistance(), right.defaultResistance()),
+          left.defaultCanDrop && right.defaultCanDrop,
           Helpers.mergeMaps(left.data(), right.data(),
-              (rightData, newLeftData) -> new ResistanceData(
-                Math.min(newLeftData.resistance(), rightData.resistance()),
-                newLeftData.applyMiningSpeed() || rightData.applyMiningSpeed()
+              (rightData, leftData) -> new ToolProfile(
+                Math.min(leftData.resistance(), rightData.resistance()),
+                leftData.applyMiningSpeed() || rightData.applyMiningSpeed(),
+                rightData.canDrop && leftData.canDrop
           ))
       );
     }
@@ -453,12 +461,14 @@ public class BlocksConfig {
       explosionResistance.ifPresent(buf::writeFloat);
 
       buf.writeInt(defaultResistance);
+      buf.writeBoolean(defaultCanDrop);
       buf.writeInt(data.size());
 
-      for (Map.Entry<Byte, ResistanceData> entry : data.entrySet()) {
+      for (Map.Entry<Byte, ToolProfile> entry : data.entrySet()) {
         buf.writeByte(entry.getKey());
         buf.writeInt(entry.getValue().resistance());
         buf.writeBoolean(entry.getValue().applyMiningSpeed());
+        buf.writeBoolean(entry.getValue().canDrop());
       }
     }
 
@@ -466,14 +476,15 @@ public class BlocksConfig {
       Optional<Float> hardness = buf.readBoolean() ? Optional.of(buf.readFloat()) : Optional.empty();
       Optional<Float> explosionResistance = buf.readBoolean() ? Optional.of(buf.readFloat()) : Optional.empty();
       int defaultResistance = buf.readInt();
+      boolean defaultCanDrop = buf.readBoolean();
 
       int size = buf.readInt();
-      Map<Byte, ResistanceData> map = new HashMap<>();
+      Map<Byte, ToolProfile> map = new HashMap<>();
       for (int i = 0; i < size; i++) {
         byte key = buf.readByte();
-        map.put(key, new ResistanceData(buf.readInt(), buf.readBoolean()));
+        map.put(key, new ToolProfile(buf.readInt(), buf.readBoolean(), buf.readBoolean()));
       }
-      return new Properties(hardness, explosionResistance, defaultResistance, map);
+      return new Properties(hardness, explosionResistance, defaultResistance, defaultCanDrop, map);
     }
   }
 }
