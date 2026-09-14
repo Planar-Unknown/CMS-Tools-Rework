@@ -16,8 +16,7 @@ import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static com.dreu.planarcms.config.EnchantsConfig.ENCHANTS_BY_ITEM_ID;
-import static com.dreu.planarcms.config.EnchantsConfig.ENCHANTS_BY_TOOL_TYPE;
+import static com.dreu.planarcms.config.EnchantsConfig.*;
 import static com.dreu.planarcms.config.ToolsConfig.TOOLS;
 
 @SuppressWarnings({"unused", "DataFlowIssue"})
@@ -72,6 +71,8 @@ public class EnchantRandomlyFunctionMixin {
           }
         }
       }
+      if (GLOBAL_ENCHANTMENTS.negative().contains(enchantId)) return false;
+      if (GLOBAL_ENCHANTMENTS.positive().contains(enchantId)) return true;
 
       return predicate.test(enchantment);
     });

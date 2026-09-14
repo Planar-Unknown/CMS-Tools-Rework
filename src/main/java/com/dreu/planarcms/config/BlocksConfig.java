@@ -306,8 +306,8 @@ public class BlocksConfig {
     if (!isValidBlock(blockId, Optional.empty())) return;
 
     BLOCKS.merge(blockId, properties, (existing, singleBlock) -> {
-      int defaultResistance = getOrElse(blockPropertiesConfig, blockId, "DefaultResistance", existing.defaultResistance(), int.class, "blocks.toml", true);
-      boolean defaultCanDrop = getOrElse(blockPropertiesConfig, blockId, "DefaultCanDrop", existing.defaultCanDrop(), boolean.class, "blocks.toml", true);
+      int defaultResistance = getOrElse(blockPropertiesConfig, blockId, "DefaultResistance", existing.defaultResistance(), Integer.class, "blocks.toml", true);
+      boolean defaultCanDrop = getOrElse(blockPropertiesConfig, blockId, "DefaultCanDrop", existing.defaultCanDrop(), Boolean.class, "blocks.toml", true);
       Map<Byte, ToolProfile> resistanceDataMap = getResistanceDataMapOverride(blockPropertiesConfig, defaultResistance, existing.data(), blockId);
 
       existing.data().forEach(resistanceDataMap::putIfAbsent);
@@ -354,7 +354,7 @@ public class BlocksConfig {
       map.put(type, new ToolProfile(
         getOrElse(toolConfig, key, "Resistance", defaultResistance, Integer.class, "blocks.toml", false),
         getOrElse(toolConfig, key, "ApplyMiningSpeed", true, Boolean.class, "blocks.toml", false),
-        getOrElse(toolConfig, key, "CanDrop", true, Boolean.class, "blocks.toml", false)
+        Optional.ofNullable(getOrElse(toolConfig, key, "CanDrop", null, Boolean.class, "blocks.toml", false))
       ));
     }
     return map;
@@ -372,12 +372,13 @@ public class BlocksConfig {
         continue;
       }
 
+      boolean hasToolProfile = right.containsKey(toolType);
       resistanceDataMap.put(
         toolType,
         new ToolProfile(
-          getOrElse(((Config) property.getValue()), key, "Resistance", right.containsKey(toolType) ? right.get(toolType).resistance() : defaultResistance, Integer.class, "blocks.toml", false),
-          getOrElse(((Config) property.getValue()), key, "ApplyMiningSpeed", right.containsKey(toolType) && right.get(toolType).applyMiningSpeed(), Boolean.class, "blocks.toml", false),
-          getOrElse(((Config) property.getValue()), key, "CanDrop", right.containsKey(toolType) && right.get(toolType).canDrop(), Boolean.class, "blocks.toml", false)
+          getOrElse(((Config) property.getValue()), key, "Resistance", hasToolProfile ? right.get(toolType).resistance() : defaultResistance, Integer.class, "blocks.toml", false),
+          getOrElse(((Config) property.getValue()), key, "ApplyMiningSpeed", hasToolProfile && right.get(toolType).applyMiningSpeed(), Boolean.class, "blocks.toml", false),
+          Optional.ofNullable(getOrElse(((Config) property.getValue()), key, "CanDrop", hasToolProfile ? right.get(toolType).canDrop().orElse(null) : null, Boolean.class, "blocks.toml", false))
         )
       );
     }
@@ -389,8 +390,8 @@ public class BlocksConfig {
   }
 
   private static @NotNull Properties assembleProperties(String configKey, Config config) {
-    int defaultResistance = getOrElse(config, configKey, "DefaultResistance", 0, int.class, "blocks.toml", false);
-    boolean defaultCanDrop = getOrElse(config, configKey, "DefaultCanDrop", true, boolean.class, "blocks.toml", false);
+    int defaultResistance = getOrElse(config, configKey, "DefaultResistance", 0, Integer.class, "blocks.toml", false);
+    boolean defaultCanDrop = getOrElse(config, configKey, "DefaultCanDrop", true, Boolean.class, "blocks.toml", false);
     return new Properties(
         getOptionalFloat(config, "Hardness", configKey),
         getOptionalFloat(config, "ExplosionResistance", configKey),
@@ -401,7 +402,7 @@ public class BlocksConfig {
   }
 
   private static boolean isStandardKey(String key) {
-    return key.equals("DefaultResistance") || key.equals("ExplosionResistance") || key.equals("Hardness");
+    return key.equals("DefaultResistance") || key.equals("ExplosionResistance") || key.equals("Hardness") || key.equals("DefaultCanDrop");
   }
 
   private static Optional<Float> getOptionalFloat(Config values, String key, String parent) {
@@ -421,7 +422,7 @@ public class BlocksConfig {
   }
   //Todo: Make Resistance an optional
 
-  public record ToolProfile(int resistance, boolean applyMiningSpeed, boolean canDrop) {}
+  public record ToolProfile(int resistance, boolean applyMiningSpeed, Optional<Boolean> canDrop) {}
   // powers is a map of ToolTypeID to ToolProfile(resistance, applyMiningSpeed, canDrop)
   public record Properties(Optional<Float> hardness, Optional<Float> explosionResistance, int defaultResistance, boolean defaultCanDrop, Map<Byte, ToolProfile> data) {
 
@@ -437,7 +438,7 @@ public class BlocksConfig {
               (rightData, leftData) -> new ToolProfile(
                 Math.min(leftData.resistance(), rightData.resistance()),
                 leftData.applyMiningSpeed() || rightData.applyMiningSpeed(),
-                rightData.canDrop && leftData.canDrop
+                leftData.canDrop.isPresent() ? rightData.canDrop.isPresent() ? Optional.of(leftData.canDrop.get() && rightData.canDrop.get()) : leftData.canDrop : rightData.canDrop
           ))
       );
     }
@@ -468,7 +469,9 @@ public class BlocksConfig {
         buf.writeByte(entry.getKey());
         buf.writeInt(entry.getValue().resistance());
         buf.writeBoolean(entry.getValue().applyMiningSpeed());
-        buf.writeBoolean(entry.getValue().canDrop());
+        Optional<Boolean> canDrop = entry.getValue().canDrop();
+        buf.writeBoolean(canDrop.isPresent());
+        if (canDrop.isPresent()) buf.writeBoolean(canDrop.get());
       }
     }
 
@@ -482,7 +485,7 @@ public class BlocksConfig {
       Map<Byte, ToolProfile> map = new HashMap<>();
       for (int i = 0; i < size; i++) {
         byte key = buf.readByte();
-        map.put(key, new ToolProfile(buf.readInt(), buf.readBoolean(), buf.readBoolean()));
+        map.put(key, new ToolProfile(buf.readInt(), buf.readBoolean(), buf.readBoolean() ? Optional.of(buf.readBoolean()) : Optional.empty()));
       }
       return new Properties(hardness, explosionResistance, defaultResistance, defaultCanDrop, map);
     }

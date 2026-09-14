@@ -24,7 +24,9 @@ public class BlockStateBaseMixin {
   @Inject(method = "getDestroySpeed", at = @At("HEAD"), cancellable = true)
   public void onGetDestroySpeed(BlockGetter level, BlockPos blockPos, CallbackInfoReturnable<Float> cir) {
     BlocksConfig.Properties blockProperties = BLOCKS.get(ForgeRegistries.BLOCKS.getKey(getBlock()).toString());
-    cir.setReturnValue(blockProperties != null ? blockProperties.hardness().orElse(this.destroySpeed) : this.destroySpeed);
+    if (blockProperties != null && blockProperties.hardness().isPresent()) {
+      cir.setReturnValue(blockProperties.hardness().get());
+    }
   }
 
   private BlockState self() {

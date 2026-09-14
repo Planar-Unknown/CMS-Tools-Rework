@@ -13,8 +13,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static com.dreu.planarcms.config.EnchantsConfig.ENCHANTS_BY_ITEM_ID;
-import static com.dreu.planarcms.config.EnchantsConfig.ENCHANTS_BY_TOOL_TYPE;
+import static com.dreu.planarcms.config.EnchantsConfig.*;
+import static com.dreu.planarcms.config.EnchantsConfig.GLOBAL_ENCHANTMENTS;
 import static com.dreu.planarcms.config.ToolsConfig.TOOLS;
 
 @SuppressWarnings({"unused", "DataFlowIssue"})
@@ -68,6 +68,8 @@ public class EnchantCommandMixin {
       }
     }
 
+    if (GLOBAL_ENCHANTMENTS.negative().contains(enchantId)) return false;
+    if (GLOBAL_ENCHANTMENTS.positive().contains(enchantId)) return true;
 
     return enchantment.canEnchant(itemStack);
   }

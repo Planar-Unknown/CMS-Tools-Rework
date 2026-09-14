@@ -6,6 +6,7 @@
   "refmap": "planar_cms.refmap.json",
   "mixins": [
     "ExplosionDamageCalculatorMixin",
+    "BlockMixin",
     "BlockStateBaseMixin",
     "ItemStackMixin",
     "enchantments/AnvilMenuMixin",

@@ -3,8 +3,6 @@ package com.dreu.planarcms.mixin;
 import com.dreu.planarcms.config.BlocksConfig;
 import com.dreu.planarcms.config.ToolsConfig;
 import com.dreu.planarcms.util.OpposingSets;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -24,13 +22,13 @@ import static com.dreu.planarcms.PlanarCMS.TAG_KEYS_BY_TOOL_TYPE;
 import static com.dreu.planarcms.config.BlocksConfig.getBlockProperties;
 import static com.dreu.planarcms.config.EnchantsConfig.ENCHANTS_BY_ITEM_ID;
 import static com.dreu.planarcms.config.EnchantsConfig.ENCHANTS_BY_TOOL_TYPE;
-import static com.dreu.planarcms.config.ToolsConfig.*;
+import static com.dreu.planarcms.config.ToolsConfig.TOOLS;
+import static com.dreu.planarcms.config.ToolsConfig.getToolProperties;
 import static com.dreu.planarcms.util.Helpers.getTierIfPresent;
 
 @SuppressWarnings({"unused", "DataFlowIssue"})
 @Mixin(ItemStack.class)
 public class ItemStackMixin {
-
   @Redirect(
       method = "isEnchantable",
       at = @At(
@@ -73,15 +71,19 @@ public class ItemStackMixin {
     if (blockProperties != null) {
       boolean applyMiningSpeed = false;
       if (toolProperties != null) {
-        boolean canMine = false;
+        boolean canMine = blockProperties.defaultResistance() == 0; //false
         for (Map.Entry<Byte, Integer> powerData : toolProperties.powers().entrySet()) {
           BlocksConfig.ToolProfile toolProfile = blockProperties.data().get(powerData.getKey());
           if (toolProfile != null) {
             int resistance = toolProfile.resistance();
-            if (resistance >= 0 && powerData.getValue() >= resistance) {
-              canMine = true;
-              if (toolProfile.applyMiningSpeed()) {
-                applyMiningSpeed = true;
+            if (resistance >= 0) {
+              if (powerData.getValue() >= resistance) {
+                canMine = true;
+                if (toolProfile.applyMiningSpeed()) {
+                  applyMiningSpeed = true;
+                }
+              } else if (powerData.getValue() >= blockProperties.defaultResistance() && blockProperties.defaultResistance() != -1) {
+                canMine = true;
               }
             }
           } else {

@@ -109,7 +109,7 @@ public class EnchantsConfig {
           "-minecraft:fire_aspect"
       ]
       
-      # Golden Tools (which have Arcane power in our example config) can not have Looting even though specified in Arcane Power Types above
+      #Golden Tools (which have Arcane power in our example config) can not have Looting even though specified in Arcane Power Types above
       "@golden_tools" = [
           "-minecraft:looting"
       ]
@@ -152,6 +152,7 @@ public class EnchantsConfig {
   }
 
   public static Config CONFIG;
+  public static OpposingSets<String> GLOBAL_ENCHANTMENTS;
 
   public static void parse() {
     CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "enchants.toml", getTemplateConfigString());
@@ -174,7 +175,9 @@ public class EnchantsConfig {
         return;
       }
       OpposingSets<String> enchantments = getOpposingSetsFromList(configKey, enchants);
-      if (configKey.startsWith("@")) {
+      if (configKey.equals("*")) {
+        populateGlobalEnchants(enchantments);
+      } else if (configKey.startsWith("@")) {
         handleItemCollection(configKey, enchantments);
       } else if (configKey.startsWith("#")) {
         handleItemTag(configKey, enchantments, Optional.empty());
@@ -191,6 +194,10 @@ public class EnchantsConfig {
       if (isValidItem(configKey, Optional.empty(), "enchants.toml"))
         ENCHANTS_BY_ITEM_ID.merge(configKey, enchantments, OpposingSets::mergeRightWins);
     });
+  }
+
+  private static void populateGlobalEnchants(OpposingSets<String> enchantments){
+    GLOBAL_ENCHANTMENTS = enchantments;
   }
 
   private static void handleToolTypeWithPower(String configKey, OpposingSets<String> enchantments) {

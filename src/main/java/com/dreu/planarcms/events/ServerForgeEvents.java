@@ -4,7 +4,6 @@ import com.dreu.planarcms.network.PacketHandler;
 import com.dreu.planarcms.network.SyncConfigS2CPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -17,8 +16,8 @@ import static com.dreu.planarcms.PlanarCMS.MODID;
 import static com.dreu.planarcms.config.GeneralConfig.HOTSWAPPABLE;
 import static net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.FORGE;
 
-@Mod.EventBusSubscriber(modid = MODID, bus = FORGE, value = Dist.DEDICATED_SERVER)
 @SuppressWarnings("unused")
+@Mod.EventBusSubscriber(modid = MODID, bus = FORGE)
 public class ServerForgeEvents {
   public static final Set<Player> playersToSendIssuesTo = new HashSet<>();
 
