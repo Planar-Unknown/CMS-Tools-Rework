@@ -152,7 +152,7 @@ public class EnchantsConfig {
   }
 
   public static Config CONFIG;
-  public static OpposingSets<String> GLOBAL_ENCHANTMENTS;
+  public static final OpposingSets<String> GLOBAL_ENCHANTMENTS = new OpposingSets<>();
 
   public static void parse() {
     CONFIG = parseFileOrDefault(PRESET_FOLDER_NAME + "enchants.toml", getTemplateConfigString());
@@ -197,7 +197,7 @@ public class EnchantsConfig {
   }
 
   private static void populateGlobalEnchants(OpposingSets<String> enchantments){
-    GLOBAL_ENCHANTMENTS = enchantments;
+    GLOBAL_ENCHANTMENTS.addAll(enchantments);
   }
 
   private static void handleToolTypeWithPower(String configKey, OpposingSets<String> enchantments) {

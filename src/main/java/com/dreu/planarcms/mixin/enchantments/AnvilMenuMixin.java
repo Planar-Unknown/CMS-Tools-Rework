@@ -20,7 +20,6 @@ import static com.dreu.planarcms.config.ToolsConfig.TOOLS;
 @SuppressWarnings({"DataFlowIssue", "unused"})
 @Mixin(AnvilMenu.class)
 public class AnvilMenuMixin {
-  private final OpposingSets<String> ENCHANTMENT_SETS = new OpposingSets<>();
 
   @Redirect(
       method = "createResult",
