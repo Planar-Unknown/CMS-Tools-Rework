@@ -14,5 +14,6 @@ public class RequestConfigIssuesC2SPacket {
       playersToSendIssuesTo.forEach(Helpers::sendConfigIssuesInChat);
       playersToSendIssuesTo.clear();
     });
+    context.get().setPacketHandled(true);
   }
 }

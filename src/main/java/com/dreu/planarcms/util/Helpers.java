@@ -104,7 +104,7 @@ public class Helpers {
       return false;
     }
     if (!ModList.get().isLoaded(modId)) {
-      addConfigIssue(INFO, (byte) 2, "{} declared Block Resistance values for all blocks in mod '{{}}', which is not loaded | Skipping...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() -> "Config: [" + PRESET_FOLDER_NAME + fileName + "]"), modId);
+      addConfigIssue(INFO, (byte) 2, "{} declared values for mod '{{}}', which is not loaded | Skipping...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() -> "Config: [" + PRESET_FOLDER_NAME + fileName + "]"), modId);
       return false;
     }
     return true;

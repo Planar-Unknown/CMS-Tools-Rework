@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static com.dreu.planarcms.config.EnchantsConfig.*;
-import static com.dreu.planarcms.config.EnchantsConfig.GLOBAL_ENCHANTMENTS;
 import static com.dreu.planarcms.config.ToolsConfig.TOOLS;
 
 @SuppressWarnings({"DataFlowIssue", "unused"})

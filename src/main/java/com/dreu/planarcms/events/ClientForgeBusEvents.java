@@ -1,19 +1,17 @@
 package com.dreu.planarcms.events;
 
 import com.dreu.planarcms.config.BlocksConfig;
-import com.dreu.planarcms.config.ToolsConfig;
+import com.dreu.planarcms.config.DisplayConfig;
+import com.dreu.planarcms.util.DisplayHelper;
 import com.dreu.planarcms.util.Helpers;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.datafixers.util.Either;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
@@ -26,13 +24,11 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import static com.dreu.planarcms.PlanarCMS.MODID;
 import static com.dreu.planarcms.config.BlocksConfig.BLOCKS;
-import static com.dreu.planarcms.config.BlocksConfig.getBlockProperties;
 import static com.dreu.planarcms.config.ToolsConfig.*;
 import static com.dreu.planarcms.events.ClientModBusEvents.TOGGLE_TOOLTIPS_KEY_MAPPING;
 import static com.dreu.planarcms.events.ClientModBusEvents.TOGGLE_WAILA_KEY_MAPPING;
@@ -49,6 +45,8 @@ public class ClientForgeBusEvents {
       parseAndPopulateConfig();
       configHasBeenPopulated = true;
     }
+    DisplayConfig.parse();
+    DisplayConfig.populate();
   }
 
   @SubscribeEvent
@@ -69,59 +67,18 @@ public class ClientForgeBusEvents {
 
   @SubscribeEvent
   public static void renderGuiEvent(RenderGuiEvent event) {
-    //Todo: display "Unmineable" when default resistance is -1 and no resistances are present
     if (Helpers.WAILA_POSITION == Helpers.WailaPosition.INVISIBLE) return;
+    if (ModList.get().isLoaded("jade")) return;
+
     Minecraft mc = Minecraft.getInstance();
-    if (mc.level == null || !(mc.hitResult instanceof BlockHitResult blockHitResult)) return;
+    if (mc.level == null || mc.player == null || !(mc.hitResult instanceof BlockHitResult blockHitResult)) return;
 
-    Block block = mc.level.getBlockState(blockHitResult.getBlockPos()).getBlock();
-    if (block.equals(Blocks.AIR)) return;
+    BlockState blockState = mc.level.getBlockState(blockHitResult.getBlockPos());
+    if (blockState.isAir()) return;
 
-    List<MutableComponent> componentsList = new ArrayList<>();
-    componentsList.add(block.getName());
-
-    BlocksConfig.Properties blockProperties = getBlockProperties(block);
-    if (blockProperties != null && !blockProperties.data().isEmpty()) {
-      ToolsConfig.Properties toolProperties = TOOLS.get(
-          ForgeRegistries.ITEMS.getKey(mc.player.getItemInHand(InteractionHand.MAIN_HAND).getItem()).toString()
-      );
-
-      MutableComponent builder = Component.literal("");
-      boolean first = true;
-
-      for (Map.Entry<Byte, BlocksConfig.ToolProfile> entry : blockProperties.data().entrySet()) {
-        if (!first) builder.append("   ");
-        first = false;
-        ChatFormatting color;
-
-        if (toolProperties != null && toolProperties.powers().containsKey(entry.getKey())) {
-          int toolPower = toolProperties.powers().get(entry.getKey());
-          color = entry.getValue().resistance() == -1 || toolPower < entry.getValue().resistance()
-              ? ChatFormatting.RED
-              : entry.getValue().applyMiningSpeed()
-              ? ChatFormatting.GREEN
-              : ChatFormatting.YELLOW;
-        } else {
-          color = blockProperties.defaultResistance() == 0 ? ChatFormatting.GREEN : ChatFormatting.RED;
-        }
-
-
-        builder.append(Component.literal(REGISTERED_TOOL_TYPES.get(entry.getKey())).withStyle(ChatFormatting.GRAY))
-            .append(" ")
-            .append(Component.literal(String.valueOf(entry.getValue().resistance())).withStyle(color));
-      }
-
-      componentsList.add(builder);
-    }
-
-    //noinspection DataFlowIssue
-    componentsList.add(Component.literal(
-        ModList.get().getModContainerById(ForgeRegistries.BLOCKS.getKey(block).getNamespace())
-            .map(mod -> mod.getModInfo().getDisplayName())
-            .orElse(ForgeRegistries.BLOCKS.getKey(block).getNamespace())
-    ).withStyle(ChatFormatting.ITALIC, ChatFormatting.BLUE));
-
-    drawBox(componentsList, event.getGuiGraphics());
+    List<MutableComponent> wailaComponents = DisplayHelper.getManualWailaComponents(blockState, mc.level, blockHitResult.getBlockPos(), mc.player.getMainHandItem());
+    if (wailaComponents.isEmpty()) return;
+    drawBox(wailaComponents, event.getGuiGraphics());
   }
 
   private static void drawBox(List<MutableComponent> components, GuiGraphics guiGraphics) {

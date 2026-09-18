@@ -4,9 +4,9 @@ import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.toml.TomlParser;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.Item;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.*;
@@ -185,6 +185,7 @@ public class ToolsConfig {
 
   public static void populateToolTypes() {
     REGISTERED_TOOL_TYPES.clear();
+    REGISTERED_TOOL_COLORS.clear();
     HashSet<String> set = new HashSet<>();
     ((ArrayList<?>) CONFIG.get("ToolTypes")).forEach(toolType -> {
       String entry = toolType.toString();
@@ -264,17 +265,17 @@ public class ToolsConfig {
       if (member.startsWith("-")) {
         String sub = member.substring(1);
         if (sub.startsWith("#")) {
-          addItemsFromTag(configKey, Optional.of(collectionName), negatives);
+          addItemsFromTag(sub, member, Optional.of(collectionName), negatives);
         } else if (sub.endsWith(":*")) {
-          addItemsFromMod(configKey, Optional.of(collectionName), negatives);
-        } else if (isValidItem(sub, Optional.of(collectionName), "tools.toml")) {
+          addItemsFromMod(sub, member, Optional.of(collectionName), negatives);
+        } else if (isValidItem(sub, member, Optional.of(collectionName), "tools.toml")) {
           negatives.add(sub);
         }
       } else if (member.startsWith("#")) {
-        addItemsFromTag(configKey, Optional.of(collectionName), positives);
+        addItemsFromTag(member, member, Optional.of(collectionName), positives);
       } else if (member.endsWith(":*")) {
-        addItemsFromMod(configKey, Optional.of(collectionName), positives);
-      } else if (isValidItem(member, Optional.of(collectionName), "tools.toml")) {
+        addItemsFromMod(member, member, Optional.of(collectionName), positives);
+      } else if (isValidItem(member, member, Optional.of(collectionName), "tools.toml")) {
         explicit_positives.add(member);
       }
     }
@@ -290,46 +291,81 @@ public class ToolsConfig {
 
   private static void handleMod(String configKey, Properties properties) {
     String modId = configKey.substring(0, configKey.length() - 2);
-    if (isValidMod(modId, Optional.empty(), "tools.toml")) {
+    if (isValidMod(configKey, modId, Optional.empty(), "tools.toml")) {
       if (!registryHasBeenFilteredByModId) {
         for (ResourceLocation item : ForgeRegistries.ITEMS.getKeys())
           FILTERED_REGISTRY.computeIfAbsent(item.getNamespace(), b -> new ArrayList<>()).add(item.toString());
         registryHasBeenFilteredByModId = true;
       }
-      for (String itemId : FILTERED_REGISTRY.get(modId))
-        addItem(itemId, properties);
+      if (FILTERED_REGISTRY.get(modId) != null) {
+        for (String itemId : FILTERED_REGISTRY.get(modId))
+          addItem(itemId, properties);
+      }
     }
   }
 
-  private static void addItemsFromMod(String configKey, Optional<String> collectionName, Collection<String> list) {
+  private static void addItemsFromMod(String configKey, String sourceKey, Optional<String> collectionName, Collection<String> list) {
     String modId = configKey.substring(0, configKey.length() - 2);
-    if (isValidMod(modId, collectionName, "tools.toml")) {
+    if (isValidMod(sourceKey, modId, collectionName, "tools.toml")) {
       if (!registryHasBeenFilteredByModId) {
         for (ResourceLocation item : ForgeRegistries.ITEMS.getKeys())
           FILTERED_REGISTRY.computeIfAbsent(item.getNamespace(), b -> new ArrayList<>()).add(item.toString());
         registryHasBeenFilteredByModId = true;
       }
-      list.addAll(FILTERED_REGISTRY.get(modId));
+      if (FILTERED_REGISTRY.get(modId) != null)
+        list.addAll(FILTERED_REGISTRY.get(modId));
     }
   }
 
   @SuppressWarnings("DataFlowIssue")
-  private static void addItemsFromTag(String configKey, Optional<String> collectionName, Collection<String> list) {
-    if (!isValidTag(configKey, collectionName)) return;
+  private static void addItemsFromTag(String configKey, String sourceKey, Optional<String> collectionName, Collection<String> list) {
+    if (!isValidTag(configKey, sourceKey, collectionName)) return;
     for (Item item : ForgeRegistries.ITEMS.tags().getTag(ItemTags.create(new ResourceLocation(configKey.substring(1))))) {
       list.add(getItemId(item));
     }
   }
 
   @SuppressWarnings({"BooleanMethodIsAlwaysInverted", "DataFlowIssue"})
-  private static boolean isValidTag(String configKey, Optional<String> collectionName) {
+  private static boolean isValidTag(String configKey, String sourceKey, Optional<String> collectionName) {
     String tagId = configKey.substring(1);
     if (!ResourceLocation.isValidResourceLocation(tagId)) {
-      addConfigIssue(INFO, (byte) 2, "Not a valid Tag ResourceLocation: <{}> declared in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "blocks.toml]"));
+      addConfigIssue(INFO, (byte) 2, "Not a valid Tag ResourceLocation: <{}> declared in {} | Skipping...", sourceKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "tools.toml]"));
       return false;
     }
-    if (!ForgeRegistries.BLOCKS.tags().isKnownTagName(BlockTags.create(new ResourceLocation(tagId)))) {
-      addConfigIssue(INFO, (byte) 2, "Not an existing Block Tag: <{}> declared in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "blocks.toml]"));
+    if (!ForgeRegistries.ITEMS.tags().isKnownTagName(ItemTags.create(new ResourceLocation(tagId)))) {
+      addConfigIssue(INFO, (byte) 2, "Not an existing Item Tag: <{}> declared in {} | Skipping...", sourceKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() ->  "config: [" + PRESET_FOLDER_NAME + "tools.toml]"));
+      return false;
+    }
+    return true;
+  }
+
+  private static boolean isValidItem(String itemId, Optional<String> collectionName, String fileName) {
+    return isValidItem(itemId, itemId, collectionName, fileName);
+  }
+
+  private static boolean isValidItem(String itemId, String sourceKey, Optional<String> collectionName, String fileName) {
+    if (!ResourceLocation.isValidResourceLocation(itemId)) {
+      addConfigIssue(INFO, (byte) 2, "Not a valid Item ResourceLocation: <{}> declared in {} | Skipping Item...", sourceKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() -> "config: [" + PRESET_FOLDER_NAME + fileName + "]"));
+      return false;
+    }
+    if (!ModList.get().isLoaded(itemId.split(":")[0])) {
+      addConfigIssue(INFO, (byte) 2, "{} declared Tool Power values for <{}> but mod '{{}}' is not loaded | Skipping Item...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() -> "Config: [" + PRESET_FOLDER_NAME + fileName + "]"), sourceKey, itemId.split(":")[0]);
+      return false;
+    }
+    if (!ForgeRegistries.ITEMS.containsKey(new ResourceLocation(itemId))) {
+      addConfigIssue(INFO, (byte) 2, "{} declared item <{}> which does not exist, check for typos! | Skipping Item...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() -> "Config: [" + PRESET_FOLDER_NAME + fileName + "]"), sourceKey);
+      return false;
+    }
+    return true;
+  }
+
+  private static boolean isValidMod(String sourceKey, String modId, Optional<String> collectionName, String fileName) {
+    if (!ResourceLocation.isValidNamespace(modId)) {
+      addConfigIssue(INFO, (byte) 2, "Not a valid Mod ID in <{}> declared in {} | Skipping...", sourceKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() -> "config: [" + PRESET_FOLDER_NAME + fileName + "]"));
+      return false;
+    }
+    if (!ModList.get().isLoaded(modId)) {
+      addConfigIssue(INFO, (byte) 2, "{} declared Tool Power values for <{}> but mod '{{}}' is not loaded | Skipping...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() -> "Config: [" + PRESET_FOLDER_NAME + fileName + "]"), sourceKey, modId);
       return false;
     }
     return true;
@@ -344,7 +380,7 @@ public class ToolsConfig {
     toolProperties.valueMap().forEach((property, value) -> {
       if (property.equals("MiningSpeed")) return;
       if (!REGISTERED_TOOL_TYPES.contains(property)) {
-        addConfigIssue(ERROR, (byte) 6, "\"{}\" used in config file [{}] for <{}> is NOT a registered tool type!", property, PRESET_FOLDER_NAME + "blocks.toml", configKey);
+        addConfigIssue(ERROR, (byte) 6, "\"{}\" used in config file [{}] for <{}> is NOT a registered tool type!", property, PRESET_FOLDER_NAME + "tools.toml", configKey);
         return;
       }
       Integer power = tryCast(value, Integer.class, configKey + "." + property, "tools.toml");

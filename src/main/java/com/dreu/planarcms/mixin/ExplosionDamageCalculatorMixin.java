@@ -29,10 +29,13 @@ public class ExplosionDamageCalculatorMixin {
     if (blockProperties != null) {
       Optional<Float> explosionResistance = blockProperties.explosionResistance();
       if (explosionResistance.isPresent()) {
-        float value = explosionResistance.get();
-        if (value == -1) cir.setReturnValue(Optional.of(Float.POSITIVE_INFINITY));
+        float expRes = explosionResistance.get();
+        if (expRes == -1) {
+          cir.setReturnValue(Optional.of(Float.POSITIVE_INFINITY));
+          return;
+        }
         cir.setReturnValue(blockState.isAir() && fluidState.isEmpty() ? Optional.empty() : Optional.of(
-            Math.max(value, fluidState.getExplosionResistance(level, blockPos, explosion))
+            Math.max(expRes, fluidState.getExplosionResistance(level, blockPos, explosion))
         ));
       } else {
         if (blockProperties.defaultResistance() == -1) cir.setReturnValue(Optional.of(Float.POSITIVE_INFINITY));

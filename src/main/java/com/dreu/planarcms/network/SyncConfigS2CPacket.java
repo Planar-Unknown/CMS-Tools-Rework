@@ -1,6 +1,7 @@
 package com.dreu.planarcms.network;
 
 import com.dreu.planarcms.config.BlocksConfig;
+import com.dreu.planarcms.config.DisplayConfig;
 import com.dreu.planarcms.config.ToolsConfig;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
@@ -12,42 +13,38 @@ import java.util.function.Supplier;
 
 import static com.dreu.planarcms.PlanarCMS.populateTagKeys;
 import static com.dreu.planarcms.config.BlocksConfig.BLOCKS;
-import static com.dreu.planarcms.config.GeneralConfig.*;
 import static com.dreu.planarcms.config.ToolsConfig.*;
 import static com.dreu.planarcms.util.Helpers.*;
 
 public class SyncConfigS2CPacket {
 
-
   public SyncConfigS2CPacket(FriendlyByteBuf buf) {
-    USE_GLOBAL_DEFAULT = buf.readBoolean();
-    GLOBAL_DEFAULT_RESISTANCE = USE_GLOBAL_DEFAULT ? buf.readInt() : 0;
-    Map<String, BlocksConfig.Properties> bp = new HashMap<>();
-    Map<String, ToolsConfig.Properties> tp = new HashMap<>();
+    Map<String, BlocksConfig.Properties> blockProperties = new HashMap<>();
+    Map<String, ToolsConfig.Properties> toolProperties = new HashMap<>();
 
-    int bounds = buf.readInt();
-    for (int i = 0; i < bounds; i++)
-      bp.put(buf.readCharSequence(buf.readInt(), StandardCharsets.UTF_8).toString(), BlocksConfig.Properties.read(buf));
-    BLOCKS = bp;
+    int size = buf.readInt();
+    for (int i = 0; i < size; i++)
+      blockProperties.put(buf.readCharSequence(buf.readInt(), StandardCharsets.UTF_8).toString(), BlocksConfig.Properties.read(buf));
+    BLOCKS = blockProperties;
 
-    bounds = buf.readInt();
-    for (int i = 0; i < bounds; i++)
-      tp.put(buf.readCharSequence(buf.readInt(), StandardCharsets.UTF_8).toString(), ToolsConfig.Properties.readFromBuffer(buf));
-    TOOLS = tp;
+    size = buf.readInt();
+    for (int i = 0; i < size; i++)
+      toolProperties.put(buf.readCharSequence(buf.readInt(), StandardCharsets.UTF_8).toString(), ToolsConfig.Properties.readFromBuffer(buf));
+    TOOLS = toolProperties;
 
-    bounds = buf.readInt();
+    size = buf.readInt();
     CONFIG_ISSUES.clear();
-    for (int i = 0; i < bounds; i++)
+    for (int i = 0; i < size; i++)
       CONFIG_ISSUES.add(new Issue(
           LogLevel.values()[buf.readByte()],
           buf.readCharSequence(buf.readInt(), StandardCharsets.UTF_8).toString(),
           buf.readByte()
       ));
 
-    bounds = buf.readInt();
+    size = buf.readInt();
     REGISTERED_TOOL_TYPES.clear();
     REGISTERED_TOOL_COLORS.clear();
-    for (int i = 0; i < bounds; i++) {
+    for (int i = 0; i < size; i++) {
       REGISTERED_TOOL_TYPES.add(buf.readCharSequence(buf.readInt(), StandardCharsets.UTF_8).toString());
       REGISTERED_TOOL_COLORS.add(buf.readInt());
     }
@@ -55,15 +52,11 @@ public class SyncConfigS2CPacket {
   }
 
   public SyncConfigS2CPacket() {
-    if (!configHasBeenPopulated || HOTSWAPPABLE)
+    if (!configHasBeenPopulated)
       parseAndPopulateConfig();
   }
 
   public void toBytes(FriendlyByteBuf buf) {
-    buf.writeBoolean(USE_GLOBAL_DEFAULT);
-    if (USE_GLOBAL_DEFAULT)
-      buf.writeInt(GLOBAL_DEFAULT_RESISTANCE);
-
     buf.writeInt(BLOCKS.size());
     for (Map.Entry<String, BlocksConfig.Properties> props : BLOCKS.entrySet()) {
       buf.writeInt(props.getKey().length());
@@ -94,9 +87,10 @@ public class SyncConfigS2CPacket {
     }
   }
 
-
   public void handle(Supplier<NetworkEvent.Context> context) {
     context.get().enqueueWork(() -> {
+      DisplayConfig.parse();
+      DisplayConfig.populate();
       PacketHandler.CHANNEL.sendToServer(new RequestConfigIssuesC2SPacket());
       configHasBeenPopulated = false;
     });

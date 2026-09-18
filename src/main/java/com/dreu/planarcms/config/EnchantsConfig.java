@@ -162,6 +162,7 @@ public class EnchantsConfig {
   public static final Map<String, OpposingSets<String>> ENCHANTS_BY_ITEM_ID = new HashMap<>();
 
   public static void populateEnchants() {
+    GLOBAL_ENCHANTMENTS.clear();
     ENCHANTS_BY_TOOL_TYPE.clear();
     ENCHANTS_BY_ITEM_ID.clear();
     Map<String, OpposingSets<String>> singleItems = new HashMap<>();
@@ -238,7 +239,7 @@ public class EnchantsConfig {
     }
     collection.forEach((member) -> {
       if (member.startsWith("#")) {
-        handleItemTag(configKey, enchantments, Optional.of(collectionName));
+        handleItemTag(member, member, enchantments, Optional.of(collectionName));
       } else {
         if (!isValidItem(member, Optional.of(collectionName), "enchants.toml")) return;
         ENCHANTS_BY_ITEM_ID.merge(member, enchantments, OpposingSets::merge);
@@ -248,13 +249,18 @@ public class EnchantsConfig {
 
   @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "DataFlowIssue"})
   private static void handleItemTag(String configKey, OpposingSets<String> sets, Optional<String> collectionName) {
+    handleItemTag(configKey, configKey, sets, collectionName);
+  }
+
+  @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "DataFlowIssue"})
+  private static void handleItemTag(String configKey, String sourceKey, OpposingSets<String> sets, Optional<String> collectionName) {
     String tagId = configKey.substring(1);
     if (!ResourceLocation.isValidResourceLocation(tagId)) {
-      addConfigIssue(INFO, (byte) 2, "Not a valid Tag ResourceLocation: <{}> declared in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() -> "config: [" + PRESET_FOLDER_NAME + "enchants.toml]"));
+      addConfigIssue(INFO, (byte) 2, "Not a valid Tag ResourceLocation: <{}> declared in {} | Skipping...", sourceKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() -> "config: [" + PRESET_FOLDER_NAME + "enchants.toml]"));
       return;
     }
     if (!ForgeRegistries.ITEMS.tags().isKnownTagName(ItemTags.create(new ResourceLocation(tagId)))) {
-      addConfigIssue(INFO, (byte) 2, "Not an existing Item Tag: <{}> declared in {} | Skipping...", configKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() -> "config: [" + PRESET_FOLDER_NAME + "enchants.toml]"));
+      addConfigIssue(INFO, (byte) 2, "Not an existing Item Tag: <{}> declared in {} | Skipping...", sourceKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() -> "config: [" + PRESET_FOLDER_NAME + "enchants.toml]"));
       return;
     }
     ForgeRegistries.ITEMS.tags().getTag(ItemTags.create(new ResourceLocation(tagId))).forEach(item ->
@@ -263,27 +269,31 @@ public class EnchantsConfig {
 
   private static @NotNull OpposingSets<String> getOpposingSetsFromList(String configKey, List<String> enchants) {
     OpposingSets<String> enchantments = new OpposingSets<>();
-    for (String enchant : enchants) {
-      if (enchant.startsWith("-")) {
-        enchant = enchant.substring(1);
+    for (String enchantKey : enchants) {
+      if (enchantKey.startsWith("-")) {
+        String enchant = enchantKey.substring(1);
         if (enchant.startsWith("@")) {
-          addEnchantmentsFromCollection(enchant, enchantments, true);
-        } else if (isValidEnchant(enchant, Optional.empty(), "for: \"" + configKey + "\""))
+          addEnchantmentsFromCollection(enchant, enchantKey, enchantments, true);
+        } else if (isValidEnchant(enchant, enchantKey, Optional.empty(), "for: \"" + configKey + "\""))
           enchantments.addNegative(enchant);
-      } else if (enchant.startsWith("@")) {
-        addEnchantmentsFromCollection(enchant, enchantments, false);
-      } else if (isValidEnchant(enchant, Optional.empty(), configKey)) {
-        enchantments.addPositive(enchant);
+      } else if (enchantKey.startsWith("@")) {
+        addEnchantmentsFromCollection(enchantKey, enchantKey, enchantments, false);
+      } else if (isValidEnchant(enchantKey, enchantKey, Optional.empty(), configKey)) {
+        enchantments.addPositive(enchantKey);
       }
     }
     return enchantments;
   }
 
   private static void addEnchantmentsFromCollection(String configKey, OpposingSets<String> enchantments, boolean invert) {
+    addEnchantmentsFromCollection(configKey, configKey, enchantments, invert);
+  }
+
+  private static void addEnchantmentsFromCollection(String configKey, String sourceKey, OpposingSets<String> enchantments, boolean invert) {
     String collectionName = configKey.substring(1);
     List<String> collection = CollectionsConfig.ENCHANTS_MAP.get(collectionName);
     if (collection == null) {
-      addConfigIssue(WARN, (byte) 4, "Config [{}] declared item collection <{}> which does not exist, check for typos! | Skipping Collection...", PRESET_FOLDER_NAME + "enchants.toml", configKey);
+      addConfigIssue(WARN, (byte) 4, "Config [{}] declared item collection <{}> which does not exist, check for typos! | Skipping Collection...", PRESET_FOLDER_NAME + "enchants.toml", sourceKey);
       return;
     }
     collection.forEach((enchant) -> {
@@ -295,16 +305,21 @@ public class EnchantsConfig {
 
   @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
   private static boolean isValidEnchant(String enchant, Optional<String> collectionName, String key) {
+    return isValidEnchant(enchant, enchant, collectionName, key);
+  }
+
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  private static boolean isValidEnchant(String enchant, String sourceKey, Optional<String> collectionName, String key) {
     if (!ResourceLocation.isValidResourceLocation(enchant)) {
-      addConfigIssue(INFO, (byte) 2, "Not a valid Enchant ResourceLocation: <{}> declared in {} | Skipping...", enchant, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() -> "config: [" + PRESET_FOLDER_NAME + "tools.toml]"));
+      addConfigIssue(INFO, (byte) 2, "Not a valid Enchant ResourceLocation: <{}> declared in {} | Skipping Enchantment...", sourceKey, collectionName.map(s -> "collection: [" + s + "]").orElseGet(() -> "config: [" + PRESET_FOLDER_NAME + "enchants.toml]"));
       return false;
     }
     if (!ModList.get().isLoaded(enchant.split(":")[0])) {
-      addConfigIssue(INFO, (byte) 2, "{} declared enchantment: <{}>{}, but mod '{{}}' is not loaded | Skipping Item...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() -> "Config: [" + PRESET_FOLDER_NAME + "enchants.toml]"), enchant, key, enchant.split(":")[0]);
+      addConfigIssue(INFO, (byte) 2, "{} declared enchantment: <{}>{}, but mod '{{}}' is not loaded | Skipping Enchantment...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() -> "Config: [" + PRESET_FOLDER_NAME + "enchants.toml]"), sourceKey, key, enchant.split(":")[0]);
       return false;
     }
     if (!ForgeRegistries.ENCHANTMENTS.containsKey(new ResourceLocation(enchant))) {
-      addConfigIssue(INFO, (byte) 2, "{} declared non-existent enchantment: <{}>{}, check for typos! | Skipping Item...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() -> "Config: [" + PRESET_FOLDER_NAME + "tools.toml]"), enchant, key);
+      addConfigIssue(INFO, (byte) 2, "{} declared non-existent enchantment: <{}>{}, check for typos! | Skipping Enchantment...", collectionName.map(s -> "Collection: [" + s + "]").orElseGet(() -> "Config: [" + PRESET_FOLDER_NAME + "enchants.toml]"), sourceKey, key);
       return false;
     }
     return true;

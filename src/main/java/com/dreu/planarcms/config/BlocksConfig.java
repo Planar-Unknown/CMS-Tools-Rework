@@ -202,7 +202,7 @@ public class BlocksConfig {
         } else if (sub.startsWith("$")) {
           addBlocksFromFamily(sub, Optional.of(collectionName), negatives);
         } else if (sub.endsWith(":*")) {
-          addBlocksFromMod(member, negatives);
+          addBlocksFromMod(sub, negatives);
         } else if (isValidBlock(sub, Optional.of(collectionName))) {
           negatives.add(sub);
         }
@@ -451,7 +451,7 @@ public class BlocksConfig {
               ? left
               : right
             : left
-          : Optional.empty();
+          : right;
     }
 
     public void write(FriendlyByteBuf buf) {

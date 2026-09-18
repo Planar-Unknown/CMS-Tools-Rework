@@ -95,6 +95,10 @@ public class CollectionsConfig {
   public static final Map<String, List<String>> ENCHANTS_MAP = new HashMap<>();
 
   public static void parseAndPopulate() {
+    BLOCKS_MAP.clear();
+    ITEMS_MAP.clear();
+    ENCHANTS_MAP.clear();
+
     if (new File(ENCHANT_COLLECTIONS_FOLDER).mkdirs()) {
       try (FileWriter fileWriter = new FileWriter(ENCHANT_COLLECTIONS_FOLDER + "/combat.txt")) {
         fileWriter.write(COMBAT_EXAMPLE_TEMPLATE);
@@ -109,6 +113,8 @@ public class CollectionsConfig {
       } catch (Exception e) {
         LOGGER.error(e.getMessage());
       }
+    } else {
+      populateMapFromFilesRecursively(ENCHANT_COLLECTIONS_FOLDER, ENCHANTS_MAP, ENCHANT_COLLECTIONS_FOLDER.length() + 1);
     }
     if (new File(ITEM_COLLECTIONS_FOLDER).mkdirs()) {
       try (FileWriter fileWriter = new FileWriter(ITEM_COLLECTIONS_FOLDER + "/golden_tools.txt")) {
@@ -123,6 +129,8 @@ public class CollectionsConfig {
       } catch (Exception e) {
         LOGGER.error(e.getMessage());
       }
+    } else {
+      populateMapFromFilesRecursively(ITEM_COLLECTIONS_FOLDER, ITEMS_MAP, ITEM_COLLECTIONS_FOLDER.length() + 1);
     }
     if (new File(BLOCK_COLLECTIONS_FOLDER).mkdirs()) {
       //noinspection ResultOfMethodCallIgnored
@@ -171,8 +179,6 @@ public class CollectionsConfig {
         LOGGER.error(e.getMessage());
       }
     } else {
-      populateMapFromFilesRecursively(ENCHANT_COLLECTIONS_FOLDER, ENCHANTS_MAP, ENCHANT_COLLECTIONS_FOLDER.length() + 1);
-      populateMapFromFilesRecursively(ITEM_COLLECTIONS_FOLDER, ITEMS_MAP, ITEM_COLLECTIONS_FOLDER.length() + 1);
       populateMapFromFilesRecursively(BLOCK_COLLECTIONS_FOLDER, BLOCKS_MAP, BLOCK_COLLECTIONS_FOLDER.length() + 1);
     }
   }
