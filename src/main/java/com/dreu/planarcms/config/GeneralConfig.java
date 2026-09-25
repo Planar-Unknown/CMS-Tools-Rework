@@ -46,7 +46,9 @@ public class GeneralConfig {
             
             # To use a custom preset, create a folder in: config/planar_cms/presets/[your-preset-name]
             # Add blocks.toml, tools.toml, and enchants.toml to your preset folder.
-            # Use the "template" preset in config/planar_cms/presets/template as an example.
+            # The default "custom" preset starts as a blank slate for your own rules.
+            # The "template" folder is the tutorial: config/planar_cms/presets/template.
+            # Copy the examples you want into your own preset; template is reset on startup.
             Preset = "custom"
             """;
 

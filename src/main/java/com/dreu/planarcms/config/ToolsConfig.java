@@ -22,64 +22,26 @@ public class ToolsConfig {
   public static String getTemplateConfigString() {
     return """
     ConfigVersion = 1
-    # See Template for more information
+    # Add your own rules below. See config/planar_cms/presets/template for a tutorial.
     
+    # These names and colors do not modify items until you add rules under [Tools].
     ToolTypes = [
         "Pickaxe:FFD700",
         "Axe:8B4513",
         "Shovel:A9A9A9",
         "Hoe:32CD32",
         "Sword:DC143C",
-        "Shears",
-        "Arcane:7F00FF"
+        "Shears"
     ]
     
     [Tools]
-    "#minecraft:swords" = {Shears = 20}
-    "@golden_tools" = {Arcane = 30}
-    
-    "minecraft:wooden_pickaxe" = {Pickaxe = 20, MiningSpeed = 2}
-    "minecraft:stone_pickaxe" = {Pickaxe = 40, MiningSpeed = 4}
-    "minecraft:iron_pickaxe" = {Pickaxe = 60, MiningSpeed = 6}
-    "minecraft:golden_pickaxe" = {Pickaxe = 40, MiningSpeed = 12}
-    "minecraft:diamond_pickaxe" = {Pickaxe = 80, MiningSpeed = 8}
-    "minecraft:netherite_pickaxe" = {Pickaxe = 100, MiningSpeed = 9}
-    
-    "minecraft:wooden_shovel" = {Shovel = 20, MiningSpeed = 2}
-    "minecraft:stone_shovel" = {Shovel = 40, MiningSpeed = 4}
-    "minecraft:iron_shovel" = {Shovel = 60, MiningSpeed = 6}
-    "minecraft:golden_shovel" = {Shovel = 40, MiningSpeed = 12}
-    "minecraft:diamond_shovel" = {Shovel = 80, MiningSpeed = 8}
-    "minecraft:netherite_shovel" = {Shovel = 100, MiningSpeed = 9}
-    
-    "minecraft:wooden_hoe" = {Hoe = 20, MiningSpeed = 2}
-    "minecraft:stone_hoe" = {Hoe = 40, MiningSpeed = 4}
-    "minecraft:iron_hoe" = {Hoe = 60, MiningSpeed = 6}
-    "minecraft:golden_hoe" = {Hoe = 40, MiningSpeed = 12}
-    "minecraft:diamond_hoe" = {Hoe = 80, MiningSpeed = 8}
-    "minecraft:netherite_hoe" = {Hoe = 100, MiningSpeed = 9}
-    
-    "minecraft:wooden_axe" = {Axe = 20, MiningSpeed = 2}
-    "minecraft:stone_axe" = {Axe = 40, MiningSpeed = 4}
-    "minecraft:iron_axe" = {Axe = 60, MiningSpeed = 6}
-    "minecraft:golden_axe" = {Axe = 40, MiningSpeed = 12}
-    "minecraft:diamond_axe" = {Axe = 80, MiningSpeed = 8}
-    "minecraft:netherite_axe" = {Axe = 100, MiningSpeed = 9}
-    
-    "minecraft:wooden_sword" = {Sword = 20, MiningSpeed = 2}
-    "minecraft:stone_sword" = {Sword = 40, MiningSpeed = 4}
-    "minecraft:iron_sword" = {Sword = 60, MiningSpeed = 6}
-    "minecraft:golden_sword" = {Sword = 40, MiningSpeed = 12}
-    "minecraft:diamond_sword" = {Sword = 80, MiningSpeed = 8}
-    "minecraft:netherite_sword" = {Sword = 100, MiningSpeed = 9}
-    
-    "minecraft:shears" = {Shears = 100, MiningSpeed = 10}
     """;
   }
   public static String getCommentedTemplateConfigString() {
     return """
     ConfigVersion = 1
     # DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!
+    # Tutorial examples: copy the types and rules you want into presets/custom/tools.toml.
     # Values not included for Tools will default to the Default power.
     # Power indicates the block Resistance level a tool can overcome.
     # MiningSpeed indicates the rate at which a tool will mine blocks that it can mine.
@@ -397,17 +359,17 @@ public class ToolsConfig {
       if (power != null)
         powers.put((byte) REGISTERED_TOOL_TYPES.indexOf(property), power);
     });
-    return new Properties(powers, getOptionalInt(toolProperties, "MiningSpeed", configKey));
+    return new Properties(powers, getOptionalFloat(toolProperties, "MiningSpeed", configKey));
   }
 
   @SuppressWarnings("SameParameterValue")
-  private static Optional<Integer> getOptionalInt(Config values, String key, String parent) {
+  private static Optional<Float> getOptionalFloat(Config values, String key, String parent) {
     Object value = values.get(key);
-    if (value instanceof Number number) {
-      return Optional.of(number.intValue());
+    if (value instanceof Number number && Float.isFinite(number.floatValue())) {
+      return Optional.of(number.floatValue());
     } else if (value != null) {
       addConfigIssue(WARN, (byte) 4,
-        "Value: \"{}\" for \"{}.{}\" is an invalid type in config [{}] | Expected: 'Integer' but got: '{}' | Ignoring property...",
+        "Value: \"{}\" for \"{}.{}\" is invalid in config [{}] | Expected a finite number but got: '{}' | Ignoring property...",
         value, parent, key, PRESET_FOLDER_NAME + "tools.toml", value.getClass().getSimpleName());
     }
     return Optional.empty();
@@ -428,7 +390,7 @@ public class ToolsConfig {
   }
 
   // powers is a map of ToolTypeID to ToolPower
-  public record Properties(Map<Byte, Integer> powers, Optional<Integer> miningSpeed) {
+  public record Properties(Map<Byte, Integer> powers, Optional<Float> miningSpeed) {
 
     public static Properties merged(Properties left, Properties right) {
       return new Properties(
@@ -447,7 +409,7 @@ public class ToolsConfig {
         buf.writeInt(entry.getValue());
       }
       buf.writeBoolean(miningSpeed.isPresent());
-      miningSpeed().ifPresent(buf::writeInt);
+      miningSpeed().ifPresent(buf::writeFloat);
     }
 
     public static Properties readFromBuffer(FriendlyByteBuf buf) {
@@ -455,7 +417,7 @@ public class ToolsConfig {
       int bounds = buf.readInt();
       for (int i = 0; i < bounds; i++)
         powers.put(buf.readByte(), buf.readInt());
-      return new Properties(powers, buf.readBoolean() ? Optional.of(buf.readInt()) : Optional.empty());
+      return new Properties(powers, buf.readBoolean() ? Optional.of(buf.readFloat()) : Optional.empty());
     }
   }
 }

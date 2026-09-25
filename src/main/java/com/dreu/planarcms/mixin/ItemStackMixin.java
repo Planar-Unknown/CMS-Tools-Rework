@@ -70,6 +70,7 @@ public class ItemStackMixin {
     BlocksConfig.Properties blockProperties = getBlockProperties(blockState.getBlock());
     ToolsConfig.Properties toolProperties = getToolProperties(item);
     float miningSpeedBonus = 0;
+    boolean hasQualifiedBonus = false;
     if (blockProperties != null) {
       boolean applyMiningSpeed = false;
       if (toolProperties != null) {
@@ -81,7 +82,8 @@ public class ItemStackMixin {
             if (resistance >= 0) {
               if (powerData.getValue() >= resistance) {
                 canMine = true;
-                miningSpeedBonus = Math.max(miningSpeedBonus, toolProfile.miningSpeedBonus());
+                miningSpeedBonus = hasQualifiedBonus ? Math.max(miningSpeedBonus, toolProfile.miningSpeedBonus()) : toolProfile.miningSpeedBonus();
+                hasQualifiedBonus = true;
                 if (toolProfile.applyMiningSpeed()) {
                   applyMiningSpeed = true;
                 }
@@ -95,19 +97,22 @@ public class ItemStackMixin {
               canMine = true;
           }
         }
-        if (canMine) {
-          if (applyMiningSpeed) {
-            if (toolProperties.miningSpeed().isPresent())
-              return applyMiningSpeedBonus(toolProperties.miningSpeed().get(), miningSpeedBonus);
-          } else
-            return applyMiningSpeedBonus(1f, miningSpeedBonus);
-        } else
+        if (!canMine)
           return 0f;
+
+        // Only matching profiles can force base speed 1; any enabling profile wins.
+        if (hasQualifiedBonus && !applyMiningSpeed)
+          return applyMiningSpeedBonus(1f, miningSpeedBonus);
+
+        if (toolProperties.miningSpeed().isPresent()
+            && (applyMiningSpeed || isCorrectToolForDrops(blockState)))
+          return applyMiningSpeedBonus(toolProperties.miningSpeed().get(), miningSpeedBonus);
       } else {
-        return blockProperties.defaultResistance() == 0 ? 1f : 0f;
+        return blockProperties.defaultResistance() == 0 ? item.getDestroySpeed(itemStack, blockState) : 0f;
       }
     } else if (toolProperties != null) {
-      return isCorrectToolForDrops(blockState) ? toolProperties.miningSpeed().orElse(1) : 1.0f;
+      if (toolProperties.miningSpeed().isPresent() && isCorrectToolForDrops(blockState))
+        return applyMiningSpeedBonus(toolProperties.miningSpeed().get(), 0);
     }
     return applyMiningSpeedBonus(item.getDestroySpeed(itemStack, blockState), miningSpeedBonus);
   }
@@ -133,7 +138,8 @@ public class ItemStackMixin {
             }
           }
         }
-      } else {
+      }
+      if (blockProperties == null || blockProperties.data().isEmpty()) {
         for (Map.Entry<Byte, Integer> powerData : toolProperties.powers().entrySet()) {
           TagKey<Block> tag = TAG_KEYS_BY_TOOL_TYPE.get(Byte.toUnsignedInt(powerData.getKey()));
           if (blockState.is(tag)) {

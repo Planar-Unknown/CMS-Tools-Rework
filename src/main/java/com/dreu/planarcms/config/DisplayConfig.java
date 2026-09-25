@@ -79,7 +79,7 @@ public class DisplayConfig {
     configHasBeenPopulated = true;
   }
 
-  public static boolean isAdvancedWaila() {
+  public static boolean showAdvanceWaila() {
     return ADVANCED_WAILA || (GeneralConfig.ENABLE_ADVANCED_WAILA_KEYBIND && advancedWailaKeyActive);
   }
 

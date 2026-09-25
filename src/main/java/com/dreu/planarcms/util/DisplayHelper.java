@@ -90,7 +90,7 @@ public class DisplayHelper {
       BlocksConfig.ToolProfile profile = power == null ? profiles.baseline() : profiles.atPower(power);
       MutableComponent row = getToolRow(type, profile, block, power, status);
       rows.add(row);
-      if (power == null && isAdvancedWaila())
+      if (power == null && showAdvanceWaila())
         addPowerChangeRows(rows, profiles, block.defaultCanDrop(), ChatFormatting.YELLOW);
     }
   }
@@ -154,17 +154,17 @@ public class DisplayHelper {
         .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
         .append(Component.literal(formatResistance(toolProfile.resistance())).withStyle(getToolStatusColor(toolProfile, heldPower)));
 
-    if (isAdvancedWaila() && SHOW_HELD_TOOL_POWER && heldPower != null) {
+    if (showAdvanceWaila() && SHOW_HELD_TOOL_POWER && heldPower != null) {
       row.append(Component.literal(PROPERTY_SEPARATOR + HELD_LABEL).withStyle(ChatFormatting.GRAY))
           .append(Component.literal(String.valueOf(heldPower)).withStyle(heldPower >= toolProfile.resistance() && toolProfile.resistance() >= 0 ? ChatFormatting.GREEN : ChatFormatting.RED));
     }
 
-    if (!isAdvancedWaila() && !heldToolStatus.displaysDefault() && heldToolStatus.displayedToolType() == toolType) {
+    if (!showAdvanceWaila() && !heldToolStatus.displaysDefault() && heldToolStatus.displayedToolType() == toolType) {
       appendHeldToolStatus(row, heldToolStatus);
     }
 
-    if (isAdvancedWaila()) {
-      boolean qualified = heldPower != null && toolProfile.resistance() >= 0 && heldPower >= toolProfile.resistance();
+    if (showAdvanceWaila()) {
+      boolean qualified = heldToolStatus.canMine() && heldPower != null && toolProfile.resistance() >= 0 && heldPower >= toolProfile.resistance();
       appendProfileProperties(row, toolProfile, blockProperties.defaultCanDrop(), qualified ? ChatFormatting.GREEN : ChatFormatting.YELLOW);
     }
 
@@ -180,7 +180,8 @@ public class DisplayHelper {
 
     if (SHOW_MINING_SPEED) {
       if (appended) row.append(Component.literal(PROPERTY_SEPARATOR));
-      appendMiningSpeed(row, status.applyMiningSpeed(), status.miningSpeedBonus(), false, ChatFormatting.GREEN);
+      appendMiningSpeed(row, status.applyMiningSpeed(), status.miningSpeedBonus(), false,
+          status.applyMiningSpeed() ? ChatFormatting.GREEN : ChatFormatting.RED);
       appended = true;
     }
 
@@ -191,21 +192,23 @@ public class DisplayHelper {
   }
 
   private static HeldToolStatus getHeldToolStatus(BlockState blockState, BlockGetter level, BlockPos blockPos, ItemStack heldStack, BlocksConfig.Properties blockProperties, ToolsConfig.Properties toolProperties) {
+    float actualSpeed = heldStack.getDestroySpeed(blockState);
+    boolean physicallyMineable = blockState.getDestroySpeed(level, blockPos) >= 0 && actualSpeed > 0;
     if (blockProperties == null) {
-      boolean canMine = blockState.getDestroySpeed(level, blockPos) != -1.0F;
+      boolean canMine = physicallyMineable;
       boolean hasCorrectToolForDrops = canMine && hasCorrectToolForDrops(blockState, heldStack);
-      boolean applyMiningSpeed = canMine && heldStack.getDestroySpeed(blockState) > 1.0F;
+      boolean applyMiningSpeed = canMine && actualSpeed > 1.0F;
       return new HeldToolStatus(canMine, applyMiningSpeed, hasCorrectToolForDrops, (byte) -1, true, 0);
     }
 
     boolean canMine = blockProperties.defaultResistance() == 0;
-    boolean applyMiningSpeed = false;
     boolean canDrop = blockProperties.defaultCanDrop();
     boolean toolAllowsDrops = false;
     boolean displaysDefault = true;
     byte displayedToolType = -1;
     int strongestSuccessfulPower = Integer.MIN_VALUE;
     float miningSpeedBonus = 0;
+    boolean hasQualifiedBonus = false;
 
     if (toolProperties != null) {
       for (var heldPower : toolProperties.powers().entrySet()) {
@@ -215,7 +218,8 @@ public class DisplayHelper {
           if (resistance >= 0) {
             if (heldPower.getValue() >= resistance) {
               canMine = true;
-              miningSpeedBonus = Math.max(miningSpeedBonus, toolProfile.miningSpeedBonus());
+              miningSpeedBonus = hasQualifiedBonus ? Math.max(miningSpeedBonus, toolProfile.miningSpeedBonus()) : toolProfile.miningSpeedBonus();
+              hasQualifiedBonus = true;
               if (heldPower.getValue() > strongestSuccessfulPower
                   || heldPower.getValue() == strongestSuccessfulPower
                   && Byte.toUnsignedInt(heldPower.getKey()) < Byte.toUnsignedInt(displayedToolType)) {
@@ -223,7 +227,6 @@ public class DisplayHelper {
                 displayedToolType = heldPower.getKey();
               }
               displaysDefault = false;
-              if (toolProfile.applyMiningSpeed()) applyMiningSpeed = true;
               if (toolProfile.canDrop().isPresent()) {
                 if (toolProfile.canDrop().get()) {
                   canDrop = true;
@@ -249,6 +252,10 @@ public class DisplayHelper {
       }
     }
 
+    canMine &= physicallyMineable;
+    boolean applyMiningSpeed = canMine && actualSpeed > 1.0F;
+    canDrop &= hasCorrectToolForDrops(blockState, heldStack);
+
     return new HeldToolStatus(canMine, applyMiningSpeed, canMine && canDrop, displayedToolType, displaysDefault, miningSpeedBonus);
   }
 
@@ -267,24 +274,32 @@ public class DisplayHelper {
       appended = true;
     }
 
-    if (SHOW_HARDNESS) {
-      if (appended) physicalRow.append(Component.literal(PROPERTY_SEPARATOR));
-      float hardness = blockProperties != null && blockProperties.hardness().isPresent()
-          ? blockProperties.hardness().get()
-          : blockState.getDestroySpeed(level, blockPos);
-      physicalRow.append(Component.literal("Hardness: ").withStyle(ChatFormatting.GRAY))
-          .append(Component.literal(formatFloat(hardness)).withStyle(ChatFormatting.WHITE));
-      appended = true;
-    }
-
     if (SHOW_EXPLOSION_RESISTANCE) {
       if (appended) physicalRow.append(Component.literal(PROPERTY_SEPARATOR));
       float explosionResistance = blockProperties != null && blockProperties.explosionResistance().isPresent()
           ? blockProperties.explosionResistance().get()
+          : blockProperties != null && blockProperties.defaultResistance() == -1
+              ? -1
           : blockState.getBlock().getExplosionResistance();
-      physicalRow.append(Component.literal("Blast: ").withStyle(ChatFormatting.GRAY))
-          .append(Component.literal(formatExplosionResistance(explosionResistance)).withStyle(ChatFormatting.WHITE));
+      if (explosionResistance == -1 || explosionResistance == Float.POSITIVE_INFINITY) {
+        physicalRow.append(Component.literal("Blast Immune").withStyle(ChatFormatting.RED));
+      } else {
+        physicalRow.append(Component.literal("Blast: ").withStyle(ChatFormatting.GRAY))
+            .append(Component.literal(formatFloat(explosionResistance)).withStyle(ChatFormatting.WHITE));
+      }
       appended = true;
+    }
+
+    if (SHOW_HARDNESS) {
+      float hardness = blockProperties != null && blockProperties.hardness().isPresent()
+          ? blockProperties.hardness().get()
+          : blockState.getDestroySpeed(level, blockPos);
+      if (showAdvanceWaila() || !(hardness == -1.0F && SHOW_UNMINEABLE && !heldToolStatus.canMine())) {
+        if (appended) physicalRow.append(Component.literal(PROPERTY_SEPARATOR));
+        physicalRow.append(Component.literal("Hardness: ").withStyle(ChatFormatting.GRAY))
+            .append(Component.literal(formatFloat(hardness)).withStyle(ChatFormatting.WHITE));
+        appended = true;
+      }
     }
 
     return appended ? physicalRow : null;
@@ -309,15 +324,11 @@ public class DisplayHelper {
   private static void appendMiningSpeed(MutableComponent row, boolean applyMiningSpeed, float bonus, boolean showZero, ChatFormatting enabledColor) {
     row.append(Component.literal(MINING_SPEED_LABEL).withStyle(applyMiningSpeed || bonus > 0 ? enabledColor : ChatFormatting.RED));
     if (bonus != 0 || showZero)
-      row.append(Component.literal(" +" + formatFloat(bonus)).withStyle(ChatFormatting.WHITE));
+      row.append(Component.literal((bonus < 0 ? " " : " +") + formatFloat(bonus)).withStyle(ChatFormatting.WHITE));
   }
 
   private static String formatResistance(int resistance) {
     return resistance < 0 ? "unmineable" : String.valueOf(resistance);
-  }
-
-  private static String formatExplosionResistance(float resistance) {
-    return resistance == -1 ? "unbreakable" : formatFloat(resistance);
   }
 
   private static String formatFloat(float value) {

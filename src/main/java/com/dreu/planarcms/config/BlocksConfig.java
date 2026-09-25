@@ -27,49 +27,14 @@ public class BlocksConfig {
   public static String getTemplateConfigString() {
     return """
        ConfigVersion = 1
-       # See Template for more information
-       
-       ["minecraft:packed_mud"]
-         Hardness = 1.0
-         DefaultResistance = -1
-         Shovel = {Resistance = 40, ApplyMiningSpeed = false}
-         Pickaxe = {Resistance = 20, ApplyMiningSpeed = true}
-       
-       ["minecraft:amethyst_block"]
-         DefaultResistance = -1
-         Arcane = {Resistance = 30, ApplyMiningSpeed = true}
-       
-       ["#minecraft:dirt"]
-         DefaultResistance = 0
-         Shovel = {ApplyMiningSpeed = true}
-       
-       ["minecraft:moss_block"]
-         Shovel = {ApplyMiningSpeed = false}
-         Hoe = {ApplyMiningSpeed = true}
-       
-       ["$minecraft:nether_bricks"]
-         Hardness = 3.0
-         ExplosionResistance = 7.0
-       
-       ["@example/deepslate"]
-         DefaultResistance = -1
-         Pickaxe = {Resistance = 40, ApplyMiningSpeed = true}
-       
-       ["@wood"]
-         DefaultResistance = 0
-         Axe = {ApplyMiningSpeed = true}
-       
-       ["#minecraft:wool"]
-         Shears = {Resistance = 100, ApplyMiningSpeed = true}
-       
-       ["minecraft:cobweb"]
-         Shears = {Resistance = 20, ApplyMiningSpeed = true}
+       # Create your own rules here. See config/planar_cms/presets/template for a tutorial.
        """;
   }
   public static String getCommentedTemplateConfig() {
     return """
        ConfigVersion = 1
        # DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!
+       # Tutorial examples: copy the rules you want into presets/custom/blocks.toml.
        # Collections in this file (denoted by "@") are custom groups of Blocks
        # Create your own collections at: [config/planar_cms/collections/blocks]
        # For example, the "@example/deepslate" collection can be found at [config/planar_cms/collections/blocks/example/deepslate.txt]
@@ -385,7 +350,7 @@ public class BlocksConfig {
 
       PowerProfiles inherited = right.get((byte) toolType);
       if (inherited == null)
-        inherited = PowerProfiles.constant(new ToolProfile(defaultResistance, false, Optional.empty()));
+        inherited = PowerProfiles.constant(new ToolProfile(defaultResistance, true, Optional.empty()));
       PowerProfiles profiles = parseToolProfile(parent + "." + key, property.getValue(), inherited);
       if (profiles != null) resistanceDataMap.put((byte) toolType, profiles);
     }
@@ -434,9 +399,9 @@ public class BlocksConfig {
   private static Optional<Float> getMiningSpeedBonus(Config config, String parent) {
     Object value = config.get("MiningSpeedBonus");
     if (value == null) return Optional.empty();
-    if (value instanceof Number number && number.doubleValue() >= 0 && Float.isFinite(number.floatValue()))
+    if (value instanceof Number number && Float.isFinite(number.floatValue()))
       return Optional.of(number.floatValue());
-    addConfigIssue(WARN, (byte) 4, "Invalid MiningSpeedBonus <{}> for <{}> in [{}]: expected a finite nonnegative number | Ignoring property...", value, parent, PRESET_FOLDER_NAME + "blocks.toml");
+    addConfigIssue(WARN, (byte) 4, "Invalid MiningSpeedBonus <{}> for <{}> in [{}]: expected a finite number | Ignoring property...", value, parent, PRESET_FOLDER_NAME + "blocks.toml");
     return Optional.empty();
   }
 
@@ -484,8 +449,8 @@ public class BlocksConfig {
 
   public record ToolProfile(int resistance, boolean applyMiningSpeed, Optional<Boolean> canDrop, float miningSpeedBonus) {
     public ToolProfile {
-      if (!Float.isFinite(miningSpeedBonus) || miningSpeedBonus < 0)
-        throw new IllegalArgumentException("MiningSpeedBonus must be finite and nonnegative");
+      if (!Float.isFinite(miningSpeedBonus))
+        throw new IllegalArgumentException("MiningSpeedBonus must be finite");
       if (miningSpeedBonus == 0) miningSpeedBonus = 0; // Normalize negative zero for profile coalescing.
     }
 
@@ -494,7 +459,7 @@ public class BlocksConfig {
     }
 
     public static float applyMiningSpeedBonus(float speed, float bonus) {
-      return bonus == 0 ? speed : Math.min(Float.MAX_VALUE, speed + bonus);
+      return Math.max(0f, Math.min(Float.MAX_VALUE, speed + bonus));
     }
 
     public static ToolProfile merged(ToolProfile left, ToolProfile right) {
