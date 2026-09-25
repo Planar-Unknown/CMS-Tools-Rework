@@ -22,6 +22,7 @@ public class EnchantsConfig {
   public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/enchants.toml";
   public static String getTemplateConfigString() {
     return """
+      ConfigVersion = 1
       # See Template for more information
       
       "minecraft:stick" = [
@@ -78,6 +79,7 @@ public class EnchantsConfig {
 
   public static String getCommentedTemplateConfigString() {
     return """
+      ConfigVersion = 1
       # DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!
       # Here, you can declare which enchantments can be applied to Tools, specified by Items, Tags, Collections, or Registered Tool Types.
       # Keep in mind that Unbreaking, Mending, and Sweeping edge all have explicit handling, so allowing them on an item may not do anything
@@ -92,6 +94,9 @@ public class EnchantsConfig {
       # For example the "@combat" enchant collection can be found at [config/planar_cms/collections/enchants/combat.txt]
       # Enchant Collections may only contain individual enchants
       
+      # "*" is the global fallback; more specific declarations take priority. "-" denies an enchant.
+      "*" = ["-minecraft:looting"]
+
       # example of allowing a single item to be enchanted
       "minecraft:stick" = [
           "minecraft:looting"
@@ -167,7 +172,7 @@ public class EnchantsConfig {
     ENCHANTS_BY_ITEM_ID.clear();
     Map<String, OpposingSets<String>> singleItems = new HashMap<>();
 
-    CONFIG.valueMap().forEach((configKey, configEnchants) -> {
+    ConfigUpgrades.entries(CONFIG).forEach((configKey, configEnchants) -> {
       //noinspection unchecked
       List<String> enchants = tryCast(configEnchants, List.class, configKey, "enchants.toml");
       if (enchants == null) return;

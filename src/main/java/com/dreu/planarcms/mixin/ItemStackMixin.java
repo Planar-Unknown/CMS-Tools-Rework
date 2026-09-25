@@ -20,6 +20,7 @@ import java.util.TreeMap;
 
 import static com.dreu.planarcms.PlanarCMS.TAG_KEYS_BY_TOOL_TYPE;
 import static com.dreu.planarcms.config.BlocksConfig.getBlockProperties;
+import static com.dreu.planarcms.config.BlocksConfig.ToolProfile.applyMiningSpeedBonus;
 import static com.dreu.planarcms.config.EnchantsConfig.ENCHANTS_BY_ITEM_ID;
 import static com.dreu.planarcms.config.EnchantsConfig.ENCHANTS_BY_TOOL_TYPE;
 import static com.dreu.planarcms.config.ToolsConfig.TOOLS;
@@ -68,17 +69,19 @@ public class ItemStackMixin {
   private float redirectGetDestroySpeed(Item item, ItemStack itemStack, BlockState blockState) {
     BlocksConfig.Properties blockProperties = getBlockProperties(blockState.getBlock());
     ToolsConfig.Properties toolProperties = getToolProperties(item);
+    float miningSpeedBonus = 0;
     if (blockProperties != null) {
       boolean applyMiningSpeed = false;
       if (toolProperties != null) {
         boolean canMine = blockProperties.defaultResistance() == 0; //false
         for (Map.Entry<Byte, Integer> powerData : toolProperties.powers().entrySet()) {
-          BlocksConfig.ToolProfile toolProfile = blockProperties.data().get(powerData.getKey());
+          BlocksConfig.ToolProfile toolProfile = blockProperties.profileFor(powerData.getKey(), powerData.getValue());
           if (toolProfile != null) {
             int resistance = toolProfile.resistance();
             if (resistance >= 0) {
               if (powerData.getValue() >= resistance) {
                 canMine = true;
+                miningSpeedBonus = Math.max(miningSpeedBonus, toolProfile.miningSpeedBonus());
                 if (toolProfile.applyMiningSpeed()) {
                   applyMiningSpeed = true;
                 }
@@ -95,9 +98,9 @@ public class ItemStackMixin {
         if (canMine) {
           if (applyMiningSpeed) {
             if (toolProperties.miningSpeed().isPresent())
-              return Float.valueOf(toolProperties.miningSpeed().get());
+              return applyMiningSpeedBonus(toolProperties.miningSpeed().get(), miningSpeedBonus);
           } else
-            return 1f;
+            return applyMiningSpeedBonus(1f, miningSpeedBonus);
         } else
           return 0f;
       } else {
@@ -106,7 +109,7 @@ public class ItemStackMixin {
     } else if (toolProperties != null) {
       return isCorrectToolForDrops(blockState) ? toolProperties.miningSpeed().orElse(1) : 1.0f;
     }
-    return item.getDestroySpeed(itemStack, blockState);
+    return applyMiningSpeedBonus(item.getDestroySpeed(itemStack, blockState), miningSpeedBonus);
   }
 
   @Redirect(
@@ -123,7 +126,7 @@ public class ItemStackMixin {
     if (toolProperties != null) {
       if (blockProperties != null) {
         for (Map.Entry<Byte, Integer> powerData : toolProperties.powers().entrySet()) {
-          BlocksConfig.ToolProfile toolProfile = blockProperties.data().get(powerData.getKey());
+          BlocksConfig.ToolProfile toolProfile = blockProperties.profileFor(powerData.getKey(), powerData.getValue());
           if (toolProfile != null) {
             if (toolProfile.resistance() >= 0 && powerData.getValue() >= toolProfile.resistance()) {
               return true;
@@ -132,7 +135,7 @@ public class ItemStackMixin {
         }
       } else {
         for (Map.Entry<Byte, Integer> powerData : toolProperties.powers().entrySet()) {
-          TagKey<Block> tag = TAG_KEYS_BY_TOOL_TYPE.get(powerData.getKey());
+          TagKey<Block> tag = TAG_KEYS_BY_TOOL_TYPE.get(Byte.toUnsignedInt(powerData.getKey()));
           if (blockState.is(tag)) {
             var tier = getTierIfPresent(powerData.getKey(), toolProperties);
             if (tier != null && TierSortingRegistry.isCorrectTierForDrops(tier, blockState)) {

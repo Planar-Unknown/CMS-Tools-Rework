@@ -23,3 +23,8 @@ run
 
 # Files from Forge MDK
 forge*changelog.txt
+
+# Local documentation and AI prompt notes (all directories)
+*.[mM][dD]
+*.[mM][aA][rR][kK][dD][oO][wW][nN]
+[rR][eE][aA][dD][mM][eE]*

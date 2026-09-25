@@ -26,6 +26,7 @@ public class BlocksConfig {
   public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/blocks.toml";
   public static String getTemplateConfigString() {
     return """
+       ConfigVersion = 1
        # See Template for more information
        
        ["minecraft:packed_mud"]
@@ -67,6 +68,7 @@ public class BlocksConfig {
   }
   public static String getCommentedTemplateConfig() {
     return """
+       ConfigVersion = 1
        # DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!
        # Collections in this file (denoted by "@") are custom groups of Blocks
        # Create your own collections at: [config/planar_cms/collections/blocks]
@@ -90,6 +92,16 @@ public class BlocksConfig {
          Shovel = {Resistance = 40, ApplyMiningSpeed = false}    # Tools with ShovelPower ≥ 40 can mine this block but their MiningSpeed is NOT applied.
          Pickaxe = {Resistance = 20, ApplyMiningSpeed = true}    # Tools with PickaxePower ≥ 20 can mine this block and their MiningSpeed IS applied.
        
+       # Power entries inherit omitted values; Resistance must still be met.
+       # Bonuses add to mining speed (highest eligible bonus wins); 0 clears the bonus.
+       ["minecraft:calcite"]
+         DefaultResistance = -1
+         Pickaxe = [
+           {Resistance = 20, ApplyMiningSpeed = false, CanDrop = false},
+           {Power = 40, ApplyMiningSpeed = true, CanDrop = true, MiningSpeedBonus = 2.5},
+           {Power = 80, MiningSpeedBonus = 0}
+         ]
+
        ["minecraft:amethyst_block"]                              # A simple example of making Amethyst only mineable with Golden Tools
          DefaultResistance = -1                                  # Not mineable by default
          Arcane = {Resistance = 30, ApplyMiningSpeed = true}     # Tools with Arcane power 30 or above can mine it
@@ -139,10 +151,12 @@ public class BlocksConfig {
   public static void populateBlocks() {
     BLOCKS.clear();
     Map<String, Map.Entry<Config, Properties>> singleBlocks = new HashMap<>();
-
-    for (Map.Entry<String, Object> entry : CONFIG.valueMap().entrySet()) {
+    for (Map.Entry<String, Object> entry : ConfigUpgrades.entries(CONFIG).entrySet()) {
       String configKey = entry.getKey();
-      Config propertiesConfig = (Config) entry.getValue();
+      if (!(entry.getValue() instanceof Config propertiesConfig)) {
+        addConfigIssue(ERROR, (byte) 6, "Expected a block table for <{}> in [{}] | Unsupported metadata or config format; skipping entry...", configKey, PRESET_FOLDER_NAME + "blocks.toml");
+        continue;
+      }
       Properties properties = assembleProperties(configKey, propertiesConfig);
       if (configKey.startsWith("#")) {
         handleTag(configKey, properties);
@@ -308,7 +322,7 @@ public class BlocksConfig {
     BLOCKS.merge(blockId, properties, (existing, singleBlock) -> {
       int defaultResistance = getOrElse(blockPropertiesConfig, blockId, "DefaultResistance", existing.defaultResistance(), Integer.class, "blocks.toml", true);
       boolean defaultCanDrop = getOrElse(blockPropertiesConfig, blockId, "DefaultCanDrop", existing.defaultCanDrop(), Boolean.class, "blocks.toml", true);
-      Map<Byte, ToolProfile> resistanceDataMap = getResistanceDataMapOverride(blockPropertiesConfig, defaultResistance, existing.data(), blockId);
+      Map<Byte, PowerProfiles> resistanceDataMap = getResistanceDataMapOverride(blockPropertiesConfig, defaultResistance, existing.data(), blockId);
 
       existing.data().forEach(resistanceDataMap::putIfAbsent);
 
@@ -338,51 +352,97 @@ public class BlocksConfig {
     return true;
   }
 
-  private static Map<Byte, ToolProfile> getResistanceDataMap(Config config, int defaultResistance) {
-    Map<Byte, ToolProfile> map = new HashMap<>();
+  private static Map<Byte, PowerProfiles> getResistanceDataMap(Config config, int defaultResistance) {
+    Map<Byte, PowerProfiles> map = new HashMap<>();
     for (Map.Entry<String, Object> entry : config.valueMap().entrySet()) {
       String key = entry.getKey();
       if (isStandardKey(key)) continue;
 
-      byte type = (byte) REGISTERED_TOOL_TYPES.indexOf(key);
+      int type = REGISTERED_TOOL_TYPES.indexOf(key);
       if (type == -1) {
         addConfigIssue(ERROR, (byte) 6, "\"{}\" in config file [{}] is NOT a registered tool type!", key, PRESET_FOLDER_NAME + "blocks.toml");
         continue;
       }
 
-      Config toolConfig = (Config) entry.getValue();
-      map.put(type, new ToolProfile(
-        getOrElse(toolConfig, key, "Resistance", defaultResistance, Integer.class, "blocks.toml", false),
-        getOrElse(toolConfig, key, "ApplyMiningSpeed", true, Boolean.class, "blocks.toml", false),
-        Optional.ofNullable(getOrElse(toolConfig, key, "CanDrop", null, Boolean.class, "blocks.toml", false))
-      ));
+      PowerProfiles profiles = parseToolProfile(key, entry.getValue(),
+          PowerProfiles.constant(new ToolProfile(defaultResistance, true, Optional.empty())));
+      if (profiles != null) map.put((byte) type, profiles);
     }
     return map;
   }
 
-  private static Map<Byte, ToolProfile> getResistanceDataMapOverride(Config block, int defaultResistance, Map<Byte, ToolProfile> right, String parent) {
-    Map<Byte, ToolProfile> resistanceDataMap = new HashMap<>();
+  private static Map<Byte, PowerProfiles> getResistanceDataMapOverride(Config block, int defaultResistance, Map<Byte, PowerProfiles> right, String parent) {
+    Map<Byte, PowerProfiles> resistanceDataMap = new HashMap<>();
     for (Map.Entry<String, Object> property : block.valueMap().entrySet()) {
       String key = property.getKey();
       if (isStandardKey(key)) continue;
 
-      byte toolType = (byte) REGISTERED_TOOL_TYPES.indexOf(key);
+      int toolType = REGISTERED_TOOL_TYPES.indexOf(key);
       if (toolType == -1) {
         addConfigIssue(ERROR, (byte) 6, "\"{}\" used in config file [{}] for <{}> is NOT a registered tool type!", key, PRESET_FOLDER_NAME + "blocks.toml", parent);
         continue;
       }
 
-      boolean hasToolProfile = right.containsKey(toolType);
-      resistanceDataMap.put(
-        toolType,
-        new ToolProfile(
-          getOrElse(((Config) property.getValue()), key, "Resistance", hasToolProfile ? right.get(toolType).resistance() : defaultResistance, Integer.class, "blocks.toml", false),
-          getOrElse(((Config) property.getValue()), key, "ApplyMiningSpeed", hasToolProfile && right.get(toolType).applyMiningSpeed(), Boolean.class, "blocks.toml", false),
-          Optional.ofNullable(getOrElse(((Config) property.getValue()), key, "CanDrop", hasToolProfile ? right.get(toolType).canDrop().orElse(null) : null, Boolean.class, "blocks.toml", false))
-        )
-      );
+      PowerProfiles inherited = right.get((byte) toolType);
+      if (inherited == null)
+        inherited = PowerProfiles.constant(new ToolProfile(defaultResistance, false, Optional.empty()));
+      PowerProfiles profiles = parseToolProfile(parent + "." + key, property.getValue(), inherited);
+      if (profiles != null) resistanceDataMap.put((byte) toolType, profiles);
     }
     return resistanceDataMap;
+  }
+
+  static PowerProfiles parseToolProfile(String parent, Object value, PowerProfiles inherited) {
+    if (value instanceof Config config)
+      return PowerProfiles.overridden(inherited, parseProfilePatch(parent, config), Map.of());
+    if (!(value instanceof List<?> entries) || entries.isEmpty()) {
+      return invalidToolProfile(parent, "Expected a tool table or a nonempty array of property tables");
+    }
+
+    PowerProfiles.Patch baseline = PowerProfiles.Patch.EMPTY;
+    Map<Integer, PowerProfiles.Patch> changes = new TreeMap<>();
+    for (int i = 0; i < entries.size(); i++) {
+      if (!(entries.get(i) instanceof Config entry))
+        return invalidToolProfile(parent, "Each array entry must be a property table");
+      for (String key : entry.valueMap().keySet()) {
+        if (!key.equals("Power") && !key.equals("Resistance") && !key.equals("ApplyMiningSpeed") && !key.equals("CanDrop") && !key.equals("MiningSpeedBonus"))
+          return invalidToolProfile(parent, "Unsupported property: " + key);
+      }
+      if (entry.get("Power") == null) {
+        if (i != 0) return invalidToolProfile(parent, "Only the first entry may omit Power (the baseline)");
+        baseline = parseProfilePatch(parent, entry);
+        continue;
+      }
+      Integer power = getOrElse(entry, parent, "Power", null, Integer.class, "blocks.toml", false);
+      if (power == null || power < 0)
+        return invalidToolProfile(parent, "Power must be a nonnegative integer");
+      if (changes.putIfAbsent(power, parseProfilePatch(parent, entry)) != null)
+        return invalidToolProfile(parent, "Duplicate Power: " + power);
+    }
+    return PowerProfiles.overridden(inherited, baseline, changes);
+  }
+
+  private static PowerProfiles.Patch parseProfilePatch(String parent, Config config) {
+    return new PowerProfiles.Patch(
+        Optional.ofNullable(getOrElse(config, parent, "Resistance", null, Integer.class, "blocks.toml", false)),
+        Optional.ofNullable(getOrElse(config, parent, "ApplyMiningSpeed", null, Boolean.class, "blocks.toml", false)),
+        Optional.ofNullable(getOrElse(config, parent, "CanDrop", null, Boolean.class, "blocks.toml", false)),
+        getMiningSpeedBonus(config, parent)
+    );
+  }
+
+  private static Optional<Float> getMiningSpeedBonus(Config config, String parent) {
+    Object value = config.get("MiningSpeedBonus");
+    if (value == null) return Optional.empty();
+    if (value instanceof Number number && number.doubleValue() >= 0 && Float.isFinite(number.floatValue()))
+      return Optional.of(number.floatValue());
+    addConfigIssue(WARN, (byte) 4, "Invalid MiningSpeedBonus <{}> for <{}> in [{}]: expected a finite nonnegative number | Ignoring property...", value, parent, PRESET_FOLDER_NAME + "blocks.toml");
+    return Optional.empty();
+  }
+
+  private static PowerProfiles invalidToolProfile(String parent, String reason) {
+    addConfigIssue(ERROR, (byte) 6, "Invalid tool properties for <{}> in [{}]: {} | Skipping profile...", parent, PRESET_FOLDER_NAME + "blocks.toml", reason);
+    return null;
   }
 
   private static void addBlock(String blockId, Properties properties) {
@@ -422,9 +482,37 @@ public class BlocksConfig {
   }
   //Todo: Make Resistance an optional
 
-  public record ToolProfile(int resistance, boolean applyMiningSpeed, Optional<Boolean> canDrop) {}
-  // powers is a map of ToolTypeID to ToolProfile(resistance, applyMiningSpeed, canDrop)
-  public record Properties(Optional<Float> hardness, Optional<Float> explosionResistance, int defaultResistance, boolean defaultCanDrop, Map<Byte, ToolProfile> data) {
+  public record ToolProfile(int resistance, boolean applyMiningSpeed, Optional<Boolean> canDrop, float miningSpeedBonus) {
+    public ToolProfile {
+      if (!Float.isFinite(miningSpeedBonus) || miningSpeedBonus < 0)
+        throw new IllegalArgumentException("MiningSpeedBonus must be finite and nonnegative");
+      if (miningSpeedBonus == 0) miningSpeedBonus = 0; // Normalize negative zero for profile coalescing.
+    }
+
+    public ToolProfile(int resistance, boolean applyMiningSpeed, Optional<Boolean> canDrop) {
+      this(resistance, applyMiningSpeed, canDrop, 0);
+    }
+
+    public static float applyMiningSpeedBonus(float speed, float bonus) {
+      return bonus == 0 ? speed : Math.min(Float.MAX_VALUE, speed + bonus);
+    }
+
+    public static ToolProfile merged(ToolProfile left, ToolProfile right) {
+      return new ToolProfile(
+          Math.min(left.resistance(), right.resistance()),
+          left.applyMiningSpeed() || right.applyMiningSpeed(),
+          left.canDrop.isPresent() ? right.canDrop.isPresent() ? Optional.of(left.canDrop.get() && right.canDrop.get()) : left.canDrop : right.canDrop,
+          Math.max(left.miningSpeedBonus(), right.miningSpeedBonus())
+      );
+    }
+  }
+  // Each tool type selects a precompiled profile by held power.
+  public record Properties(Optional<Float> hardness, Optional<Float> explosionResistance, int defaultResistance, boolean defaultCanDrop, Map<Byte, PowerProfiles> data) {
+
+    public ToolProfile profileFor(byte type, int power) {
+      PowerProfiles profiles = data.get(type);
+      return profiles == null ? null : profiles.atPower(power);
+    }
 
     public static Properties merged(Properties left, Properties right) {
       return new Properties(
@@ -434,12 +522,7 @@ public class BlocksConfig {
               ? Math.max(left.defaultResistance, right.defaultResistance)
               : Math.min(left.defaultResistance(), right.defaultResistance()),
           left.defaultCanDrop && right.defaultCanDrop,
-          Helpers.mergeMaps(left.data(), right.data(),
-              (rightData, leftData) -> new ToolProfile(
-                Math.min(leftData.resistance(), rightData.resistance()),
-                leftData.applyMiningSpeed() || rightData.applyMiningSpeed(),
-                leftData.canDrop.isPresent() ? rightData.canDrop.isPresent() ? Optional.of(leftData.canDrop.get() && rightData.canDrop.get()) : leftData.canDrop : rightData.canDrop
-          ))
+          Helpers.mergeMaps(left.data(), right.data(), PowerProfiles::merged)
       );
     }
 
@@ -465,13 +548,9 @@ public class BlocksConfig {
       buf.writeBoolean(defaultCanDrop);
       buf.writeInt(data.size());
 
-      for (Map.Entry<Byte, ToolProfile> entry : data.entrySet()) {
+      for (Map.Entry<Byte, PowerProfiles> entry : data.entrySet()) {
         buf.writeByte(entry.getKey());
-        buf.writeInt(entry.getValue().resistance());
-        buf.writeBoolean(entry.getValue().applyMiningSpeed());
-        Optional<Boolean> canDrop = entry.getValue().canDrop();
-        buf.writeBoolean(canDrop.isPresent());
-        if (canDrop.isPresent()) buf.writeBoolean(canDrop.get());
+        entry.getValue().write(buf);
       }
     }
 
@@ -482,10 +561,13 @@ public class BlocksConfig {
       boolean defaultCanDrop = buf.readBoolean();
 
       int size = buf.readInt();
-      Map<Byte, ToolProfile> map = new HashMap<>();
+      if (size < 0 || size > 256 || size > buf.readableBytes() / 15)
+        throw new IllegalArgumentException("Invalid tool profile count");
+      Map<Byte, PowerProfiles> map = new HashMap<>();
       for (int i = 0; i < size; i++) {
         byte key = buf.readByte();
-        map.put(key, new ToolProfile(buf.readInt(), buf.readBoolean(), buf.readBoolean() ? Optional.of(buf.readBoolean()) : Optional.empty()));
+        if (map.put(key, PowerProfiles.read(buf)) != null)
+          throw new IllegalArgumentException("Duplicate tool profile");
       }
       return new Properties(hardness, explosionResistance, defaultResistance, defaultCanDrop, map);
     }

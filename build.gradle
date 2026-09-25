@@ -34,17 +34,10 @@ minecraft {
             }
         }
 
-        client {
-            property 'forge.enabledGameTestNamespaces', mod_id
-        }
+        client {}
 
         server {
-            property 'forge.enabledGameTestNamespaces', mod_id
             args '--nogui'
-        }
-
-        gameTestServer {
-            property 'forge.enabledGameTestNamespaces', mod_id
         }
 
         data {
@@ -71,6 +64,7 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     compileOnly fg.deobf("curse.maven:jade-324717:${jade_file_id}")
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    testImplementation 'junit:junit:4.13.2'
 }
 
 mixin {
@@ -128,4 +122,14 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
+
+// Normal builds package the mod; verification must be requested explicitly.
+tasks.named('build') {
+    setDependsOn(['assemble'])
+}
+
+tasks.named('test') {
+    workingDir = layout.buildDirectory.dir('test-run').get().asFile
+    doFirst { workingDir.mkdirs() }
 }

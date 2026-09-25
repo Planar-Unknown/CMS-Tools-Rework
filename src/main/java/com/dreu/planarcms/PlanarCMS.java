@@ -23,29 +23,21 @@ import static com.dreu.planarcms.util.Helpers.addConfigIssue;
 
 @Mod(PlanarCMS.MODID)
 public class PlanarCMS {
-    //Todo: Overhaul core system, make every property predicated by Power
-    //Todo: Add /planarConfigReload command to reload configs without closing the world
-    //Todo: Fix bugs with Blocks and Tooltypes not being handled correctly
 
     //ChromaMoon will pay MAX of $50 for:
     //Todo: Mixin to ItemStack#getAttributeModifiers to allow config of tool attack damage
     //Todo: Mixin to ItemStack#getMaxDamage to allow config of tool durability
     //Todo: Allow config of tool attack speed
-    //Todo: Add "MiningSpeedBonus" property to toolProperties declared for a Block
     //Todo: Make Hardness able to be predicated by tool type
 
-    //Todo: Rigorously test new collection handling (with -'s) and "modid:*" support
-    //Todo: Scrub for forEach() calls that could be replaced with enhanced for's
     //Todo: Implement ability to force certain tools to be required
-    //Todo: Add defaultCanDrop to blocks and CanDrop to each tool type of blocks
     //Todo: Nbt system for upgrading tools
     //Todo: Nbt for players too
     //Todo: Config for modifying projectile properties
 
-    //Todo: optimize SyncConfigPacket by creating Map<Properties, List<String>> first,
-    //      then reversing it to reduce instances of Properties
+    //Todo: consider: optimize SyncConfigPacket by creating Map<Properties, List<String>> first,
+    //      then reversing it to reduce instances of Properties (only necessary for extremely large packets. perhaps ignore for now)
     //Todo: JEI compat
-    //Todo: Jade compat
     //Eventually make blocks store their destroy progress on config option
 
     public static final String MODID = "planar_cms";

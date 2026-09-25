@@ -49,7 +49,7 @@ public class PlanarConfigScreen extends Screen {
   private final List<ScrollableWidget> scrollableWidgets = new ArrayList<>();
 
   private ScreenValues savedValues;
-  private Button reloadButton;
+  private Button cancelButton;
   private Button doneButton;
   private EditBox presetBox;
   private Component statusMessage;
@@ -60,6 +60,8 @@ public class PlanarConfigScreen extends Screen {
 
   private Helpers.WailaPosition defaultWailaPosition;
   private String preset;
+  private boolean enableAdvancedWailaKeybind;
+  private GeneralConfig.AdvancedWailaKeyMode advancedWailaKeyMode;
 
   private boolean showUnconfiguredBlocks;
   private boolean showBlockName;
@@ -99,6 +101,11 @@ public class PlanarConfigScreen extends Screen {
       preset = value;
       updateReloadButton();
     });
+    y = addBooleanRow("enableAdvancedWailaKeybind", left, controlX, y, enableAdvancedWailaKeybind, value -> {
+      enableAdvancedWailaKeybind = value;
+      updateReloadButton();
+    });
+    y = addAdvancedWailaKeyModeRow(left, controlX, y);
 
     y = addSection(Component.translatable(OPTION_TRANSLATION_PREFIX + "display"), left, y + 2);
     y = addBooleanRow("showUnconfiguredBlocks", left, controlX, y, showUnconfiguredBlocks, value -> {
@@ -154,10 +161,10 @@ public class PlanarConfigScreen extends Screen {
     updateMaxScrollOffset();
 
     int buttonY = getFooterTop() + FOOTER_BUTTON_Y;
-    reloadButton = addRenderableWidget(Button.builder(Component.translatable(OPTION_TRANSLATION_PREFIX + "reload"), button -> saveAndReload())
+    cancelButton = addRenderableWidget(Button.builder(Component.translatable(OPTION_TRANSLATION_PREFIX + "cancel"), button -> onClose())
         .bounds(width / 2 - 155, buttonY, 150, 20)
         .build());
-    doneButton = addRenderableWidget(Button.builder(Component.translatable("gui.done"), button -> onClose())
+    doneButton = addRenderableWidget(Button.builder(Component.translatable("gui.done"), button -> confirmChanges())
         .bounds(width / 2 + 5, buttonY, 150, 20)
         .build());
 
@@ -220,7 +227,7 @@ public class PlanarConfigScreen extends Screen {
     if (message != null) {
       guiGraphics.drawCenteredString(font, message, width / 2, footerTop + FOOTER_STATUS_Y, statusColor);
     }
-    if (reloadButton != null) reloadButton.render(guiGraphics, mouseX, mouseY, partialTick);
+    if (cancelButton != null) cancelButton.render(guiGraphics, mouseX, mouseY, partialTick);
     if (doneButton != null) doneButton.render(guiGraphics, mouseX, mouseY, partialTick);
   }
 
@@ -256,6 +263,19 @@ public class PlanarConfigScreen extends Screen {
         .displayOnlyValue()
         .create(controlX, y, CONTROL_WIDTH, CONTROL_HEIGHT, label, (button, value) -> {
           defaultWailaPosition = value;
+          updateReloadButton();
+        }), y);
+    return y + ROW_HEIGHT;
+  }
+
+  private int addAdvancedWailaKeyModeRow(int left, int controlX, int y) {
+    Component label = addOptionRow("advancedWailaKeyMode", left, controlX, y);
+    addScrollableWidget(CycleButton.<GeneralConfig.AdvancedWailaKeyMode>builder(mode -> Component.translatable(OPTION_TRANSLATION_PREFIX + "keyMode." + mode.toString().toLowerCase()))
+        .withValues(GeneralConfig.AdvancedWailaKeyMode.values())
+        .withInitialValue(advancedWailaKeyMode)
+        .displayOnlyValue()
+        .create(controlX, y, CONTROL_WIDTH, CONTROL_HEIGHT, label, (button, value) -> {
+          advancedWailaKeyMode = value;
           updateReloadButton();
         }), y);
     return y + ROW_HEIGHT;
@@ -321,15 +341,52 @@ public class PlanarConfigScreen extends Screen {
     }
   }
 
-  private void saveAndReload() {
-    if (preset.trim().isEmpty()) {
+  private void confirmChanges() {
+    if (saveChanges()) onClose();
+  }
+
+  private boolean saveChanges() {
+    if (!isValid()) {
       updateReloadButton();
-      return;
+      return false;
     }
 
     preset = preset.trim();
-    GeneralConfig.save(defaultWailaPosition, preset);
-    DisplayConfig.save(
+    boolean generalChanged = hasGeneralChanges();
+    boolean displayChanged = hasDisplayChanges();
+    boolean reload = needsReload();
+    if (generalChanged && !GeneralConfig.save(defaultWailaPosition, preset, enableAdvancedWailaKeybind, advancedWailaKeyMode)) return saveFailed();
+    if (displayChanged && !saveDisplayConfig()) return saveFailed();
+
+    if (reload) {
+      Helpers.parseAndPopulateConfig();
+      DisplayConfig.parse();
+      DisplayConfig.populate();
+    } else {
+      if (generalChanged) {
+        GeneralConfig.parse();
+        GeneralConfig.populate();
+      }
+      if (displayChanged) {
+        DisplayConfig.parse();
+        DisplayConfig.populate();
+      }
+    }
+    savedValues = getValues();
+    statusMessage = Component.translatable(OPTION_TRANSLATION_PREFIX + (reload ? "reloaded" : "saved"));
+    statusColor = SUCCESS_COLOR;
+    updateReloadButton();
+    return true;
+  }
+
+  private boolean saveFailed() {
+    statusMessage = Component.translatable(OPTION_TRANSLATION_PREFIX + "saveFailed");
+    statusColor = ERROR_COLOR;
+    return false;
+  }
+
+  private boolean saveDisplayConfig() {
+    return DisplayConfig.save(
         showUnconfiguredBlocks,
         showBlockName,
         showModName,
@@ -343,21 +400,15 @@ public class PlanarConfigScreen extends Screen {
         showMiningSpeed,
         showUnmineable
     );
-
-    Helpers.parseAndPopulateConfig();
-    DisplayConfig.parse();
-    DisplayConfig.populate();
-    savedValues = getValues();
-    statusMessage = Component.translatable(OPTION_TRANSLATION_PREFIX + "reloaded");
-    statusColor = SUCCESS_COLOR;
-    updateReloadButton();
   }
 
   private void updateReloadButton() {
-    if (reloadButton != null) {
-      reloadButton.active = hasChanges() && isValid();
+    if (doneButton != null) {
+      doneButton.setMessage(needsReload() ? Component.translatable(OPTION_TRANSLATION_PREFIX + "reload") : Component.translatable("gui.done"));
+      doneButton.active = isValid();
     }
     if (isValid()) {
+      if (hasChanges() && statusMessage != null && statusColor == SUCCESS_COLOR) statusMessage = null;
       if (statusMessage != null && statusColor == ERROR_COLOR) statusMessage = null;
     } else {
       statusMessage = getValidationMessage();
@@ -381,6 +432,31 @@ public class PlanarConfigScreen extends Screen {
     return !getValues().equals(savedValues);
   }
 
+  private boolean needsReload() {
+    return !preset.trim().equals(savedValues.preset());
+  }
+
+  private boolean hasGeneralChanges() {
+    return defaultWailaPosition != savedValues.defaultWailaPosition() || needsReload()
+        || enableAdvancedWailaKeybind != savedValues.enableAdvancedWailaKeybind()
+        || advancedWailaKeyMode != savedValues.advancedWailaKeyMode();
+  }
+
+  private boolean hasDisplayChanges() {
+    return showUnconfiguredBlocks != savedValues.showUnconfiguredBlocks()
+        || showBlockName != savedValues.showBlockName()
+        || showModName != savedValues.showModName()
+        || advancedWaila != savedValues.advancedWaila()
+        || showHardness != savedValues.showHardness()
+        || showExplosionResistance != savedValues.showExplosionResistance()
+        || showDefaultResistance != savedValues.showDefaultResistance()
+        || showDrops != savedValues.showDrops()
+        || showToolRequirements != savedValues.showToolRequirements()
+        || showHeldToolPower != savedValues.showHeldToolPower()
+        || showMiningSpeed != savedValues.showMiningSpeed()
+        || showUnmineable != savedValues.showUnmineable();
+  }
+
   private boolean isValid() {
     return !preset.trim().isEmpty();
   }
@@ -396,6 +472,8 @@ public class PlanarConfigScreen extends Screen {
   private void loadValues() {
     defaultWailaPosition = GeneralConfig.DEFAULT_WAILA_POSITION;
     preset = GeneralConfig.getPreset();
+    enableAdvancedWailaKeybind = GeneralConfig.ENABLE_ADVANCED_WAILA_KEYBIND;
+    advancedWailaKeyMode = GeneralConfig.ADVANCED_WAILA_KEY_MODE;
 
     showUnconfiguredBlocks = DisplayConfig.SHOW_UNCONFIGURED_BLOCKS;
     showBlockName = DisplayConfig.SHOW_BLOCK_NAME;
@@ -414,7 +492,9 @@ public class PlanarConfigScreen extends Screen {
   private ScreenValues getValues() {
     return new ScreenValues(
         defaultWailaPosition,
-        preset,
+        preset.trim(),
+        enableAdvancedWailaKeybind,
+        advancedWailaKeyMode,
         showUnconfiguredBlocks,
         showBlockName,
         showModName,
@@ -473,6 +553,8 @@ public class PlanarConfigScreen extends Screen {
   private record ScreenValues(
       Helpers.WailaPosition defaultWailaPosition,
       String preset,
+      boolean enableAdvancedWailaKeybind,
+      GeneralConfig.AdvancedWailaKeyMode advancedWailaKeyMode,
       boolean showUnconfiguredBlocks,
       boolean showBlockName,
       boolean showModName,

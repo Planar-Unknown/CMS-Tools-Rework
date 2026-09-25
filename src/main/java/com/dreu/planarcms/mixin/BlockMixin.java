@@ -38,7 +38,7 @@ public abstract class BlockMixin {
         ToolsConfig.Properties toolProperties = getToolProperties(itemStack.getItem());
         if (toolProperties != null) {
           for (Map.Entry<Byte, Integer> powerData : toolProperties.powers().entrySet()) {
-            BlocksConfig.ToolProfile toolProfile = blockProperties.data().get(powerData.getKey());
+            BlocksConfig.ToolProfile toolProfile = blockProperties.profileFor(powerData.getKey(), powerData.getValue());
             if (toolProfile != null) {
               if (toolProfile.resistance() >= 0 && powerData.getValue() >= toolProfile.resistance()) {
                 if (toolProfile.canDrop().isPresent()) {

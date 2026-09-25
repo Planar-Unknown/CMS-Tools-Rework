@@ -24,12 +24,14 @@ public class ClientModBusEvents {
 
   public static final KeyMapping TOGGLE_WAILA_KEY_MAPPING = new KeyMapping("key." + MODID + ".toggleWaila", KeyConflictContext.IN_GAME, KeyModifier.ALT, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, KEY_CATEGORY_TRANSLATION);
   public static final KeyMapping TOGGLE_TOOLTIPS_KEY_MAPPING = new KeyMapping("key." + MODID + ".toggleTooltips", KeyConflictContext.UNIVERSAL, KeyModifier.CONTROL, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, KEY_CATEGORY_TRANSLATION);
+  public static final KeyMapping ADVANCED_WAILA_KEY_MAPPING = new KeyMapping("key." + MODID + ".advancedWaila", KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_SHIFT, KEY_CATEGORY_TRANSLATION);
 
 
   @SubscribeEvent
   public static void registerKeyMappingsEvent(RegisterKeyMappingsEvent event) {
     event.register(TOGGLE_WAILA_KEY_MAPPING);
     event.register(TOGGLE_TOOLTIPS_KEY_MAPPING);
+    event.register(ADVANCED_WAILA_KEY_MAPPING);
   }
 
   @SubscribeEvent

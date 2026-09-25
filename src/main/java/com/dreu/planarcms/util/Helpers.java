@@ -2,7 +2,6 @@ package com.dreu.planarcms.util;
 
 import com.dreu.planarcms.config.*;
 import com.electronwill.nightconfig.core.Config;
-import com.electronwill.nightconfig.toml.TomlParser;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.ClickEvent;
@@ -351,20 +350,7 @@ public class Helpers {
   }
 
   public static Config parseFileOrDefault(String fileName, String defaultConfig) {
-    Path filePath = Path.of(fileName);
-    try {
-      Files.createDirectories(filePath.getParent());
-      return new TomlParser().parse(filePath.toAbsolutePath(),
-        (path, configFormat) -> {
-          FileWriter writer = new FileWriter(path.toFile().getAbsolutePath());
-          writer.write(defaultConfig);
-          writer.close();
-          return true;
-        });
-    } catch (Exception e) {
-      addConfigIssue(LogLevel.ERROR, (byte) 10, "Exception encountered during parsing of config file: [{}]. The hardcoded default config will be used | Exception: {}", fileName, e.getMessage());
-      return new TomlParser().parse(defaultConfig);
-    }
+    return ConfigUpgrades.load(Path.of(fileName), defaultConfig, 1, Map.of());
   }
 
   public static <T> T getOrElse(Config config, String parentKey, String key, T fallback, Class<T> clazz, String fileName, boolean suppressErrors) {

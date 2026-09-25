@@ -2,10 +2,9 @@ package com.dreu.planarcms.config;
 
 import com.electronwill.nightconfig.core.Config;
 
-import java.io.FileWriter;
+import java.nio.file.Path;
 
 import static com.dreu.planarcms.PlanarCMS.MODID;
-import static com.dreu.planarcms.util.Helpers.LogLevel.ERROR;
 import static com.dreu.planarcms.util.Helpers.LogLevel.WARN;
 import static com.dreu.planarcms.util.Helpers.addConfigIssue;
 import static com.dreu.planarcms.util.Helpers.parseFileOrDefault;
@@ -14,6 +13,7 @@ public class DisplayConfig {
   public static final String fileName = "config/" + MODID + "/display.toml";
 
   static final String DEFAULT_CONFIG_STRING = """
+      ConfigVersion = 1
       # Client-side display settings for the manual Planar Tools overlay and Jade integration.
       # Jade integration is automatic when Jade is installed. These options control which Planar rows are shown.
       
@@ -41,6 +41,7 @@ public class DisplayConfig {
   public static boolean SHOW_BLOCK_NAME;
   public static boolean SHOW_MOD_NAME;
   public static boolean ADVANCED_WAILA;
+  private static boolean advancedWailaKeyActive;
   public static boolean SHOW_HARDNESS;
   public static boolean SHOW_EXPLOSION_RESISTANCE;
   public static boolean SHOW_DEFAULT_RESISTANCE;
@@ -74,10 +75,29 @@ public class DisplayConfig {
     SHOW_HELD_TOOL_POWER = getOrDefault("ShowHeldToolPower", true);
     SHOW_MINING_SPEED = getOrDefault("ShowMiningSpeed", true);
     SHOW_UNMINEABLE = getOrDefault("ShowUnmineable", true);
+    resetAdvancedWailaKey();
     configHasBeenPopulated = true;
   }
 
-  public static void save(
+  public static boolean isAdvancedWaila() {
+    return ADVANCED_WAILA || (GeneralConfig.ENABLE_ADVANCED_WAILA_KEYBIND && advancedWailaKeyActive);
+  }
+
+  public static void updateAdvancedWailaKey(boolean pressed) {
+    if (ADVANCED_WAILA || !GeneralConfig.ENABLE_ADVANCED_WAILA_KEYBIND) {
+      resetAdvancedWailaKey();
+    } else if (GeneralConfig.ADVANCED_WAILA_KEY_MODE == GeneralConfig.AdvancedWailaKeyMode.HOLD) {
+      advancedWailaKeyActive = pressed;
+    } else if (pressed) {
+      advancedWailaKeyActive = !advancedWailaKeyActive;
+    }
+  }
+
+  public static void resetAdvancedWailaKey() {
+    advancedWailaKeyActive = false;
+  }
+
+  public static boolean save(
       boolean showUnconfiguredBlocks,
       boolean ShowBlockName,
       boolean ShowModName,
@@ -91,8 +111,8 @@ public class DisplayConfig {
       boolean showMiningSpeed,
       boolean showUnmineable
   ) {
-    try (FileWriter writer = new FileWriter(fileName)) {
-      writer.write(
+    return ConfigUpgrades.save(Path.of(fileName),
+          "ConfigVersion = 1\n" +
           "# Client-side display settings for the manual Planar Tools overlay and Jade integration.\n" +
           "# Jade integration is automatic when Jade is installed. These options control which Planar rows are shown.\n\n" +
           "# Manual overlay only. Jade already shows the target name and owning mod.\n" +
@@ -108,11 +128,7 @@ public class DisplayConfig {
           "ShowToolRequirements = " + showToolRequirements + "\n" +
           "ShowHeldToolPower = " + showHeldToolPower + "\n" +
           "ShowMiningSpeed = " + showMiningSpeed + "\n" +
-          "ShowUnmineable = " + showUnmineable + "\n"
-      );
-    } catch (Exception e) {
-      addConfigIssue(ERROR, (byte) 5, "Encountered exception while saving config file [{}] | Exception: {}", fileName, e.getMessage());
-    }
+          "ShowUnmineable = " + showUnmineable + "\n", 1);
   }
 
   private static boolean getOrDefault(String key, boolean fallback) {

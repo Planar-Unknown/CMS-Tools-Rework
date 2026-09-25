@@ -21,6 +21,7 @@ public class ToolsConfig {
   public static final String TEMPLATE_FILE_NAME = "config/" + MODID + "/presets/template/tools.toml";
   public static String getTemplateConfigString() {
     return """
+    ConfigVersion = 1
     # See Template for more information
     
     ToolTypes = [
@@ -77,11 +78,13 @@ public class ToolsConfig {
   }
   public static String getCommentedTemplateConfigString() {
     return """
+    ConfigVersion = 1
     # DO NOT EDIT THIS TEMPLATE! IT WILL BE RESET!
     # Values not included for Tools will default to the Default power.
     # Power indicates the block Resistance level a tool can overcome.
     # MiningSpeed indicates the rate at which a tool will mine blocks that it can mine.
     # Each block can be configured to choose whether a tools MiningSpeed will be applied.
+    # Block-local MiningSpeedBonus values belong to tool profiles in blocks.toml, not this file.
     
     # Collections in this file (denoted by "@") are custom groups of Items
     # Create your own item collections at: [config/planar_cms/collections/items]
@@ -180,6 +183,7 @@ public class ToolsConfig {
     }
   }
 
+  public static final int MAX_TOOL_TYPES = 1 << Byte.SIZE;
   public static final ArrayList<String> REGISTERED_TOOL_TYPES = new ArrayList<>();
   public static final ArrayList<Integer> REGISTERED_TOOL_COLORS = new ArrayList<>();
 
@@ -192,6 +196,12 @@ public class ToolsConfig {
       String[] parts = entry.split(":");
 
       if (set.add(parts[0])) {
+        if (REGISTERED_TOOL_TYPES.size() >= MAX_TOOL_TYPES) {
+          addConfigIssue(ERROR, (byte) 4,
+              "ToolType: \"{}\" declared in config [{}] exceeds the maximum of {} registered tool types | Skipping ToolType...",
+              parts[0], PRESET_FOLDER_NAME + "tools.toml", MAX_TOOL_TYPES);
+          return;
+        }
         REGISTERED_TOOL_TYPES.add(parts[0]);
         if (parts.length == 2) {
           try {

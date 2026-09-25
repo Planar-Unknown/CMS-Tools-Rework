@@ -2,6 +2,7 @@ package com.dreu.planarcms.events;
 
 import com.dreu.planarcms.config.BlocksConfig;
 import com.dreu.planarcms.config.DisplayConfig;
+import com.dreu.planarcms.config.GeneralConfig;
 import com.dreu.planarcms.util.DisplayHelper;
 import com.dreu.planarcms.util.Helpers;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -19,6 +20,7 @@ import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.client.event.RenderTooltipEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
@@ -31,6 +33,7 @@ import static com.dreu.planarcms.PlanarCMS.MODID;
 import static com.dreu.planarcms.config.BlocksConfig.BLOCKS;
 import static com.dreu.planarcms.config.ToolsConfig.*;
 import static com.dreu.planarcms.events.ClientModBusEvents.TOGGLE_TOOLTIPS_KEY_MAPPING;
+import static com.dreu.planarcms.events.ClientModBusEvents.ADVANCED_WAILA_KEY_MAPPING;
 import static com.dreu.planarcms.events.ClientModBusEvents.TOGGLE_WAILA_KEY_MAPPING;
 import static com.dreu.planarcms.util.Helpers.*;
 import static net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus.FORGE;
@@ -57,6 +60,7 @@ public class ClientForgeBusEvents {
 
   @SubscribeEvent
   public static void onKeyInput(InputEvent.Key event) {
+    updateAdvancedWailaKey(InputConstants.getKey(event.getKey(), event.getScanCode()), event.getAction());
     if (TOGGLE_WAILA_KEY_MAPPING.consumeClick()) {
       Helpers.WAILA_POSITION = Helpers.WAILA_POSITION.next();
       return;
@@ -66,7 +70,33 @@ public class ClientForgeBusEvents {
   }
 
   @SubscribeEvent
-  public static void renderGuiEvent(RenderGuiEvent event) {
+  public static void onMouseInput(InputEvent.MouseButton.Post event) {
+    updateAdvancedWailaKey(InputConstants.Type.MOUSE.getOrCreate(event.getButton()), event.getAction());
+  }
+
+  private static void updateAdvancedWailaKey(InputConstants.Key key, int action) {
+    if (action != InputConstants.PRESS && action != InputConstants.RELEASE) return;
+    Minecraft mc = Minecraft.getInstance();
+    if (mc.level != null && mc.player != null && mc.screen == null && mc.isWindowActive()
+        && ADVANCED_WAILA_KEY_MAPPING.isActiveAndMatches(key))
+      DisplayConfig.updateAdvancedWailaKey(action == InputConstants.PRESS);
+  }
+
+  @SubscribeEvent
+  public static void onClientTick(TickEvent.ClientTickEvent event) {
+    if (event.phase != TickEvent.Phase.END) return;
+    // Toggle uses physical press events, not the click queue's keyboard-repeat events.
+    while (ADVANCED_WAILA_KEY_MAPPING.consumeClick()) {}
+    Minecraft mc = Minecraft.getInstance();
+    if (mc.level == null || mc.player == null || DisplayConfig.ADVANCED_WAILA || !GeneralConfig.ENABLE_ADVANCED_WAILA_KEYBIND) {
+      DisplayConfig.resetAdvancedWailaKey();
+    } else if (GeneralConfig.ADVANCED_WAILA_KEY_MODE == GeneralConfig.AdvancedWailaKeyMode.HOLD) {
+      DisplayConfig.updateAdvancedWailaKey(mc.screen == null && mc.isWindowActive() && ADVANCED_WAILA_KEY_MAPPING.isDown());
+    }
+  }
+
+  @SubscribeEvent
+  public static void renderGuiEvent(RenderGuiEvent.Post event) {
     if (Helpers.WAILA_POSITION == Helpers.WailaPosition.INVISIBLE) return;
     if (ModList.get().isLoaded("jade")) return;
 
@@ -83,10 +113,9 @@ public class ClientForgeBusEvents {
 
   private static void drawBox(List<MutableComponent> components, GuiGraphics guiGraphics) {
     Minecraft mc = Minecraft.getInstance();
-    int fontWidth = components.stream()
-        .mapToInt(c -> mc.font.width(c.getVisualOrderText()))
-        .max()
-        .orElse(0);
+    int fontWidth = 0;
+    for (int i = 0; i < components.size(); i++)
+      fontWidth = Math.max(fontWidth, mc.font.width(components.get(i).getVisualOrderText()));
 
     int boxWidth = fontWidth + 4;
     int left = switch (Helpers.WAILA_POSITION) {
@@ -111,24 +140,25 @@ public class ClientForgeBusEvents {
   public static void appendTooltipEvent(RenderTooltipEvent.GatherComponents event) {
     if (!displayTooltips) return;
     String item = ForgeRegistries.ITEMS.getKey(event.getItemStack().getItem()).toString();
-    if (BLOCKS.containsKey(item) && !BLOCKS.get(item).data().isEmpty()) {
+    BlocksConfig.Properties blockProperties = BLOCKS.get(item);
+    if (blockProperties != null && !blockProperties.data().isEmpty()) {
       event.getTooltipElements().add(Either.left(Component.translatable(MODID + ".tooltip.resistanceTitle")));
-      for (Map.Entry<Byte, BlocksConfig.ToolProfile> data : BLOCKS.get(item).data().entrySet()) {
-        event.getTooltipElements().add(Either.left(
-            Component.literal(" ")
-                .append(Component.literal(REGISTERED_TOOL_TYPES.get(data.getKey())))
-                .withStyle(style -> style.withColor(REGISTERED_TOOL_COLORS.get(data.getKey())))
-                .append(Component.literal(": " + data.getValue().resistance()))
-        ));
+      boolean defaultCanDrop = blockProperties.defaultCanDrop();
+      for (var data : blockProperties.data().entrySet()) {
+        event.getTooltipElements().add(Either.left(DisplayHelper.getBlockToolTooltip(data.getKey(), data.getValue(), defaultCanDrop)));
+        for (MutableComponent row : DisplayHelper.getPowerChangeRows(data.getValue(), defaultCanDrop))
+          event.getTooltipElements().add(Either.left(row));
       }
     }
-    if (TOOLS.containsKey(item) && !TOOLS.get(item).powers().isEmpty()) {
+    var toolProperties = TOOLS.get(item);
+    if (toolProperties != null && !toolProperties.powers().isEmpty()) {
       event.getTooltipElements().add(Either.left(Component.translatable(MODID + ".tooltip.powerTitle")));
-      for (Map.Entry<Byte, Integer> powerData : TOOLS.get(item).powers().entrySet()) {
+      for (Map.Entry<Byte, Integer> powerData : toolProperties.powers().entrySet()) {
+        int index = Byte.toUnsignedInt(powerData.getKey());
         event.getTooltipElements().add(Either.left(
             Component.literal(" ")
-                .append(Component.literal(REGISTERED_TOOL_TYPES.get(powerData.getKey()))
-                    .withStyle(style -> style.withColor(REGISTERED_TOOL_COLORS.get(powerData.getKey())))
+                .append(Component.literal(REGISTERED_TOOL_TYPES.get(index))
+                    .withStyle(style -> style.withColor(REGISTERED_TOOL_COLORS.get(index)))
                     .append(": " + powerData.getValue()))
         ));
       }

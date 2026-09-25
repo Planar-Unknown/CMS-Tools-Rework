@@ -42,6 +42,8 @@ public class SyncConfigS2CPacket {
       ));
 
     size = buf.readInt();
+    if (size < 0 || size > MAX_TOOL_TYPES)
+      throw new IllegalArgumentException("Invalid tool type count");
     REGISTERED_TOOL_TYPES.clear();
     REGISTERED_TOOL_COLORS.clear();
     for (int i = 0; i < size; i++) {
