@@ -30,7 +30,7 @@ public final class PowerProfiles {
     ToolProfile[] profiles = new ToolProfile[changes.size() + 1];
     profiles[0] = Objects.requireNonNull(baseline);
     int size = 0;
-    for (var change : new TreeMap<>(changes).entrySet()) {
+    for (Map.Entry<Integer, ToolProfile> change : new TreeMap<>(changes).entrySet()) {
       if (change.getKey() < 0) throw new IllegalArgumentException("Power cannot be negative");
       ToolProfile profile = Objects.requireNonNull(change.getValue());
       if (profile.equals(profiles[size])) continue;

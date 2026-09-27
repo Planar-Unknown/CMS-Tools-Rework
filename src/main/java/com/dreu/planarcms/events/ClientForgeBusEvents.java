@@ -3,6 +3,7 @@ package com.dreu.planarcms.events;
 import com.dreu.planarcms.config.BlocksConfig;
 import com.dreu.planarcms.config.DisplayConfig;
 import com.dreu.planarcms.config.GeneralConfig;
+import com.dreu.planarcms.config.PowerProfiles;
 import com.dreu.planarcms.util.DisplayHelper;
 import com.dreu.planarcms.util.Helpers;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -144,7 +145,7 @@ public class ClientForgeBusEvents {
     if (blockProperties != null && !blockProperties.data().isEmpty()) {
       event.getTooltipElements().add(Either.left(Component.translatable(MODID + ".tooltip.resistanceTitle")));
       boolean defaultCanDrop = blockProperties.defaultCanDrop();
-      for (var data : blockProperties.data().entrySet()) {
+      for (Map.Entry<Byte, PowerProfiles> data : blockProperties.data().entrySet()) {
         event.getTooltipElements().add(Either.left(DisplayHelper.getBlockToolTooltip(data.getKey(), data.getValue(), defaultCanDrop)));
         for (MutableComponent row : DisplayHelper.getPowerChangeRows(data.getValue(), defaultCanDrop))
           event.getTooltipElements().add(Either.left(row));

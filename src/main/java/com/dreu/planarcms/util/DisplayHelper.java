@@ -16,6 +16,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.dreu.planarcms.config.BlocksConfig.getBlockProperties;
 import static com.dreu.planarcms.config.DisplayConfig.*;
@@ -193,15 +194,14 @@ public class DisplayHelper {
 
   private static HeldToolStatus getHeldToolStatus(BlockState blockState, BlockGetter level, BlockPos blockPos, ItemStack heldStack, BlocksConfig.Properties blockProperties, ToolsConfig.Properties toolProperties) {
     float actualSpeed = heldStack.getDestroySpeed(blockState);
-    boolean physicallyMineable = blockState.getDestroySpeed(level, blockPos) >= 0 && actualSpeed > 0;
+    boolean canMine = blockState.getDestroySpeed(level, blockPos) >= 0 && actualSpeed > 0;
     if (blockProperties == null) {
-      boolean canMine = physicallyMineable;
       boolean hasCorrectToolForDrops = canMine && hasCorrectToolForDrops(blockState, heldStack);
       boolean applyMiningSpeed = canMine && actualSpeed > 1.0F;
       return new HeldToolStatus(canMine, applyMiningSpeed, hasCorrectToolForDrops, (byte) -1, true, 0);
     }
 
-    boolean canMine = blockProperties.defaultResistance() == 0;
+    canMine = blockProperties.defaultResistance() == 0;
     boolean canDrop = blockProperties.defaultCanDrop();
     boolean toolAllowsDrops = false;
     boolean displaysDefault = true;
@@ -211,7 +211,7 @@ public class DisplayHelper {
     boolean hasQualifiedBonus = false;
 
     if (toolProperties != null) {
-      for (var heldPower : toolProperties.powers().entrySet()) {
+      for (Map.Entry<Byte, Integer> heldPower : toolProperties.powers().entrySet()) {
         BlocksConfig.ToolProfile toolProfile = blockProperties.profileFor(heldPower.getKey(), heldPower.getValue());
         if (toolProfile != null) {
           int resistance = toolProfile.resistance();
@@ -252,7 +252,7 @@ public class DisplayHelper {
       }
     }
 
-    canMine &= physicallyMineable;
+    canMine &= canMine;
     boolean applyMiningSpeed = canMine && actualSpeed > 1.0F;
     canDrop &= hasCorrectToolForDrops(blockState, heldStack);
 

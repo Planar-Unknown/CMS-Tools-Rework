@@ -379,6 +379,16 @@ public class Helpers {
     return Tiers.NETHERITE;
   }
 
+  public static Integer getPowerFromTier(Tier tier, ToolsConfig.Properties toolProperties) {
+    if (tier == null) return 0;
+    if (tier == Tiers.WOOD) return 20;
+    if (tier == Tiers.STONE) return 40;
+    if (tier == Tiers.IRON) return 60;
+    if (tier == Tiers.DIAMOND) return 80;
+    if (tier == Tiers.NETHERITE) return 100;
+    return 0;
+  }
+
   public static <K, V> Map<K, V> mergeMaps(Map<K, V> left, Map<K, V> right, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
     Map<K, V> mergedMap = new HashMap<>(left);
     right.forEach((key, value) -> mergedMap.merge(key, value, remappingFunction));
