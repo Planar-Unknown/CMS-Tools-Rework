@@ -2,7 +2,6 @@ package com.dreu.planarcms.util;
 
 import com.dreu.planarcms.config.BlocksConfig;
 import com.dreu.planarcms.config.PowerProfiles;
-import com.dreu.planarcms.config.ToolsConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -28,7 +27,7 @@ public class DisplayHelper {
   private static final String DEFAULT_LABEL = "Default: ";
   private static final String HELD_LABEL = "Held: ";
   private static final String MINING_SPEED_LABEL = "MiningSpeed";
-  private static final String DROPS_LABEL = "Drops";
+  private static final String NO_DROPS_LABEL = "No Drops";
   private static final String UNMINEABLE_LABEL = "Unmineable";
 
   public static List<MutableComponent> getManualWailaComponents(BlockState blockState, BlockGetter level, BlockPos blockPos, ItemStack heldStack) {
@@ -52,11 +51,11 @@ public class DisplayHelper {
   }
 
   private static void addPlanarRows(List<MutableComponent> rows, BlockState blockState, BlockGetter level, BlockPos blockPos, ItemStack heldStack, BlocksConfig.Properties blockProperties) {
-    ToolsConfig.Properties toolProperties = heldStack.isEmpty() ? null : getToolProperties(heldStack.getItem());
-    HeldToolStatus heldToolStatus = getHeldToolStatus(blockState, level, blockPos, heldStack, blockProperties, toolProperties);
+    Map<Byte, Integer> powers = ToolResolver.getPowers(heldStack);
+    HeldToolStatus heldToolStatus = getHeldToolStatus(blockState, level, blockPos, heldStack, blockProperties, powers);
 
     boolean showDefaultResistance = blockProperties != null && SHOW_DEFAULT_RESISTANCE && blockProperties.defaultResistance() > 0;
-    boolean showToolStatus = SHOW_MINING_SPEED || SHOW_DROPS;
+    boolean showToolStatus = SHOW_MINING_SPEED || (SHOW_NO_DROPS && !heldToolStatus.cmsAllowsDrops());
     boolean showDefaultToolStatus = showToolStatus && heldToolStatus.displaysDefault();
     if (showDefaultResistance || showDefaultToolStatus) {
       MutableComponent defaultRow = Component.literal("");
@@ -75,46 +74,46 @@ public class DisplayHelper {
       rows.add(statusRow);
     }
 
-    if (blockProperties != null) addToolRows(rows, blockProperties, toolProperties, heldToolStatus);
+    if (blockProperties != null) addToolRows(rows, blockProperties, powers, heldToolStatus);
 
     MutableComponent physicalRow = getPhysicalRow(blockState, level, blockPos, blockProperties, heldToolStatus);
     if (physicalRow != null) rows.add(physicalRow);
   }
 
-  private static void addToolRows(List<MutableComponent> rows, BlocksConfig.Properties block, ToolsConfig.Properties tool, HeldToolStatus status) {
+  private static void addToolRows(List<MutableComponent> rows, BlocksConfig.Properties block, Map<Byte, Integer> powers, HeldToolStatus status) {
     if (!SHOW_TOOL_REQUIREMENTS || block.data().isEmpty()) return;
     for (int index = 0; index < REGISTERED_TOOL_TYPES.size(); index++) {
       byte type = (byte) index;
       PowerProfiles profiles = block.data().get(type);
       if (profiles == null) continue;
-      Integer power = tool == null ? null : tool.powers().get(type);
+      Integer power = powers.get(type);
       BlocksConfig.ToolProfile profile = power == null ? profiles.baseline() : profiles.atPower(power);
-      MutableComponent row = getToolRow(type, profile, block, power, status);
+      MutableComponent row = getToolRow(type, profile, power, status);
       rows.add(row);
       if (power == null && showAdvanceWaila())
-        addPowerChangeRows(rows, profiles, block.defaultCanDrop(), ChatFormatting.YELLOW);
+        addPowerChangeRows(rows, profiles, ChatFormatting.YELLOW);
     }
   }
 
-  public static MutableComponent getBlockToolTooltip(byte type, PowerProfiles profiles, boolean defaultCanDrop) {
+  public static MutableComponent getBlockToolTooltip(byte type, PowerProfiles profiles) {
     int index = Byte.toUnsignedInt(type);
     MutableComponent row = Component.literal(" ")
         .append(Component.literal(REGISTERED_TOOL_TYPES.get(index)))
         .withStyle(style -> style.withColor(REGISTERED_TOOL_COLORS.get(index)))
         .append(Component.literal(": " + profiles.baseline().resistance()));
     if (profiles.size() > 0 || profiles.baseline().miningSpeedBonus() != 0)
-      appendProfileProperties(row, profiles.baseline(), defaultCanDrop, ChatFormatting.GREEN);
+      appendProfileProperties(row, profiles.baseline(), ChatFormatting.GREEN);
     return row;
   }
 
-  public static List<MutableComponent> getPowerChangeRows(PowerProfiles profiles, boolean defaultCanDrop) {
+  public static List<MutableComponent> getPowerChangeRows(PowerProfiles profiles) {
     if (profiles.size() == 0) return List.of();
     List<MutableComponent> rows = new ArrayList<>(profiles.size());
-    addPowerChangeRows(rows, profiles, defaultCanDrop, ChatFormatting.GREEN);
+    addPowerChangeRows(rows, profiles, ChatFormatting.GREEN);
     return rows;
   }
 
-  private static void addPowerChangeRows(List<MutableComponent> rows, PowerProfiles profiles, boolean defaultCanDrop, ChatFormatting enabledColor) {
+  private static void addPowerChangeRows(List<MutableComponent> rows, PowerProfiles profiles, ChatFormatting enabledColor) {
     BlocksConfig.ToolProfile previous = profiles.baseline();
     // These ordered, coalesced snapshots are the immutable summary data, not raw declarations.
     for (int i = 0; i < profiles.size(); i++) {
@@ -126,28 +125,20 @@ public class DisplayHelper {
         changes.append(Component.literal(PROPERTY_SEPARATOR));
         appendMiningSpeed(changes, profile.applyMiningSpeed(), profile.miningSpeedBonus(), profile.miningSpeedBonus() != previous.miningSpeedBonus(), enabledColor);
       }
-      if (SHOW_DROPS && !profile.canDrop().equals(previous.canDrop()))
-        appendProfileDrops(changes, profile, defaultCanDrop, enabledColor);
       if (!changes.getSiblings().isEmpty())
         rows.add(Component.literal("  Power " + profiles.power(i) + "+:").withStyle(ChatFormatting.GRAY).append(changes));
       previous = profile;
     }
   }
 
-  private static void appendProfileProperties(MutableComponent row, BlocksConfig.ToolProfile profile, boolean defaultCanDrop, ChatFormatting enabledColor) {
+  private static void appendProfileProperties(MutableComponent row, BlocksConfig.ToolProfile profile, ChatFormatting enabledColor) {
     if (SHOW_MINING_SPEED) {
       row.append(Component.literal(PROPERTY_SEPARATOR));
       appendMiningSpeed(row, profile.applyMiningSpeed(), profile.miningSpeedBonus(), false, enabledColor);
     }
-    if (SHOW_DROPS) appendProfileDrops(row, profile, defaultCanDrop, enabledColor);
   }
 
-  private static void appendProfileDrops(MutableComponent row, BlocksConfig.ToolProfile profile, boolean defaultCanDrop, ChatFormatting enabledColor) {
-    boolean canDrop = profile.canDrop().orElse(defaultCanDrop);
-    row.append(Component.literal(PROPERTY_SEPARATOR + DROPS_LABEL).withStyle(canDrop ? enabledColor : ChatFormatting.RED));
-  }
-
-  private static MutableComponent getToolRow(byte toolType, BlocksConfig.ToolProfile toolProfile, BlocksConfig.Properties blockProperties, Integer heldPower, HeldToolStatus heldToolStatus) {
+  private static MutableComponent getToolRow(byte toolType, BlocksConfig.ToolProfile toolProfile, Integer heldPower, HeldToolStatus heldToolStatus) {
     int index = Byte.toUnsignedInt(toolType);
     MutableComponent row = Component.literal("")
         .append(Component.literal(REGISTERED_TOOL_TYPES.get(index))
@@ -166,7 +157,11 @@ public class DisplayHelper {
 
     if (showAdvanceWaila()) {
       boolean qualified = heldToolStatus.canMine() && heldPower != null && toolProfile.resistance() >= 0 && heldPower >= toolProfile.resistance();
-      appendProfileProperties(row, toolProfile, blockProperties.defaultCanDrop(), qualified ? ChatFormatting.GREEN : ChatFormatting.YELLOW);
+      appendProfileProperties(row, toolProfile, qualified ? ChatFormatting.GREEN : ChatFormatting.YELLOW);
+      if (!heldToolStatus.displaysDefault() && heldToolStatus.displayedToolType() == toolType
+          && SHOW_NO_DROPS && !heldToolStatus.cmsAllowsDrops()) {
+        row.append(Component.literal(PROPERTY_SEPARATOR + NO_DROPS_LABEL).withStyle(ChatFormatting.RED));
+      }
     }
 
     return row;
@@ -186,81 +181,53 @@ public class DisplayHelper {
       appended = true;
     }
 
-    if (SHOW_DROPS) {
+    if (SHOW_NO_DROPS && !status.cmsAllowsDrops()) {
       if (appended) row.append(Component.literal(PROPERTY_SEPARATOR));
-      row.append(Component.literal(DROPS_LABEL).withStyle(getCanDropFormatting(status.canDrop())));
+      row.append(Component.literal(NO_DROPS_LABEL).withStyle(ChatFormatting.RED));
     }
   }
 
-  private static HeldToolStatus getHeldToolStatus(BlockState blockState, BlockGetter level, BlockPos blockPos, ItemStack heldStack, BlocksConfig.Properties blockProperties, ToolsConfig.Properties toolProperties) {
+  private static HeldToolStatus getHeldToolStatus(BlockState blockState, BlockGetter level, BlockPos blockPos, ItemStack heldStack, BlocksConfig.Properties blockProperties, Map<Byte, Integer> powers) {
     float actualSpeed = heldStack.getDestroySpeed(blockState);
     boolean canMine = blockState.getDestroySpeed(level, blockPos) >= 0 && actualSpeed > 0;
-    if (blockProperties == null) {
-      boolean hasCorrectToolForDrops = canMine && hasCorrectToolForDrops(blockState, heldStack);
-      boolean applyMiningSpeed = canMine && actualSpeed > 1.0F;
-      return new HeldToolStatus(canMine, applyMiningSpeed, hasCorrectToolForDrops, (byte) -1, true, 0);
-    }
+    if (blockProperties == null)
+      return new HeldToolStatus(canMine, canMine && actualSpeed > 1f, true, (byte) -1, true, 0);
 
-    canMine = blockProperties.defaultResistance() == 0;
-    boolean canDrop = blockProperties.defaultCanDrop();
+    boolean cmsAllowsDrops = blockProperties.defaultCanDrop();
     boolean toolAllowsDrops = false;
-    boolean displaysDefault = true;
+    boolean applyMiningSpeed = false;
     byte displayedToolType = -1;
     int strongestSuccessfulPower = Integer.MIN_VALUE;
     float miningSpeedBonus = 0;
-    boolean hasQualifiedBonus = false;
+    boolean hasQualifiedProfile = false;
 
-    if (toolProperties != null) {
-      for (Map.Entry<Byte, Integer> heldPower : toolProperties.powers().entrySet()) {
-        BlocksConfig.ToolProfile toolProfile = blockProperties.profileFor(heldPower.getKey(), heldPower.getValue());
-        if (toolProfile != null) {
-          int resistance = toolProfile.resistance();
-          if (resistance >= 0) {
-            if (heldPower.getValue() >= resistance) {
-              canMine = true;
-              miningSpeedBonus = hasQualifiedBonus ? Math.max(miningSpeedBonus, toolProfile.miningSpeedBonus()) : toolProfile.miningSpeedBonus();
-              hasQualifiedBonus = true;
-              if (heldPower.getValue() > strongestSuccessfulPower
-                  || heldPower.getValue() == strongestSuccessfulPower
-                  && Byte.toUnsignedInt(heldPower.getKey()) < Byte.toUnsignedInt(displayedToolType)) {
-                strongestSuccessfulPower = heldPower.getValue();
-                displayedToolType = heldPower.getKey();
-              }
-              displaysDefault = false;
-              if (toolProfile.canDrop().isPresent()) {
-                if (toolProfile.canDrop().get()) {
-                  canDrop = true;
-                  toolAllowsDrops = true;
-                } else if (!toolAllowsDrops) {
-                  canDrop = false;
-                }
-              }
-            } else if (heldPower.getValue() >= blockProperties.defaultResistance() && blockProperties.defaultResistance() != -1) {
-              canMine = true;
-              if (strongestSuccessfulPower == Integer.MIN_VALUE)
-                displaysDefault = true;
-            }
-          }
-        } else {
-          int defaultResistance = blockProperties.defaultResistance();
-          if (defaultResistance != -1 && heldPower.getValue() >= defaultResistance) {
-            canMine = true;
-            if (strongestSuccessfulPower == Integer.MIN_VALUE)
-              displaysDefault = true;
-          }
+    for (Map.Entry<Byte, Integer> heldPower : powers.entrySet()) {
+      BlocksConfig.ToolProfile profile = blockProperties.profileFor(heldPower.getKey(), heldPower.getValue());
+      if (profile == null || profile.resistance() < 0 || heldPower.getValue() < profile.resistance())
+        continue;
+
+      miningSpeedBonus = hasQualifiedProfile ? Math.max(miningSpeedBonus, profile.miningSpeedBonus()) : profile.miningSpeedBonus();
+      hasQualifiedProfile = true;
+      applyMiningSpeed |= profile.applyMiningSpeed();
+      if (heldPower.getValue() > strongestSuccessfulPower
+          || heldPower.getValue() == strongestSuccessfulPower
+          && Byte.toUnsignedInt(heldPower.getKey()) < Byte.toUnsignedInt(displayedToolType)) {
+        strongestSuccessfulPower = heldPower.getValue();
+        displayedToolType = heldPower.getKey();
+      }
+      if (profile.canDrop().isPresent()) {
+        if (profile.canDrop().get()) {
+          cmsAllowsDrops = true;
+          toolAllowsDrops = true;
+        } else if (!toolAllowsDrops) {
+          cmsAllowsDrops = false;
         }
       }
     }
 
-    canMine &= canMine;
-    boolean applyMiningSpeed = canMine && actualSpeed > 1.0F;
-    canDrop &= hasCorrectToolForDrops(blockState, heldStack);
-
-    return new HeldToolStatus(canMine, applyMiningSpeed, canMine && canDrop, displayedToolType, displaysDefault, miningSpeedBonus);
-  }
-
-  private static boolean hasCorrectToolForDrops(BlockState blockState, ItemStack heldStack) {
-    return !blockState.requiresCorrectToolForDrops() || heldStack.isCorrectToolForDrops(blockState);
+    // Permission to drop is independent of physical mining and native harvesting.
+    boolean speedEnabled = canMine && (hasQualifiedProfile ? applyMiningSpeed : actualSpeed > 1f);
+    return new HeldToolStatus(canMine, speedEnabled, cmsAllowsDrops, displayedToolType, !hasQualifiedProfile, miningSpeedBonus);
   }
 
   private static MutableComponent getPhysicalRow(BlockState blockState, BlockGetter level, BlockPos blockPos, BlocksConfig.Properties blockProperties, HeldToolStatus heldToolStatus) {
@@ -317,10 +284,6 @@ public class DisplayHelper {
     return ChatFormatting.YELLOW;
   }
 
-  private static ChatFormatting getCanDropFormatting(boolean value) {
-    return value ? ChatFormatting.GREEN : ChatFormatting.RED;
-  }
-
   private static void appendMiningSpeed(MutableComponent row, boolean applyMiningSpeed, float bonus, boolean showZero, ChatFormatting enabledColor) {
     row.append(Component.literal(MINING_SPEED_LABEL).withStyle(applyMiningSpeed || bonus > 0 ? enabledColor : ChatFormatting.RED));
     if (bonus != 0 || showZero)
@@ -343,5 +306,5 @@ public class DisplayHelper {
     ).withStyle(ChatFormatting.ITALIC, ChatFormatting.BLUE);
   }
 
-  private record HeldToolStatus(boolean canMine, boolean applyMiningSpeed, boolean canDrop, byte displayedToolType, boolean displaysDefault, float miningSpeedBonus) {}
+  private record HeldToolStatus(boolean canMine, boolean applyMiningSpeed, boolean cmsAllowsDrops, byte displayedToolType, boolean displaysDefault, float miningSpeedBonus) {}
 }

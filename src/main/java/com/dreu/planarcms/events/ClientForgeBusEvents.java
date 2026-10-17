@@ -144,10 +144,9 @@ public class ClientForgeBusEvents {
     BlocksConfig.Properties blockProperties = BLOCKS.get(item);
     if (blockProperties != null && !blockProperties.data().isEmpty()) {
       event.getTooltipElements().add(Either.left(Component.translatable(MODID + ".tooltip.resistanceTitle")));
-      boolean defaultCanDrop = blockProperties.defaultCanDrop();
       for (Map.Entry<Byte, PowerProfiles> data : blockProperties.data().entrySet()) {
-        event.getTooltipElements().add(Either.left(DisplayHelper.getBlockToolTooltip(data.getKey(), data.getValue(), defaultCanDrop)));
-        for (MutableComponent row : DisplayHelper.getPowerChangeRows(data.getValue(), defaultCanDrop))
+        event.getTooltipElements().add(Either.left(DisplayHelper.getBlockToolTooltip(data.getKey(), data.getValue())));
+        for (MutableComponent row : DisplayHelper.getPowerChangeRows(data.getValue()))
           event.getTooltipElements().add(Either.left(row));
       }
     }

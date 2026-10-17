@@ -27,7 +27,7 @@ public class DisplayConfig {
       ShowHardness = true
       ShowExplosionResistance = true
       ShowDefaultResistance = true
-      ShowDrops = true
+      ShowNoDrops = true
       ShowToolRequirements = true
       ShowHeldToolPower = true
       ShowMiningSpeed = true
@@ -45,7 +45,7 @@ public class DisplayConfig {
   public static boolean SHOW_HARDNESS;
   public static boolean SHOW_EXPLOSION_RESISTANCE;
   public static boolean SHOW_DEFAULT_RESISTANCE;
-  public static boolean SHOW_DROPS;
+  public static boolean SHOW_NO_DROPS;
   public static boolean SHOW_TOOL_REQUIREMENTS;
   public static boolean SHOW_HELD_TOOL_POWER;
   public static boolean SHOW_MINING_SPEED;
@@ -70,7 +70,8 @@ public class DisplayConfig {
     SHOW_HARDNESS = getOrDefault("ShowHardness", true);
     SHOW_EXPLOSION_RESISTANCE = getOrDefault("ShowExplosionResistance", true);
     SHOW_DEFAULT_RESISTANCE = getOrDefault("ShowDefaultResistance", true);
-    SHOW_DROPS = getOrDefault("ShowDrops", true);
+    SHOW_NO_DROPS = CONFIG.contains("ShowNoDrops")
+        ? getOrDefault("ShowNoDrops", true) : getOrDefault("ShowDrops", true);
     SHOW_TOOL_REQUIREMENTS = getOrDefault("ShowToolRequirements", true);
     SHOW_HELD_TOOL_POWER = getOrDefault("ShowHeldToolPower", true);
     SHOW_MINING_SPEED = getOrDefault("ShowMiningSpeed", true);
@@ -105,7 +106,7 @@ public class DisplayConfig {
       boolean showHardness,
       boolean showExplosionResistance,
       boolean showDefaultResistance,
-      boolean showDrops,
+      boolean showNoDrops,
       boolean showToolRequirements,
       boolean showHeldToolPower,
       boolean showMiningSpeed,
@@ -124,7 +125,7 @@ public class DisplayConfig {
           "ShowHardness = " + showHardness + "\n" +
           "ShowExplosionResistance = " + showExplosionResistance + "\n" +
           "ShowDefaultResistance = " + showDefaultResistance + "\n" +
-          "ShowDrops = " + showDrops + "\n" +
+          "ShowNoDrops = " + showNoDrops + "\n" +
           "ShowToolRequirements = " + showToolRequirements + "\n" +
           "ShowHeldToolPower = " + showHeldToolPower + "\n" +
           "ShowMiningSpeed = " + showMiningSpeed + "\n" +

@@ -70,7 +70,7 @@ public class PlanarConfigScreen extends Screen {
   private boolean showHardness;
   private boolean showExplosionResistance;
   private boolean showDefaultResistance;
-  private boolean showDrops;
+  private boolean showNoDrops;
   private boolean showToolRequirements;
   private boolean showHeldToolPower;
   private boolean showMiningSpeed;
@@ -136,8 +136,8 @@ public class PlanarConfigScreen extends Screen {
       showDefaultResistance = value;
       updateReloadButton();
     });
-    y = addBooleanRow("showDrops", left, controlX, y, showDrops, value -> {
-      showDrops = value;
+    y = addBooleanRow("showNoDrops", left, controlX, y, showNoDrops, value -> {
+      showNoDrops = value;
       updateReloadButton();
     });
     y = addBooleanRow("showToolRequirements", left, controlX, y, showToolRequirements, value -> {
@@ -394,7 +394,7 @@ public class PlanarConfigScreen extends Screen {
         showHardness,
         showExplosionResistance,
         showDefaultResistance,
-        showDrops,
+        showNoDrops,
         showToolRequirements,
         showHeldToolPower,
         showMiningSpeed,
@@ -450,7 +450,7 @@ public class PlanarConfigScreen extends Screen {
         || showHardness != savedValues.showHardness()
         || showExplosionResistance != savedValues.showExplosionResistance()
         || showDefaultResistance != savedValues.showDefaultResistance()
-        || showDrops != savedValues.showDrops()
+        || showNoDrops != savedValues.showNoDrops()
         || showToolRequirements != savedValues.showToolRequirements()
         || showHeldToolPower != savedValues.showHeldToolPower()
         || showMiningSpeed != savedValues.showMiningSpeed()
@@ -482,7 +482,7 @@ public class PlanarConfigScreen extends Screen {
     showHardness = DisplayConfig.SHOW_HARDNESS;
     showExplosionResistance = DisplayConfig.SHOW_EXPLOSION_RESISTANCE;
     showDefaultResistance = DisplayConfig.SHOW_DEFAULT_RESISTANCE;
-    showDrops = DisplayConfig.SHOW_DROPS;
+    showNoDrops = DisplayConfig.SHOW_NO_DROPS;
     showToolRequirements = DisplayConfig.SHOW_TOOL_REQUIREMENTS;
     showHeldToolPower = DisplayConfig.SHOW_HELD_TOOL_POWER;
     showMiningSpeed = DisplayConfig.SHOW_MINING_SPEED;
@@ -502,7 +502,7 @@ public class PlanarConfigScreen extends Screen {
         showHardness,
         showExplosionResistance,
         showDefaultResistance,
-        showDrops,
+        showNoDrops,
         showToolRequirements,
         showHeldToolPower,
         showMiningSpeed,
@@ -562,7 +562,7 @@ public class PlanarConfigScreen extends Screen {
       boolean showHardness,
       boolean showExplosionResistance,
       boolean showDefaultResistance,
-      boolean showDrops,
+      boolean showNoDrops,
       boolean showToolRequirements,
       boolean showHeldToolPower,
       boolean showMiningSpeed,

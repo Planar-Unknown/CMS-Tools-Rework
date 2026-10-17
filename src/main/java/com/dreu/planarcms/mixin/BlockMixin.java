@@ -1,7 +1,6 @@
 package com.dreu.planarcms.mixin;
 
 import com.dreu.planarcms.config.BlocksConfig;
-import com.dreu.planarcms.config.ToolsConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -19,7 +18,7 @@ import javax.annotation.Nullable;
 import java.util.Map;
 
 import static com.dreu.planarcms.config.BlocksConfig.getBlockProperties;
-import static com.dreu.planarcms.config.ToolsConfig.getToolProperties;
+import static com.dreu.planarcms.util.ToolResolver.getPowers;
 
 @Mixin(Block.class)
 public abstract class BlockMixin {
@@ -35,19 +34,16 @@ public abstract class BlockMixin {
       BlocksConfig.Properties blockProperties = getBlockProperties(blockState.getBlock());
       if (blockProperties != null) {
         shouldDrop = blockProperties.defaultCanDrop();
-        ToolsConfig.Properties toolProperties = getToolProperties(itemStack.getItem());
-        if (toolProperties != null) {
-          for (Map.Entry<Byte, Integer> powerData : toolProperties.powers().entrySet()) {
-            BlocksConfig.ToolProfile toolProfile = blockProperties.profileFor(powerData.getKey(), powerData.getValue());
-            if (toolProfile != null) {
-              if (toolProfile.resistance() >= 0 && powerData.getValue() >= toolProfile.resistance()) {
-                if (toolProfile.canDrop().isPresent()) {
-                  if (toolProfile.canDrop().get()) {
-                    shouldDrop = true; // If any resistance is successfully met and allows drops, then break and allow
-                    break;
-                  } else {
-                    shouldDrop = false; // If a resistance is successfully met and does not allow drops, set drops not allowed and continue to check other resistances
-                  }
+        for (Map.Entry<Byte, Integer> powerData : getPowers(itemStack).entrySet()) {
+          BlocksConfig.ToolProfile toolProfile = blockProperties.profileFor(powerData.getKey(), powerData.getValue());
+          if (toolProfile != null) {
+            if (toolProfile.resistance() >= 0 && powerData.getValue() >= toolProfile.resistance()) {
+              if (toolProfile.canDrop().isPresent()) {
+                if (toolProfile.canDrop().get()) {
+                  shouldDrop = true; // If any resistance is successfully met and allows drops, then break and allow
+                  break;
+                } else {
+                  shouldDrop = false; // If a resistance is successfully met and does not allow drops, set drops not allowed and continue to check other resistances
                 }
               }
             }
